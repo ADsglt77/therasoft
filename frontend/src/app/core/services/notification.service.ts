@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { NotificationVariant } from '../../shared/ui/notification-container/notification-container.component';
+import { NotificationVariant } from '../../components/notification/notification.component';
 
 export interface Notification {
   id: string;

@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MenuMainComponent } from '../../shared/ui/navbar/menuMain/menu-main.component';
-import { AppIconComponent } from '../../shared/ui/icon/app-icon.component';
-import { UiCardComponent, CardPoint } from '../../shared/ui/card/ui-card.component';
+import { MenuMainComponent } from '../../components/navbar/menuMain/menu-main.component';
+import { AppIconComponent } from '../../components/icon/app-icon.component';
+import { UiCardComponent, CardPoint } from '../../components/card/ui-card.component';
 
 /**
  * Page principale (placeholder)

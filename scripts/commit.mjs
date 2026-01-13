@@ -1,418 +1,479 @@
 #!/usr/bin/env node
+/**
+ * Multi-commit helper (no push)
+ * Format: "<emoji> - (<type>) <description>"
+ *
+ * Usage:
+ *   node scripts/commit.mjs
+ *   node scripts/commit.mjs --dry-run
+ *   node scripts/commit.mjs --yes
+ */
 
-import { execSync } from 'child_process';
-import { createInterface } from 'readline';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { spawnSync } from "child_process";
+import readline from "readline/promises";
+import { stdin as input, stdout as output } from "process";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mapping type -> emoji
+// --- Commit types (message) ---
 const EMOJI_MAP = {
-  ui: '🎨',
-  feat: '✨',
-  fix: '🐛',
-  evol: '🚀',
-  refactor: '♻️',
-  docs: '📝',
-  chore: '🔧',
-  test: '✅',
-  perf: '⚡️',
-  ci: '👷',
+  ui: "🎨",
+  feat: "✨",
+  fix: "🐛",
+  evol: "🚀",
+  refactor: "♻️",
+  docs: "📝",
+  chore: "🔧",
+  test: "✅",
+  perf: "⚡️",
+  ci: "👷",
 };
-
-// Types autorisés
 const VALID_TYPES = Object.keys(EMOJI_MAP);
 
-/**
- * Exécute une commande git et retourne le résultat
- */
-function execGit(command) {
-  try {
-    return execSync(command, { encoding: 'utf-8', cwd: join(__dirname, '..') }).trim();
-  } catch (error) {
-    return '';
+// --- CLI opts ---
+const argv = new Set(process.argv.slice(2));
+const OPTS = {
+  dryRun: argv.has("--dry-run"),
+  yes: argv.has("--yes"),
+};
+
+// --- Shell helpers ---
+function run(cmd, args, { allowFail = false } = {}) {
+  const res = spawnSync(cmd, args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  if (res.status !== 0 && !allowFail) {
+    const msg = (res.stderr || res.stdout || "").trim() || `${cmd} failed`;
+    throw new Error(msg);
   }
+  return {
+    ok: res.status === 0,
+    stdout: (res.stdout || "").toString(),
+    stderr: (res.stderr || "").toString(),
+    status: res.status,
+  };
 }
-
-/**
- * Récupère la liste des fichiers modifiés
- */
-function getChangedFiles() {
-  const status = execGit('git status --porcelain');
-  if (!status) return [];
-  
-  return status
-    .split('\n')
-    .filter(line => line.trim())
-    .map(line => {
-      const status = line.substring(0, 2).trim();
-      const file = line.substring(3).trim();
-      return { status, file };
-    });
+function git(args, opts) {
+  return run("git", args, opts).stdout.trimEnd();
 }
-
-/**
- * Analyse les fichiers pour déduire le type de commit
- */
-function detectType(files) {
-  if (files.length === 0) return null;
-
-  const filePaths = files.map(f => f.file.toLowerCase());
-  const addedFiles = files.filter(f => f.status.startsWith('A') || f.status === '??');
-  const deletedFiles = files.filter(f => f.status.includes('D') && !f.status.includes('A'));
-  
-  // UI components
-  if (filePaths.some(f => f.includes('shared/ui/') || f.includes('components/'))) {
-    return 'ui';
-  }
-  
-  // Tests
-  if (filePaths.some(f => f.includes('test') || f.includes('spec') || f.includes('.test.'))) {
-    return 'test';
-  }
-  
-  // Documentation
-  if (filePaths.some(f => f.includes('readme') || f.includes('docs/') || f.endsWith('.md'))) {
-    return 'docs';
-  }
-  
-  // CI/CD
-  if (filePaths.some(f => f.includes('.github/') || f.includes('ci/') || f.includes('workflow'))) {
-    return 'ci';
-  }
-  
-  // Performance
-  if (filePaths.some(f => f.includes('perf') || filePaths.some(f => f.includes('optimize')))) {
-    return 'perf';
-  }
-  
-  // Config / Scripts / Tooling
-  if (filePaths.some(f => 
-    f.includes('package.json') || 
-    f.includes('tsconfig') || 
-    f.includes('docker') ||
-    f.includes('scripts/') ||
-    f.includes('.config.')
-  )) {
-    return 'chore';
-  }
-  
-  // Nouvelles features (routes, pages, services)
-  if (addedFiles.length > 0 && (
-    filePaths.some(f => f.includes('routes/') || f.includes('pages/') || f.includes('services/')) ||
-    addedFiles.length > deletedFiles.length * 2
-  )) {
-    return 'feat';
-  }
-  
-  // Refactor (renommage, déplacement, cleanup)
-  if (filePaths.some(f => f.includes('refactor')) || 
-      (deletedFiles.length > 0 && addedFiles.length > 0)) {
-    return 'refactor';
-  }
-  
-  // Fix (par défaut si on détecte des erreurs/bugs)
-  if (filePaths.some(f => 
-    f.includes('fix') || 
-    f.includes('error') || 
-    f.includes('bug') ||
-    f.includes('typo')
-  )) {
-    return 'fix';
-  }
-  
-  // Par défaut : feat si nouvelles fonctionnalités, sinon chore
-  return addedFiles.length > deletedFiles.length ? 'feat' : 'chore';
+function inGitRepo() {
+  const r = run("git", ["rev-parse", "--is-inside-work-tree"], { allowFail: true });
+  return r.ok && r.stdout.trim() === "true";
 }
-
-/**
- * Génère une description automatique basée sur les fichiers modifiés
- */
-function generateDescription(files) {
-  if (files.length === 0) return 'Update files';
-  
-  const filePaths = files.map(f => f.file);
-  const addedFiles = files.filter(f => f.status.startsWith('A') || f.status === '??');
-  // Détecter les fichiers supprimés (peut être "D", "D ", " D", "AD", etc.)
-  const deletedFiles = files.filter(f => f.status.includes('D') && !f.status.includes('A'));
-  const modifiedFiles = files.filter(f => !f.status.startsWith('A') && !f.status.includes('D') && f.status !== '??');
-  
-  // Détecter le composant/fichier principal modifié
-  const mainFile = filePaths[0];
-  const fileName = mainFile.split('/').pop().replace(/\.[^.]+$/, '');
-  
-  // Cas spéciaux pour les suppressions
-  if (deletedFiles.length > 0) {
-    // Si un seul fichier supprimé, inclure son nom
-    if (deletedFiles.length === 1) {
-      const deletedFile = deletedFiles[0].file;
-      const deletedFileName = deletedFile.split('/').pop();
-      const deletedFileBase = deletedFileName.replace(/\.[^.]+$/, '');
-      
-      // Cas spéciaux pour certains fichiers
-      if (deletedFile.includes('gitignore')) {
-        return 'Remove .gitignore file';
-      }
-      if (deletedFile.includes('readme')) {
-        return 'Remove README file';
-      }
-      if (deletedFile.includes('package.json')) {
-        return 'Remove package.json';
-      }
-      
-      // Formater le nom du fichier (gérer les fichiers cachés, remplacer - par espaces, capitaliser)
-      let formattedName = deletedFileBase;
-      
-      // Si le fichier commence par un point (fichier caché), garder le point
-      if (deletedFileName.startsWith('.')) {
-        formattedName = deletedFileName; // Garder le nom complet avec le point
-      } else {
-        // Sinon, formater normalement
-        formattedName = deletedFileBase
-          .replace(/-/g, ' ')
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-      }
-      
-      return `Remove ${formattedName}`;
-    }
-    
-    // Si plusieurs fichiers supprimés, factoriser
-    if (deletedFiles.length > 1) {
-      // Regrouper par extension ou type
-      const extensions = {};
-      deletedFiles.forEach(f => {
-        const ext = f.file.split('.').pop() || 'file';
-        extensions[ext] = (extensions[ext] || 0) + 1;
-      });
-      
-      const uniqueExts = Object.keys(extensions);
-      if (uniqueExts.length === 1) {
-        const ext = uniqueExts[0];
-        return `Remove ${deletedFiles.length} ${ext} files`;
-      }
-      
-      return `Remove ${deletedFiles.length} files`;
-    }
-  }
-  
-  // Cas spéciaux
-  if (filePaths.some(f => f.includes('auth'))) {
-    if (addedFiles.length > 0) return 'Add authentication feature';
-    return 'Update authentication';
-  }
-  
-  if (filePaths.some(f => f.includes('navbar') || f.includes('menu'))) {
-    return 'Update navigation menu';
-  }
-  
-  if (filePaths.some(f => f.includes('button'))) {
-    return 'Update button component';
-  }
-  
-  if (filePaths.some(f => f.includes('input'))) {
-    return 'Update input component';
-  }
-  
-  if (filePaths.some(f => f.includes('card'))) {
-    return 'Update card component';
-  }
-  
-  if (filePaths.some(f => f.includes('routes'))) {
-    return 'Update routes configuration';
-  }
-  
-  if (filePaths.some(f => f.includes('styles') || f.includes('scss') || f.includes('css'))) {
-    return 'Update styles';
-  }
-  
-  if (filePaths.some(f => f.includes('service'))) {
-    return `Update ${fileName} service`;
-  }
-  
-  if (filePaths.some(f => f.includes('component'))) {
-    return `Update ${fileName} component`;
-  }
-  
-  // Générique pour les ajouts
-  if (addedFiles.length > 0) {
-    if (addedFiles.length === 1) {
-      const addedFile = addedFiles[0].file;
-      const addedFileName = addedFile.split('/').pop().replace(/\.[^.]+$/, '');
-      const formattedName = addedFileName
-        .replace(/-/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      return `Add ${formattedName}`;
-    }
-    return `Add ${addedFiles.length} files`;
-  }
-  
-  // Capitaliser le premier caractère du nom de fichier
-  const capitalized = fileName.charAt(0).toUpperCase() + fileName.slice(1).replace(/-/g, ' ');
-  return `Update ${capitalized}`;
+function hasStagedChanges() {
+  const out = run("git", ["diff", "--cached", "--name-only"], { allowFail: true }).stdout.trim();
+  return Boolean(out);
 }
-
-/**
- * Nettoie et formate la description (max 60 chars, première lettre majuscule, pas de point)
- */
+function sanitizeOneLine(s) {
+  return String(s ?? "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+}
 function formatDescription(desc) {
-  // Enlever les points finaux
-  desc = desc.replace(/\.$/, '');
-  
-  // Première lettre majuscule
-  desc = desc.charAt(0).toUpperCase() + desc.slice(1);
-  
-  // Limiter à 60 caractères
-  if (desc.length > 60) {
-    desc = desc.substring(0, 57) + '...';
-  }
-  
-  return desc;
+  let d = sanitizeOneLine(desc).replace(/\.$/, "");
+  if (!d) d = "Update files";
+  d = d.charAt(0).toUpperCase() + d.slice(1);
+  if (d.length > 60) d = d.slice(0, 57).trimEnd() + "...";
+  return d;
 }
-
-/**
- * Construit le message de commit final
- */
 function buildCommitMessage(type, description) {
-  const emoji = EMOJI_MAP[type] || '🔧';
-  return `${emoji} - (${type}) ${description}`;
+  const emoji = EMOJI_MAP[type] ?? "🔧";
+  return `${emoji} - (${type}) ${formatDescription(description)}`;
 }
 
+// --- Robust status parsing (supports spaces/renames) ---
 /**
- * Interface interactive pour confirmation/édition
+ * Uses: git status --porcelain=v1 -z
+ * tokens pattern:
+ *  XY <path>\0
+ *  R  <old>\0<new>\0
  */
-function askConfirmation(rl, message, defaultType, defaultDesc) {
-  return new Promise((resolve) => {
-    console.log('\n📝 Message de commit proposé:');
-    console.log(`   ${message}\n`);
-    console.log('Options:');
-    console.log('  [Enter] Confirmer et committer');
-    console.log('  [e]     Éditer le type/description');
-    console.log('  [q]     Annuler\n');
-    
-    rl.question('Votre choix: ', (answer) => {
-      const choice = answer.trim().toLowerCase();
-      
-      if (choice === 'q' || choice === 'quit') {
-        console.log('❌ Commit annulé.');
-        rl.close();
-        resolve(null);
-      } else if (choice === 'e' || choice === 'edit') {
-        askEdit(rl, defaultType, defaultDesc).then(resolve);
-      } else {
-        resolve(message);
-      }
-    });
-  });
-}
+function getPorcelainZ() {
+  const raw = run("git", ["status", "--porcelain=v1", "-z"], { allowFail: true }).stdout;
+  if (!raw) return [];
+  const tokens = raw.split("\0").filter(Boolean);
 
-/**
- * Interface pour éditer le type et la description
- */
-function askEdit(rl, defaultType, defaultDesc) {
-  return new Promise((resolve) => {
-    console.log('\n📝 Édition du message de commit\n');
-    console.log(`Types disponibles: ${VALID_TYPES.join(', ')}\n`);
-    
-    rl.question(`Type [${defaultType}]: `, (typeAnswer) => {
-      const type = typeAnswer.trim() || defaultType;
-      
-      if (!VALID_TYPES.includes(type)) {
-        console.log(`⚠️  Type invalide. Utilisation de '${defaultType}' par défaut.`);
-        rl.close();
-        resolve(null);
-        return;
-      }
-      
-      rl.question(`Description [${defaultDesc}]: `, (descAnswer) => {
-        const desc = descAnswer.trim() || defaultDesc;
-        const formattedDesc = formatDescription(desc);
-        const message = buildCommitMessage(type, formattedDesc);
-        resolve(message);
+  const out = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const entry = tokens[i++];
+    if (!entry) continue;
+
+    const status = entry.slice(0, 2); // " M", "A ", "??", "R "
+    let rest = entry.slice(3); // path starts at index 3 (after "XY ")
+
+    // rename/copy appear as: "R  old" then next token is "new"
+    if (status[0] === "R" || status[0] === "C") {
+      const oldPath = rest;
+      const newPath = tokens[i++] ?? "";
+      out.push({
+        x: status[0],
+        y: status[1],
+        status: "R",
+        path: newPath,
+        fromPath: oldPath,
       });
+      continue;
+    }
+
+    out.push({
+      x: status[0],
+      y: status[1],
+      status: status.trim() || "??",
+      path: rest,
+      fromPath: null,
     });
-  });
+  }
+  return out;
 }
 
-/**
- * Fonction principale
- */
+function iconForStatus(s) {
+  if (s === "??") return "➕";
+  if (s.includes("D")) return "➖";
+  if (s.includes("A")) return "➕";
+  return "📝";
+}
+
+// --- Grouping rules (ui / backend / chore + others) ---
+function detectGroup(filePath) {
+  const p = filePath.replace(/\\/g, "/").toLowerCase();
+
+  // UI (Angular UI primitives & app components & styles)
+  if (
+    p.includes("src/app/shared/ui/") ||
+    p.includes("src/app/components/") ||
+    p.endsWith(".scss") ||
+    p.endsWith(".css") ||
+    p.includes("/styles/")
+  )
+    return "ui";
+
+  // Backend
+  if (p.startsWith("backend/") || p.includes("/backend/") || p.includes("src/server") || p.includes("/api/"))
+    return "backend";
+
+  // Docs
+  if (p.endsWith(".md") || p.includes("/docs/") || p.includes("readme")) return "docs";
+
+  // CI
+  if (p.includes(".github/") || p.includes("/workflows/") || p.includes("/ci/")) return "ci";
+
+  // Tests
+  if (p.includes("__tests__") || p.includes("/tests/") || p.includes(".spec.") || p.includes(".test.")) return "test";
+
+  // Chore/tooling/config
+  if (
+    p.endsWith("package.json") ||
+    p.includes("lock") ||
+    p.includes("tsconfig") ||
+    p.includes("eslint") ||
+    p.includes("prettier") ||
+    p.includes("docker") ||
+    p.includes("/scripts/") ||
+    p.endsWith(".yml") ||
+    p.endsWith(".yaml")
+  )
+    return "chore";
+
+  return "other";
+}
+
+// --- Commit type (message) detection inside a group ---
+function detectCommitType(groupName, changes) {
+  const paths = changes.map((c) => c.path.toLowerCase());
+  const statusList = changes.map((c) => c.status);
+
+  const added = statusList.filter((s) => s.includes("A") || s === "??").length;
+  const deleted = statusList.filter((s) => s.includes("D")).length;
+  const hasRename = changes.some((c) => c.fromPath);
+
+  // hard mapping by group
+  if (groupName === "ui") return "ui";
+  if (groupName === "docs") return "docs";
+  if (groupName === "ci") return "ci";
+  if (groupName === "test") return "test";
+
+  if (groupName === "chore") return "chore";
+
+  // backend: decide feat/fix/refactor by heuristics
+  if (groupName === "backend") {
+    if (paths.some((p) => p.includes("fix") || p.includes("bug") || p.includes("error"))) return "fix";
+    if (hasRename || (added > 0 && deleted > 0)) return "refactor";
+    return added > 0 ? "feat" : "chore";
+  }
+
+  // fallback
+  if (paths.some((p) => p.includes("fix") || p.includes("bug") || p.includes("error") || p.includes("typo"))) return "fix";
+  if (hasRename || (added > 0 && deleted > 0)) return "refactor";
+  return added > 0 ? "feat" : "chore";
+}
+
+// --- Description generation per group ---
+function titleize(name) {
+  return name
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function pickFocus(changes) {
+  const paths = changes.map((c) => c.path.replace(/\\/g, "/"));
+
+  // UI component folder focus: src/app/shared/ui/<x>/
+  const ui = paths.find((p) => p.includes("src/app/shared/ui/"));
+  if (ui) {
+    const tail = ui.split("src/app/shared/ui/")[1] || "";
+    const name = (tail.split("/")[0] || "").trim();
+    if (name) return `Ui${titleize(name)} component`;
+  }
+
+  // Front page focus: src/app/pages/<x>/
+  const page = paths.find((p) => p.includes("src/app/pages/"));
+  if (page) {
+    const tail = page.split("src/app/pages/")[1] || "";
+    const name = (tail.split("/")[0] || "").trim();
+    if (name) return `${titleize(name)} page`;
+  }
+
+  // Backend focus
+  if (paths.some((p) => /auth/i.test(p))) return "Auth";
+  if (paths.some((p) => /routes/i.test(p))) return "API routes";
+
+  // Single file
+  if (paths.length === 1) return titleize(paths[0].split("/").pop() || "files");
+
+  // Dominant folder
+  const buckets = new Map();
+  for (const p of paths) {
+    const top = p.split("/")[0] || "root";
+    buckets.set(top, (buckets.get(top) || 0) + 1);
+  }
+  const [top] = [...buckets.entries()].sort((a, b) => b[1] - a[1])[0] || ["files"];
+  return titleize(top);
+}
+
+function pickVerb(type, changes) {
+  const s = changes.map((c) => c.status);
+  const added = s.filter((x) => x.includes("A") || x === "??").length;
+  const deleted = s.filter((x) => x.includes("D")).length;
+  const renamed = changes.some((c) => c.fromPath);
+
+  if (deleted > 0 && added === 0) return "Remove";
+  if (renamed) return "Refactor";
+  if (type === "fix") return "Fix";
+  if (type === "refactor") return "Refactor";
+  if (type === "perf") return "Improve";
+  if (type === "feat" || type === "ui" || type === "test") return added > 0 ? "Add" : "Update";
+  return "Update";
+}
+
+function generateDescription(type, changes) {
+  const focus = pickFocus(changes);
+  const verb = pickVerb(type, changes);
+  return `${verb} ${focus}`;
+}
+
+// --- staging per group (safe + batching for Windows) ---
+function resetIndex() {
+  run("git", ["reset"]);
+}
+
+function stagePaths(paths) {
+  // Use git add -A -- <paths...> in chunks (Windows arg limit)
+  const CHUNK = 40;
+  for (let i = 0; i < paths.length; i += CHUNK) {
+    const slice = paths.slice(i, i + CHUNK);
+    run("git", ["add", "-A", "--", ...slice]);
+  }
+}
+
+function uniquePathsForCommit(changes) {
+  // For rename, include both old & new to capture properly
+  const set = new Set();
+  for (const c of changes) {
+    if (c.path) set.add(c.path);
+    if (c.fromPath) set.add(c.fromPath);
+  }
+  return [...set];
+}
+
+// --- main flow ---
 async function main() {
-  console.log('🚀 Génération automatique de commit\n');
-  
-  // Vérifier qu'on est dans un repo git
-  const gitDir = execGit('git rev-parse --git-dir');
-  if (!gitDir) {
-    console.error('❌ Erreur: Ce répertoire n\'est pas un dépôt Git.');
+  console.log("🚀 Multi-commit generator (no push)\n");
+
+  if (!inGitRepo()) {
+    console.error("❌ Not a git repository.");
     process.exit(1);
   }
-  
-  // Récupérer les fichiers modifiés
-  const files = getChangedFiles();
-  
-  if (files.length === 0) {
-    console.log('ℹ️  Aucun changement détecté. Rien à committer.');
+
+  // Safety: existing staged changes can mess grouping.
+  if (hasStagedChanges()) {
+    const rl0 = readline.createInterface({ input, output });
+    console.log("⚠️ You already have staged changes.");
+    console.log("To safely create multiple commits, the script needs a clean index.");
+    console.log("\nOptions:");
+    console.log("  1) Reset index (keeps working tree) and continue  [recommended]");
+    console.log("  2) Abort");
+    const ans = (await rl0.question("\nChoose (1/2): ")).trim();
+    rl0.close();
+
+    if (ans !== "1") {
+      console.log("❌ Aborted.");
+      process.exit(0);
+    }
+    resetIndex();
+    console.log("✅ Index reset.");
+  }
+
+  const all = getPorcelainZ();
+  if (!all.length) {
+    console.log("ℹ️ No changes detected.");
     process.exit(0);
   }
-  
-  console.log(`📋 ${files.length} fichier(s) modifié(s):`);
-  files.slice(0, 10).forEach(f => {
-    const icon = f.status.startsWith('A') ? '➕' : f.status.startsWith('D') ? '➖' : '📝';
-    console.log(`   ${icon} ${f.file}`);
-  });
-  if (files.length > 10) {
-    console.log(`   ... et ${files.length - 10} autre(s) fichier(s)`);
+
+  // Build groups
+  const groups = new Map(); // name -> changes[]
+  for (const c of all) {
+    const g = detectGroup(c.path);
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(c);
   }
-  
-  // Détecter le type et générer la description
-  const detectedType = detectType(files);
-  const detectedDesc = generateDescription(files);
-  const formattedDesc = formatDescription(detectedDesc);
-  const proposedMessage = buildCommitMessage(detectedType, formattedDesc);
-  
-  // Interface interactive
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  
-  const finalMessage = await askConfirmation(rl, proposedMessage, detectedType, formattedDesc);
+
+  // Preferred ordering
+  const ORDER = ["ui", "backend", "chore", "docs", "ci", "test", "other"];
+  const sortedGroups = [...groups.entries()].sort(
+    ([a], [b]) => (ORDER.indexOf(a) === -1 ? 999 : ORDER.indexOf(a)) - (ORDER.indexOf(b) === -1 ? 999 : ORDER.indexOf(b))
+  );
+
+  console.log("📦 Detected commit groups:");
+  for (const [name, changes] of sortedGroups) {
+    console.log(`  - ${name}: ${changes.length} file(s)`);
+  }
+
+  const rl = readline.createInterface({ input, output });
+
+  for (const [groupName, changes] of sortedGroups) {
+    console.log(`\n==============================`);
+    console.log(`🧩 Group: ${groupName} (${changes.length} file(s))`);
+
+    // Show preview
+    changes.slice(0, 12).forEach((c) => {
+      console.log(`  ${iconForStatus(c.status)} ${c.path}`);
+    });
+    if (changes.length > 12) console.log(`  ... +${changes.length - 12} more`);
+
+    // Propose message
+    let type = detectCommitType(groupName, changes);
+    let desc = generateDescription(type, changes);
+    let msg = buildCommitMessage(type, desc);
+
+    console.log("\n📝 Proposed commit message:");
+    console.log(`   ${msg}`);
+
+    console.log("\nOptions:");
+    console.log("  [Enter] Commit this group");
+    console.log("  e       Edit type/description");
+    console.log("  r       Regenerate suggestion");
+    console.log("  s       Show group diff --stat (preview)");
+    console.log("  k       Skip this group");
+    console.log("  q       Quit");
+
+    if (OPTS.yes) {
+      if (OPTS.dryRun) {
+        console.log("🧪 Dry-run: would commit:", msg);
+        continue;
+      }
+      // stage only this group + commit
+      resetIndex();
+      stagePaths(uniquePathsForCommit(changes));
+      run("git", ["commit", "-m", msg]);
+      console.log("✅ Commit created:", msg);
+      continue;
+    }
+
+    // interactive loop for this group
+    while (true) {
+      const ans = (await rl.question("Choice [Enter/e/r/s/k/q]: ")).trim().toLowerCase();
+
+      if (ans === "q") {
+        console.log("👋 Bye.");
+        rl.close();
+        process.exit(0);
+      }
+
+      if (ans === "k") {
+        console.log("⏭️ Skipped.");
+        break;
+      }
+
+      if (ans === "s") {
+        // stage temporarily to show stat, then reset index back
+        resetIndex();
+        stagePaths(uniquePathsForCommit(changes));
+        const stat = git(["diff", "--cached", "--stat"], { allowFail: true });
+        console.log("\n📊 Staged diff --stat:\n");
+        console.log(stat || "(empty)");
+        // reset again to avoid mixing with next group until confirmed
+        resetIndex();
+        console.log("\n📝 Current message:", msg);
+        continue;
+      }
+
+      if (ans === "r") {
+        type = detectCommitType(groupName, changes);
+        desc = generateDescription(type, changes);
+        msg = buildCommitMessage(type, desc);
+        console.log("🔁 Regenerated:", msg);
+        continue;
+      }
+
+      if (ans === "e") {
+        console.log(`Types: ${VALID_TYPES.join(", ")}`);
+        const t = (await rl.question(`Type [${type}]: `)).trim().toLowerCase();
+        if (t && VALID_TYPES.includes(t)) type = t;
+
+        const d = (await rl.question(`Description [${formatDescription(desc)}]: `)).trim();
+        if (d) desc = d;
+
+        msg = buildCommitMessage(type, desc);
+        console.log("📝 Updated:", msg);
+        continue;
+      }
+
+      // Enter => commit
+      if (OPTS.dryRun) {
+        console.log("🧪 Dry-run: would commit:", msg);
+        break;
+      }
+
+      resetIndex();
+      stagePaths(uniquePathsForCommit(changes));
+      try {
+        run("git", ["commit", "-m", msg]);
+        console.log("✅ Commit created:", msg);
+      } catch (e) {
+        console.error("❌ Commit failed:", e?.message || e);
+      }
+      break;
+    }
+  }
+
   rl.close();
-  
-  if (!finalMessage) {
-    process.exit(0);
-  }
-  
-  // Exécuter git add -A
-  console.log('\n📦 Ajout des fichiers...');
-  try {
-    execGit('git add -A');
-    console.log('✅ Fichiers ajoutés.');
-  } catch (error) {
-    console.error('❌ Erreur lors de l\'ajout des fichiers:', error.message);
-    process.exit(1);
-  }
-  
-  // Exécuter git commit
-  console.log('💾 Création du commit...');
-  try {
-    execGit(`git commit -m "${finalMessage}"`);
-    console.log(`\n✅ Commit créé avec succès!`);
-    console.log(`   ${finalMessage}\n`);
-  } catch (error) {
-    console.error('❌ Erreur lors de la création du commit:', error.message);
-    process.exit(1);
+
+  // Show remaining
+  const remaining = run("git", ["status", "--porcelain=v1"], { allowFail: true }).stdout.trim();
+  console.log("\n==============================");
+  if (!remaining) {
+    console.log("✅ All changes committed.");
+  } else {
+    console.log("ℹ️ Remaining uncommitted changes:\n");
+    console.log(remaining);
+    console.log("\nTip: rerun the script or commit manually.");
   }
 }
 
-// Exécuter
-main().catch(error => {
-  console.error('❌ Erreur:', error);
+main().catch((e) => {
+  console.error("❌ Error:", e?.message || e);
   process.exit(1);
 });
-

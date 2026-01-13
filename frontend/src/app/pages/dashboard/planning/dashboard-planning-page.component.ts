@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiCardComponent, CardPoint } from '../../../shared/ui/card/ui-card.component';
+import { UiCardComponent, CardPoint } from '../../../components/card/ui-card.component';
 
 /**
  * Page Planning Dashboard

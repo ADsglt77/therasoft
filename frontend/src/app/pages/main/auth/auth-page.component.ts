@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { AuthComponent } from '../../../shared/ui/auth/auth.component';
-import { AppIconComponent } from '../../../shared/ui/icon/app-icon.component';
+import { AuthComponent } from '../../../components/auth/auth.component';
+import { AppIconComponent } from '../../../components/icon/app-icon.component';
 
 /**
  * Page wrapper pour les routes /login et /register

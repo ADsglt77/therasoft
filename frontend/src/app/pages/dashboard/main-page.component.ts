@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MenuDashboardComponent } from '../../shared/ui/navbar/menuDashboard/menu-dashboard.component';
+import { MenuDashboardComponent } from '../../components/navbar/menuDashboard/menu-dashboard.component';
 
 @Component({
   selector: 'app-dashboard-main-page',

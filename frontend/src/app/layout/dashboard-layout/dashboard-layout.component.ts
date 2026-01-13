@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { MenuDashboardComponent } from '../../shared/ui/navbar/menuDashboard/menu-dashboard.component';
+import { MenuDashboardComponent } from '../../components/navbar/menuDashboard/menu-dashboard.component';
 
 /**
  * Layout pour les pages du dashboard
