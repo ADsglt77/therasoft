@@ -61,7 +61,7 @@ function detectType(files) {
 
   const filePaths = files.map(f => f.file.toLowerCase());
   const addedFiles = files.filter(f => f.status.startsWith('A') || f.status === '??');
-  const deletedFiles = files.filter(f => f.status.startsWith('D'));
+  const deletedFiles = files.filter(f => f.status.includes('D') && !f.status.includes('A'));
   
   // UI components
   if (filePaths.some(f => f.includes('shared/ui/') || f.includes('components/'))) {
@@ -135,16 +135,73 @@ function generateDescription(files) {
   
   const filePaths = files.map(f => f.file);
   const addedFiles = files.filter(f => f.status.startsWith('A') || f.status === '??');
-  const deletedFiles = files.filter(f => f.status.startsWith('D'));
+  // Détecter les fichiers supprimés (peut être "D", "D ", " D", "AD", etc.)
+  const deletedFiles = files.filter(f => f.status.includes('D') && !f.status.includes('A'));
+  const modifiedFiles = files.filter(f => !f.status.startsWith('A') && !f.status.includes('D') && f.status !== '??');
   
   // Détecter le composant/fichier principal modifié
   const mainFile = filePaths[0];
   const fileName = mainFile.split('/').pop().replace(/\.[^.]+$/, '');
   
+  // Cas spéciaux pour les suppressions
+  if (deletedFiles.length > 0) {
+    // Si un seul fichier supprimé, inclure son nom
+    if (deletedFiles.length === 1) {
+      const deletedFile = deletedFiles[0].file;
+      const deletedFileName = deletedFile.split('/').pop();
+      const deletedFileBase = deletedFileName.replace(/\.[^.]+$/, '');
+      
+      // Cas spéciaux pour certains fichiers
+      if (deletedFile.includes('gitignore')) {
+        return 'Remove .gitignore file';
+      }
+      if (deletedFile.includes('readme')) {
+        return 'Remove README file';
+      }
+      if (deletedFile.includes('package.json')) {
+        return 'Remove package.json';
+      }
+      
+      // Formater le nom du fichier (gérer les fichiers cachés, remplacer - par espaces, capitaliser)
+      let formattedName = deletedFileBase;
+      
+      // Si le fichier commence par un point (fichier caché), garder le point
+      if (deletedFileName.startsWith('.')) {
+        formattedName = deletedFileName; // Garder le nom complet avec le point
+      } else {
+        // Sinon, formater normalement
+        formattedName = deletedFileBase
+          .replace(/-/g, ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
+      
+      return `Remove ${formattedName}`;
+    }
+    
+    // Si plusieurs fichiers supprimés, factoriser
+    if (deletedFiles.length > 1) {
+      // Regrouper par extension ou type
+      const extensions = {};
+      deletedFiles.forEach(f => {
+        const ext = f.file.split('.').pop() || 'file';
+        extensions[ext] = (extensions[ext] || 0) + 1;
+      });
+      
+      const uniqueExts = Object.keys(extensions);
+      if (uniqueExts.length === 1) {
+        const ext = uniqueExts[0];
+        return `Remove ${deletedFiles.length} ${ext} files`;
+      }
+      
+      return `Remove ${deletedFiles.length} files`;
+    }
+  }
+  
   // Cas spéciaux
   if (filePaths.some(f => f.includes('auth'))) {
     if (addedFiles.length > 0) return 'Add authentication feature';
-    if (deletedFiles.length > 0) return 'Remove authentication feature';
     return 'Update authentication';
   }
   
@@ -180,13 +237,19 @@ function generateDescription(files) {
     return `Update ${fileName} component`;
   }
   
-  // Générique
+  // Générique pour les ajouts
   if (addedFiles.length > 0) {
-    return `Add ${fileName}`;
-  }
-  
-  if (deletedFiles.length > 0) {
-    return `Remove ${fileName}`;
+    if (addedFiles.length === 1) {
+      const addedFile = addedFiles[0].file;
+      const addedFileName = addedFile.split('/').pop().replace(/\.[^.]+$/, '');
+      const formattedName = addedFileName
+        .replace(/-/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      return `Add ${formattedName}`;
+    }
+    return `Add ${addedFiles.length} files`;
   }
   
   // Capitaliser le premier caractère du nom de fichier
