@@ -1,0 +1,13 @@
+@use '../../../../styles/mixins' as *;
+
+// Styles pour app-icon (minimal, les styles sont gérés par lucide-angular)
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  lucide-icon svg {
+    @include transition(stroke color, 300ms);
+  }
+}

@@ -1,0 +1,93 @@
+@use '../../../styles/tokens' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+
+  .header {
+    width: 100%;
+    background: color-mix(in srgb, var(--bg) 5%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--bg) 60%, transparent);
+    padding: 1rem;
+  }
+
+  .content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 100px;
+    gap: 48px;
+    max-width: 80vw;
+    margin: 0 auto;
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+      max-width: 500px;
+
+      h5 {  
+        opacity: 0.7;
+        line-height: 1.6;
+      }
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      width: 100%;
+    }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(30px);
+    animation: fadeIn 0.2s ease-in-out;
+  }
+
+  .modal-content {
+    position: relative;
+    max-width: 90%;
+    width: fit-content;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+

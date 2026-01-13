@@ -1,0 +1,13 @@
+<div class="dashboard-planning-page">
+  <div class="cards">
+    @for (card of cards; track $index) {
+      <ui-card 
+        [icon]="card.icon" 
+        [title]="card.title" 
+        [description]="card.description" 
+        [points]="card.points">
+      </ui-card>
+    }
+  </div>
+</div>
+

@@ -1,0 +1,67 @@
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
+
+:host {
+  display: inline-flex;
+  flex-direction: column;
+  gap: $spacing-4;
+  width: 100%;
+  
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .input {
+    @include input-base;
+
+    &.error {
+      border-color: var(--color-danger);
+    }
+
+    &.success {
+      border-color: var(--color-success);
+    }
+
+    &.warning {
+      border-color: var(--color-warning);
+    }
+
+    &.info {
+      border-color: var(--color-primary-300);
+    }
+
+
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: $spacing-8;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--color-gray-500);
+  }
+
+  .message {
+    margin-top: -4px;
+
+    &--error {
+      color: var(--color-danger);
+    }
+
+    &--info {
+      color: var(--color-gray-500);
+    }
+
+    &--success {
+      color: var(--color-success);
+    }
+
+    &--warning {
+      color: var(--color-warning);
+    }
+  }
+}

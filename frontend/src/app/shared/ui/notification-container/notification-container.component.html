@@ -1,0 +1,10 @@
+<div class="notification-container">
+  @for (notification of notifications; track notification.id) {
+    <div 
+      class="notification notification--{{ notification.variant }}" 
+      (click)="removeNotification(notification.id)">
+      <app-icon name="info" [size]="24" [color]="getIconColor(notification.variant)" class="icon"></app-icon>
+      <p>{{ notification.text }}</p>
+    </div>
+  }
+</div>

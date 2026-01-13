@@ -1,0 +1,21 @@
+<div class="title">
+  <app-icon name="calendar-heart" [size]="36"></app-icon>
+  <h1>TsXcare</h1>
+</div>
+<div class="links">
+  @if (!isAuthenticated) {
+    <ui-button color="connect" (click)="onLoginClick()">Se connecter</ui-button>
+  } @else {
+    <div class="avatar-wrapper" (mouseenter)="onAvatarMouseEnter()" (mouseleave)="onAvatarMouseLeave()">
+      <ui-avatar [initial]="getInitial()"></ui-avatar>
+      @if (showHamburgerMenu) {
+        <div class="hamburger-menu" (mouseenter)="onAvatarMouseEnter()" (mouseleave)="onAvatarMouseLeave()">
+          <app-menu-hamburger (logout)="onLogout()"></app-menu-hamburger>
+        </div>
+      }
+    </div>
+  }
+  <div class="icon-moon-wrapper">
+    <app-icon name="moon" [size]="24" [color]="'var(--moon-icon-color)'" class="icon"></app-icon>
+  </div>
+</div>

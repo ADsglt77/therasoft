@@ -1,0 +1,17 @@
+<div class="header">
+  <app-menu-main></app-menu-main>
+</div>
+<div class="content">
+  <div class="hero">
+    <app-icon name="calendar-heart" [size]="64"></app-icon>
+    <h1>Optimisez votre pratique radiologique</h1>
+    <h5>TsXcare Portail Médecin : gérez vos vacations, consultez vos dossiers patients et collaborez avec vos équipes.
+    </h5>
+  </div>
+  <div class="cards">
+    @for (card of cards; track $index) {
+    <ui-card [icon]="card.icon" [title]="card.title" [description]="card.description" [points]="card.points">
+    </ui-card>
+    }
+  </div>
+</div>

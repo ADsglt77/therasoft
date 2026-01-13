@@ -1,0 +1,64 @@
+@use '../../../../styles/tokens' as *;
+
+:host {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.auth-page-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(30px);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.auth-page-content {
+  position: relative;
+  max-width: 90%;
+  width: fit-content;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+
+  .close-button {
+    position: absolute;
+    top: $spacing-16;
+    right: $spacing-16;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    z-index: 10;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+

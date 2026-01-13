@@ -1,0 +1,72 @@
+// ============================================
+// MIXINS
+// ============================================
+
+@use 'tokens' as *;
+
+@mixin focus-ring($color: var(--color-primary-500)) {
+  outline: 2px solid $color;
+  outline-offset: 2px;
+}
+
+@mixin focus-visible {
+  &:focus-visible {
+    @include focus-ring();
+  }
+}
+
+@mixin transition($property: all, $duration: 150ms, $easing: ease-in-out) {
+  transition: $property $duration $easing;
+}
+
+@mixin input-base {
+  padding: $spacing-12 $spacing-16;
+  border-radius: $radius-8;
+  background: color-mix(in srgb, var(--bg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg) 10%, transparent);
+  color: var(--color-gray-100);
+  font-size: $font-size-h5; // Utilise la taille définie pour p
+  transition: border-color 0.3s ease;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary-300);
+  }
+
+  &::placeholder {
+    color: var(--color-gray-500);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Pattern d'icône centrée (répété dans plusieurs composants)
+@mixin icon-center {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Pattern de lien avec transition de couleur
+@mixin link-primary {
+  color: var(--color-primary-500);
+  text-decoration: none;
+  @include transition(color, 300ms);
+  
+  &:hover {
+    color: var(--color-primary-300);
+    text-decoration: underline;
+  }
+}
+
+// Surface avec background semi-transparent (répété)
+@mixin surface($bg-opacity: 5%, $border-opacity: 10%) {
+  background: color-mix(in srgb, var(--bg) $bg-opacity, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg) $border-opacity, transparent);
+}
+

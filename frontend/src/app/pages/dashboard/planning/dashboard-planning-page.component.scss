@@ -1,0 +1,10 @@
+@use '../../../../styles/tokens' as *;
+
+.dashboard-planning-page {
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+  }
+}
+

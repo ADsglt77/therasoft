@@ -1,0 +1,14 @@
+// ============================================
+// COMPONENTS - Global Component Styles
+// ============================================
+
+// Styles globaux pour les composants UI
+// Les styles spécifiques sont dans les fichiers .component.scss de chaque composant
+
+// Assurer que le contenu Angular est au-dessus du background
+app-root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+

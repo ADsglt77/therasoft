@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+// - Role: si tu veux un admin plus tard
+// - Sexe: optionnel mais propre
+// - ModaliteType: uniformise Vacation.modalite et Rdv.modalite
+enum Role {
+  MEDECIN
+  ADMIN
+}
+
+enum Sexe {
+  M
+  F
+  X
+  UNKNOWN
+}
+
+enum ModaliteType {
+  XRAY
+  CT
+  MRI
+  US
+  MAMMO
+  PET
+  OTHER
+}
+
+model Medecin {
+  id         Int     @id @default(autoincrement())
+  nom        String
+  prenom     String
+  specialite String?
+  email      String  @unique
+
+  // --- Auth simple & sécurisé ---
+  passwordHash String    @map("password_hash")
+  role         Role      @default(MEDECIN)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vacations Vacation[]
+  sessions  AuthSession[]
+
+  @@index([email])
+  @@map("medecin")
+}
+
+model Vacation {
+  id Int @id @default(autoincrement())
+
+  date    DateTime @db.Date
+  horaire DateTime @db.Time(0)
+
+  site     String
+  modalite ModaliteType
+
+  medecinId Int     @map("id_medecin")
+  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  links Modalite[]
+
+  @@index([medecinId])
+  @@index([date])
+  @@index([medecinId, date])
+  @@map("vacation")
+}
+
+model Patient {
+  id            Int      @id @default(autoincrement())
+  nom           String
+  prenom        String
+  dateNaissance DateTime @map("date_naissance") @db.Date
+  sexe          Sexe?    @default(UNKNOWN)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rdvs Rdv[]
+
+  @@index([nom, prenom])
+  @@index([dateNaissance])
+  @@map("patient")
+}
+
+model Rdv {
+  id Int @id @default(autoincrement())
+
+  date    DateTime @db.Date
+  horaire DateTime @db.Time(0)
+
+  modalite ModaliteType
+
+  patientId Int     @map("id_patient")
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  links Modalite[]
+
+  @@index([patientId])
+  @@index([date])
+  @@index([patientId, date])
+  @@map("rdv")
+}
+
+// DBML: "Modalite" = table de liaison (RDV <-> Vacation)
+// Je garde le nom pour coller à ton DBML.
+model Modalite {
+  id Int @id @default(autoincrement())
+
+  rdvId Int @map("id_rdv")
+  rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
+
+  vacationId Int      @map("id_vacation")
+  vacation   Vacation @relation(fields: [vacationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([rdvId, vacationId])
+  @@index([rdvId])
+  @@index([vacationId])
+  @@map("modalite")
+}
+
+// Sessions pour refresh token (recommandé)
+// - Simple: access token JWT court + refresh token en cookie httpOnly
+// - Stocker UNIQUEMENT un hash du refresh token
+model AuthSession {
+  id Int @id @default(autoincrement())
+
+  medecinId Int     @map("id_medecin")
+  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+
+  refreshTokenHash String    @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([medecinId])
+  @@index([expiresAt])
+  @@map("auth_session")
+}

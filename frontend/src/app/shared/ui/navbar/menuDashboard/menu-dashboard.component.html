@@ -1,0 +1,22 @@
+<div class="header">
+    <div class="title">
+        <app-icon name="calendar-heart" [size]="36"></app-icon>
+        <h2>TsXcare</h2>
+      </div>
+      <div class="links">
+          <app-navbar-links icon="dashboard" text="Dashboard" route="/dashboard/planning"></app-navbar-links>
+          <app-navbar-links icon="settings" text="Settings" route="/dashboard/settings"></app-navbar-links>
+      </div>
+</div>
+<div class="footer">
+    <div class="profil">
+        <ui-avatar [initial]="userInitials"></ui-avatar>
+        <div class="profil-info">
+            <h6>{{ currentUser?.nom?.toUpperCase() || 'Chargement...' }}</h6>
+            <p>{{ currentUser?.prenom || '' }}</p>
+        </div>
+        <div class="icon-logout-wrapper" (click)="onLogout()">
+            <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,180 @@
+// ============================================
+// TOKENS - Design System Variables
+// ============================================
+
+// Colors - Primary
+:root {
+  --color-primary-100: rgb(202, 240, 248);
+  --color-primary-300: rgb(144, 224, 239);
+  --color-primary-500: rgb(0, 180, 216);
+  --color-primary-700: rgb(0, 119, 182);
+  --color-primary-900: rgb(3, 4, 94);
+
+  /* Colors - Gray */
+  --color-gray-50: rgb(250, 251, 252);
+  --color-gray-100: rgb(244, 246, 248);
+  --color-gray-200: rgb(232, 236, 239);
+  --color-gray-500: rgb(107, 118, 132);
+  --color-gray-700: rgb(47, 53, 58);
+  --color-gray-800: rgb(48, 52, 56);
+  --color-gray-900: rgb(32, 34, 37);
+  --color-gray-1000: rgb(20, 21, 22);
+
+  /* Colors - Semantic */
+  --color-success: rgb(42, 157, 143);
+  --color-success-up: rgb(10, 45, 40);
+  --color-warning: rgb(233, 196, 106);
+  --color-warning-up: rgb(85, 65, 30);
+  --color-danger: rgb(231, 111, 81);
+  --color-danger-up: rgb(75, 30, 20);
+  --color-white: rgb(255, 255, 255);
+
+  /* Semantic Tokens (based on gray/primary) */
+  --bg: var(--color-gray-50);
+  --surface: var(--color-white);
+  --text: var(--color-gray-50);
+  --text-muted: var(--color-gray-500);
+  --border: var(--color-gray-200);
+}
+
+// SCSS Variables (for use in SCSS files)
+// Spacing - Valeurs réduites avec plus d'écart
+$spacing-2: 2px;
+$spacing-4: 4px;
+$spacing-6: 6px;
+$spacing-8: 8px;
+$spacing-12: 12px;
+$spacing-16: 16px;
+$spacing-20: 20px;
+$spacing-24: 24px;
+$spacing-32: 32px;
+$spacing-40: 40px;
+$spacing-48: 48px;
+
+// Radius - Valeurs réduites avec plus d'écart
+$radius-4: 4px;
+$radius-6: 6px;
+$radius-8: 8px;
+$radius-12: 12px;
+$radius-16: 16px;
+$radius-full: 999px;
+
+// Fonts - Taille spécifique pour chaque balise
+$font-family: "Poppins", sans-serif;
+
+// Tailles par balise HTML - Responsive
+// Mobile (par défaut)
+$font-size-h1: 28px;
+$font-size-h2: 24px;
+$font-size-h3: 20px;
+$font-size-h4: 18px;
+$font-size-h5: 16px;
+$font-size-h6: 14px;
+$font-size-p: 14px;
+$font-size-span: 12px;
+
+// Breakpoints
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+
+h1 {
+  font-size: $font-size-h1;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 32px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 38px;
+  }
+}
+
+h2 {
+  font-size: $font-size-h2;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 28px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 32px;
+  }
+}
+
+h3 {
+  font-size: $font-size-h3;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 22px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 26px;
+  }
+}
+
+h4 {
+  font-size: $font-size-h4;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 20px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 22px;
+  }
+}
+
+h5 {
+  font-size: $font-size-h5;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 17px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 18px;
+  }
+}
+
+h6 {
+  font-size: $font-size-h6;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 15px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 16px;
+  }
+}
+
+p {
+  font-size: $font-size-p;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 15px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 16px;
+  }
+}
+
+span {
+  font-size: $font-size-span;
+  
+  @media (min-width: $breakpoint-tablet) {
+    font-size: 13px;
+  }
+  
+  @media (min-width: $breakpoint-desktop) {
+    font-size: 14px;
+  }
+}
+
+
+$font-weight-400: 400;
+$font-weight-500: 500;
+$font-weight-600: 600;
+$font-weight-700: 700;

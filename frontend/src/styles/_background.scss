@@ -1,0 +1,72 @@
+// ============================================
+// BACKGROUND - Portail Médecin Style
+// ============================================
+
+/* Background principal - Plus sombre */
+.portail-medecin-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(3, 4, 94, 0.55) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 119, 182, 0.35) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(0, 180, 216, 0.28) 0%, transparent 50%),
+    radial-gradient(circle at 60% 80%, rgba(144, 224, 239, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 90% 60%, rgba(202, 240, 248, 0.12) 0%, transparent 50%);
+  background-color: #080808;
+  z-index: -3;
+}
+
+/* Nuages animés - Réduits */
+.cloud-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse 800px 400px at 10% 90%, rgba(3, 4, 94, 0.18) 0%, transparent 40%),
+    radial-gradient(ellipse 600px 300px at 90% 10%, rgba(0, 119, 182, 0.12) 0%, transparent 40%),
+    radial-gradient(ellipse 1000px 500px at 50% 50%, rgba(0, 180, 216, 0.1) 0%, transparent 50%);
+  animation: cloudDrift 60s linear infinite;
+  z-index: -2;
+}
+
+@keyframes cloudDrift {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(-10%);
+  }
+}
+
+/* Grille plus subtile */
+.grid-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 25%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 25%, transparent 70%);
+  z-index: -1;
+}
+
+/* Ajout d'un overlay sombre supplémentaire */
+.dark-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: -1;
+}
+

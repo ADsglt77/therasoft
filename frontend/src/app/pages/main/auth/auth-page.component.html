@@ -1,0 +1,9 @@
+<div class="auth-page-overlay" (click)="close()">
+  <div class="auth-page-content" (click)="$event.stopPropagation()">
+    <button class="close-button" (click)="close()" aria-label="Fermer">
+      <app-icon name="x" [size]="24" [color]="'var(--color-primary-500)'"></app-icon>
+    </button>
+    <app-auth></app-auth>
+  </div>
+</div>
+

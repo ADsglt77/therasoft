@@ -1,0 +1,43 @@
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
+
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-8 $spacing-16;
+  border-radius: $radius-12;
+  @include transition();
+  cursor: pointer;
+
+  &:hover:not(.ui-button--disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+
+  &.ui-button--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// Colors
+:host.ui-button--primary900 { background-color: var(--color-primary-900); }
+:host.ui-button--primary700 { background-color: var(--color-primary-700); }
+:host.ui-button--primary500 { background-color: var(--color-primary-500); }
+:host.ui-button--primary300 { background-color: var(--color-primary-300); }
+:host.ui-button--primary100 { background-color: var(--color-primary-100); }
+:host.ui-button--gray100 { background-color: var(--color-gray-100); color: var(--color-gray-900); }
+:host.ui-button--connect {
+  background-color: var(--color-gray-800);
+  border: 2px solid var(--color-gray-500);
+  color: var(--color-gray-500);
+  padding: $spacing-4 $spacing-8;
+
+  &:hover {
+    transform: none;
+    border: 2px solid var(--color-gray-200);
+    color: var(--color-gray-200);
+  }
+}

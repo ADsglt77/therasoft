@@ -1,0 +1,157 @@
+<div class="auth">
+  <div class="header">
+    <img src="/assets/logo.png" alt="logo" class="logo">
+    @if (isLoginMode) {
+      <p>Connectez-vous à Portail Médecin</p>
+      <p>Connectez-vous à votre compte pour continuer.</p>
+    } @else {
+      <p>Créez votre compte</p>
+      <p>Rejoignez Portail Médecin dès maintenant.</p>
+    }
+  </div>
+
+  @if (isLoginMode) {
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="form">
+      <div class="field-wrapper">
+        <ui-input
+          type="email"
+          label="Email"
+          [value]="loginForm.get('email')?.value || ''"
+          (input)="updateFormControl(loginForm, 'email', $any($event.target).value)"
+          placeholder="Email"
+          id="email"
+          [required]="true"
+          [touched]="loginForm.get('email')?.touched || false"
+          [dirty]="loginForm.get('email')?.dirty || false"
+          [message]="loginEmailMessage.message"
+          [messageType]="loginEmailMessage.type">
+        </ui-input>
+      </div>
+
+      <div class="password-wrapper">
+        <div class="field-wrapper">
+          <ui-input
+            type="password"
+            label="Mot de passe"
+            [value]="loginForm.get('password')?.value || ''"
+            (input)="updateFormControl(loginForm, 'password', $any($event.target).value)"
+            placeholder="Mot de passe"
+            id="password"
+            [required]="true"
+            [touched]="loginForm.get('password')?.touched || false"
+            [dirty]="loginForm.get('password')?.dirty || false"
+            [message]="loginPasswordMessage.message"
+            [messageType]="loginPasswordMessage.type">
+          </ui-input>
+        </div>
+        <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+      </div>
+    </form>
+  } @else {
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
+      <div class="name-fields">
+        <div class="field-wrapper">
+          <ui-input
+            type="text"
+            label="Nom"
+            [value]="registerForm.get('nom')?.value || ''"
+            (input)="updateFormControl(registerForm, 'nom', $any($event.target).value)"
+            placeholder="Nom"
+            id="nom"
+            [required]="true"
+            [touched]="registerForm.get('nom')?.touched || false"
+            [dirty]="registerForm.get('nom')?.dirty || false"
+            [message]="registerNomMessage.message"
+            [messageType]="registerNomMessage.type">
+          </ui-input>
+        </div>
+        <div class="field-wrapper">
+          <ui-input
+            type="text"
+            label="Prénom"
+            [value]="registerForm.get('prenom')?.value || ''"
+            (input)="updateFormControl(registerForm, 'prenom', $any($event.target).value)"
+            placeholder="Prénom"
+            id="prenom"
+            [required]="true"
+            [touched]="registerForm.get('prenom')?.touched || false"
+            [dirty]="registerForm.get('prenom')?.dirty || false"
+            [message]="registerPrenomMessage.message"
+            [messageType]="registerPrenomMessage.type">
+          </ui-input>
+        </div>
+      </div>
+
+      <div class="field-wrapper">
+        <ui-input
+          type="email"
+          label="Email"
+          [value]="registerForm.get('email')?.value || ''"
+          (input)="updateFormControl(registerForm, 'email', $any($event.target).value)"
+          placeholder="Email"
+          id="register-email"
+          [required]="true"
+          [touched]="registerForm.get('email')?.touched || false"
+          [dirty]="registerForm.get('email')?.dirty || false"
+          [message]="registerEmailMessage.message"
+          [messageType]="registerEmailMessage.type">
+        </ui-input>
+      </div>
+
+      <div class="password-wrapper">
+        <div class="field-wrapper">
+          <ui-input
+            type="password"
+            label="Mot de passe"
+            [value]="registerForm.get('password')?.value || ''"
+            (input)="updateFormControl(registerForm, 'password', $any($event.target).value)"
+            placeholder="Minimum 12 caractères (maj, min, chiffre, spécial)"
+            id="register-password"
+            [required]="true"
+            [touched]="registerForm.get('password')?.touched || false"
+            [dirty]="registerForm.get('password')?.dirty || false"
+            [message]="registerPasswordMessage.message"
+            [messageType]="registerPasswordMessage.type">
+          </ui-input>
+          <app-password-strength-indicator [password]="registerPasswordValue"></app-password-strength-indicator>
+        </div>
+      </div>
+
+      <div class="field-wrapper">
+        <ui-input
+          type="password"
+          label="Confirmer le mot de passe"
+          [value]="registerForm.get('confirmPassword')?.value || ''"
+          (input)="updateFormControl(registerForm, 'confirmPassword', $any($event.target).value)"
+          placeholder="Confirmer le mot de passe"
+          id="confirmPassword"
+          [required]="true"
+          [touched]="registerForm.get('confirmPassword')?.touched || false"
+          [dirty]="registerForm.get('confirmPassword')?.dirty || false"
+          [message]="getConfirmPasswordMessage()"
+          [messageType]="getConfirmPasswordMessageType()">
+        </ui-input>
+      </div>
+    </form>
+  }
+
+  <ui-button
+    color="primary500"
+    [disabled]="isLoading"
+    (click)="onSubmit()">
+    @if (isLoading) {
+      Chargement...
+    } @else {
+      {{ isLoginMode ? 'Se connecter' : 'S\'inscrire' }}
+    }
+  </ui-button>
+
+  <div class="toggle-mode">
+    <span>
+      {{ isLoginMode ? 'Pas encore de compte ?' : 'Déjà un compte ?' }}
+      <a [routerLink]="isLoginMode ? '/register' : '/login'" class="toggle-link">
+        {{ isLoginMode ? 'S\'inscrire' : 'Se connecter' }}
+      </a>
+    </span>
+  </div>
+</div>

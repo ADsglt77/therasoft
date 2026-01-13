@@ -1,0 +1,27 @@
+<div class="card">
+  <div class="header">
+    @if (icon || title) {
+      <div class="title">
+        @if (icon) {
+          <app-icon [name]="icon" [size]="28" class="icon"></app-icon>
+        }
+        @if (title) {
+          <h4>{{ title }}</h4>
+        }
+      </div>
+    }
+    @if (description) {
+      <p class="description">{{ description }}</p>
+    }
+  </div>
+  @if (points && points.length > 0) {
+    <div class="points">
+      @for (point of points; track $index) {
+        <div class="point">
+          <app-icon [name]="point.icon" [size]="14" class="point-icon"></app-icon>
+          <span class="point-text">{{ point.text }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>

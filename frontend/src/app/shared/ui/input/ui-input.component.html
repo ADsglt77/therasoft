@@ -1,0 +1,37 @@
+@if (label) {
+  <label [for]="displayId" class="label">{{ label }}</label>
+}
+<div class="input-wrapper">
+  <input 
+    [type]="displayType"
+    [placeholder]="displayPlaceholder"
+    [value]="value"
+    [name]="displayName"
+    [id]="displayId"
+    [required]="required"
+    [disabled]="disabled"
+    class="input"
+    [class.error]="getDisplayMessageType() === 'error'"
+    [class.success]="getDisplayMessageType() === 'success'"
+    [class.warning]="getDisplayMessageType() === 'warning'"
+    [class.info]="getDisplayMessageType() === 'info'"
+    [class.input--with-toggle]="showPasswordToggle"
+    (input)="onInput($event)"
+  />
+  @if (showPasswordToggle) {
+    <button 
+      type="button"
+      class="password-toggle"
+      (click)="togglePasswordVisibility()"
+      [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+      tabindex="0">
+      <app-icon [name]="passwordToggleIcon" [size]="20" [color]="'var(--color-gray-500)'"></app-icon>
+    </button>
+  }
+</div>
+@if (hasMessage) {
+  <span [class]="'message message--' + getDisplayMessageType()">
+    {{ getDisplayMessage() }}
+  </span>
+}
+

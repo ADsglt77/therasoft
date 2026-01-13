@@ -1,0 +1,313 @@
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { AuthService, MeResponse } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { UiButtonComponent } from '../../../shared/ui/button/ui-button.component';
+import { InputMessageType, UiInputComponent } from '../../../shared/ui/input/ui-input.component';
+import { PasswordStrengthIndicatorComponent } from '../../../shared/ui/password-strength-indicator/password-strength-indicator.component';
+import { InputErrorMessages } from '../../../core/utils/input-error-messages';
+import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
+import { NotificationMessages } from '../../../core/constants/notification-messages';
+import { FormUtils } from '../../../core/utils/form-utils';
+import { PasswordValidator } from '../../../core/validators/password.validator';
+
+@Component({
+  selector: 'app-dashboard-settings-page',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
+  templateUrl: './dashboard-settings-page.component.html',
+  styleUrl: './dashboard-settings-page.component.scss',
+})
+export class DashboardSettingsPageComponent implements OnInit {
+  currentUser: MeResponse | null = null;
+  isLoading = false;
+  isProfileLoading = false;
+  isPasswordLoading = false;
+
+  profileForm: FormGroup;
+  passwordForm: FormGroup;
+
+  constructor(
+    private authService: AuthService,
+    private notificationService: NotificationService,
+    private fb: FormBuilder,
+    private cdr: ChangeDetectorRef
+  ) {
+    this.profileForm = this.fb.group({
+      nom: ['', [Validators.required, Validators.minLength(1)]],
+      prenom: ['', [Validators.required, Validators.minLength(1)]],
+    });
+
+    this.passwordForm = this.fb.group({
+      currentPassword: ['', [Validators.required]],
+      newPassword: ['', [Validators.required, PasswordValidator.strong()]],
+      confirmPassword: ['', [Validators.required]],
+    }, {
+      validators: this.passwordMatchValidator,
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadUserInfo();
+  }
+
+  loadUserInfo(): void {
+    this.isLoading = true;
+    this.authService.getMe().subscribe({
+      next: (user) => {
+        this.currentUser = user;
+        this.profileForm.patchValue({
+          nom: user.nom,
+          prenom: user.prenom,
+        });
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.isLoading = false;
+        const extracted = ApiErrorHandler.extractError(error);
+        this.notificationService.show('danger', extracted.message || NotificationMessages.PROFILE_LOAD_ERROR);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  passwordMatchValidator(form: FormGroup) {
+    const newPassword = form.get('newPassword');
+    const confirmPassword = form.get('confirmPassword');
+
+    if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
+      confirmPassword.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    }
+
+    if (confirmPassword && confirmPassword.hasError('passwordMismatch')) {
+      confirmPassword.setErrors(null);
+    }
+
+    return null;
+  }
+
+  onUpdateProfile(): void {
+    if (this.profileForm.invalid) {
+      FormUtils.markFormGroupTouched(this.profileForm);
+      return;
+    }
+
+    this.isProfileLoading = true;
+    // Réinitialiser les erreurs serveur
+    this.profileForm.get('nom')?.setErrors(null);
+    this.profileForm.get('prenom')?.setErrors(null);
+
+    const { nom, prenom } = this.profileForm.value;
+
+    this.authService.updateProfile({ nom, prenom }).subscribe({
+      next: (updatedUser) => {
+        this.currentUser = updatedUser;
+        this.isProfileLoading = false;
+        this.notificationService.show('success', NotificationMessages.PROFILE_UPDATE_SUCCESS);
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.isProfileLoading = false;
+
+        // Extraire les informations d'erreur
+        const extracted = ApiErrorHandler.extractError(error);
+
+        // Gérer les erreurs réseau en premier
+        if (ApiErrorHandler.isNetworkError(error)) {
+          this.notificationService.show('danger', extracted.message, 5000);
+          this.cdr.markForCheck();
+          return;
+        }
+
+        // Réinitialiser les erreurs serveur précédentes
+        this.profileForm.get('nom')?.setErrors(null);
+        this.profileForm.get('prenom')?.setErrors(null);
+
+        // Gérer les erreurs de validation Zod
+        if (ApiErrorHandler.isValidationError(error)) {
+          const validationDetails = ApiErrorHandler.getValidationDetails(error);
+          validationDetails.forEach((detail) => {
+            const fieldPath = detail.path?.[0];
+            const fieldControl = this.profileForm.get(fieldPath);
+            if (fieldControl) {
+              const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
+              fieldControl.setErrors({ serverError: errorMessage });
+              fieldControl.markAsTouched();
+            }
+          });
+          this.cdr.markForCheck();
+          return;
+        }
+
+        // Erreurs générales → Notification uniquement
+        this.notificationService.show('danger', extracted.message || NotificationMessages.PROFILE_UPDATE_ERROR);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  onChangePassword(): void {
+    if (this.passwordForm.invalid) {
+      FormUtils.markFormGroupTouched(this.passwordForm);
+      return;
+    }
+
+    this.isPasswordLoading = true;
+    // Réinitialiser les erreurs serveur
+    this.passwordForm.get('currentPassword')?.setErrors(null);
+    this.passwordForm.get('newPassword')?.setErrors(null);
+    this.passwordForm.get('confirmPassword')?.setErrors(null);
+
+    const { currentPassword, newPassword } = this.passwordForm.value;
+
+    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+      next: () => {
+        this.isPasswordLoading = false;
+        this.notificationService.show('success', NotificationMessages.PASSWORD_CHANGE_SUCCESS);
+        this.passwordForm.reset();
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.isPasswordLoading = false;
+
+        // Extraire les informations d'erreur
+        const extracted = ApiErrorHandler.extractError(error);
+
+        // Gérer les erreurs réseau en premier
+        if (ApiErrorHandler.isNetworkError(error)) {
+          this.notificationService.show('danger', extracted.message, 5000);
+          this.cdr.markForCheck();
+          return;
+        }
+
+        // Réinitialiser les erreurs serveur précédentes
+        this.passwordForm.get('currentPassword')?.setErrors(null);
+        this.passwordForm.get('newPassword')?.setErrors(null);
+        this.passwordForm.get('confirmPassword')?.setErrors(null);
+
+        // Gérer les erreurs de validation Zod
+        if (ApiErrorHandler.isValidationError(error)) {
+          const validationDetails = ApiErrorHandler.getValidationDetails(error);
+          validationDetails.forEach((detail) => {
+            const fieldPath = detail.path?.[0];
+            const fieldControl = this.passwordForm.get(fieldPath);
+            if (fieldControl) {
+              const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
+              fieldControl.setErrors({ serverError: errorMessage });
+              fieldControl.markAsTouched();
+            }
+          });
+          this.cdr.markForCheck();
+          return;
+        }
+
+        // Gérer les erreurs métier spécifiques aux champs
+        if (extracted.code === 'AUTH_INVALID_PASSWORD') {
+          // Erreur de mot de passe actuel incorrect → afficher dans l'input
+          const currentPasswordControl = this.passwordForm.get('currentPassword');
+          if (currentPasswordControl) {
+            currentPasswordControl.setErrors({ 
+              serverError: InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message 
+            });
+            currentPasswordControl.markAsTouched();
+          }
+        } else if (extracted.code === 'AUTH_SAME_PASSWORD') {
+          // Nouveau mot de passe identique à l'ancien → afficher dans l'input newPassword
+          const newPasswordControl = this.passwordForm.get('newPassword');
+          if (newPasswordControl) {
+            newPasswordControl.setErrors({ 
+              serverError: extracted.message || 'Le nouveau mot de passe doit être différent de l\'ancien'
+            });
+            newPasswordControl.markAsTouched();
+          }
+        } else {
+          // Erreurs générales → Notification uniquement
+          this.notificationService.show('danger', extracted.message || NotificationMessages.PASSWORD_CHANGE_ERROR);
+        }
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  hasError(form: FormGroup, fieldName: string, errorType: string): boolean {
+    const field = form.get(fieldName);
+    return !!(field && field.hasError(errorType) && (field.touched || field.dirty));
+  }
+
+  /**
+   * Obtient le message et le type pour un champ du formulaire
+   * Utilise la classe centralisée InputErrorMessages
+   */
+  getInputMessage(form: FormGroup, fieldName: string): { message: string; type: InputMessageType | '' } {
+    return InputErrorMessages.getInputMessage(form, fieldName, {
+      showWarningForPassword: fieldName === 'newPassword',
+      passwordMinLength: 12
+    });
+  }
+
+  /**
+   * Met à jour la valeur d'un formControl
+   */
+  updateFormControl(form: FormGroup, fieldName: string, value: string): void {
+    const control = form.get(fieldName);
+    if (control) {
+      control.setValue(value);
+      control.markAsTouched();
+      // Réinitialiser les erreurs serveur lors de la saisie
+      if (control.hasError('serverError')) {
+        const errors = { ...control.errors };
+        delete errors['serverError'];
+        control.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
+    }
+  }
+
+  // Getters pour les messages des champs du formulaire de profil
+  get nomMessage() {
+    return this.getInputMessage(this.profileForm, 'nom');
+  }
+
+  get prenomMessage() {
+    return this.getInputMessage(this.profileForm, 'prenom');
+  }
+
+  // Getters pour les messages des champs du formulaire de mot de passe
+  get currentPasswordMessage() {
+    return this.getInputMessage(this.passwordForm, 'currentPassword');
+  }
+
+  get newPasswordMessage() {
+    return this.getInputMessage(this.passwordForm, 'newPassword');
+  }
+
+  get confirmPasswordMessage() {
+    return this.getInputMessage(this.passwordForm, 'confirmPassword');
+  }
+
+  /**
+   * Obtient le message pour le champ de confirmation de mot de passe
+   */
+  getConfirmPasswordMessage(): string {
+    const result = this.getInputMessage(this.passwordForm, 'confirmPassword');
+    return result.message;
+  }
+
+  /**
+   * Obtient le type de message pour le champ de confirmation de mot de passe
+   */
+  getConfirmPasswordMessageType(): InputMessageType | '' {
+    const result = this.getInputMessage(this.passwordForm, 'confirmPassword');
+    return result.type;
+  }
+
+  /**
+   * Obtient la valeur du nouveau mot de passe pour l'indicateur de force
+   */
+  get newPasswordValue(): string {
+    return this.passwordForm.get('newPassword')?.value || '';
+  }
+}
+

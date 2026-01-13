@@ -1,0 +1,53 @@
+// ============================================
+// HELPERS - Utility Classes
+// ============================================
+
+@use 'tokens' as *;
+
+// Container
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 $spacing-16;
+
+  @media (min-width: 768px) {
+    padding: 0 $spacing-24;
+  }
+}
+
+// Stack (vertical spacing)
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-16;
+
+  &--sm { gap: $spacing-8; }
+  &--md { gap: $spacing-16; }
+  &--lg { gap: $spacing-24; }
+  &--xl { gap: $spacing-32; }
+}
+
+// Grid
+.grid {
+  display: grid;
+  gap: $spacing-16;
+
+  &--2 { grid-template-columns: repeat(2, 1fr); }
+  &--3 { grid-template-columns: repeat(3, 1fr); }
+  &--4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+// Screen reader only
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
