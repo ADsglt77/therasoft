@@ -220,12 +220,12 @@ function titleize(name) {
 function pickFocus(changes) {
   const paths = changes.map((c) => c.path.replace(/\\/g, "/"));
 
-  // UI component folder focus: src/app/shared/ui/<x>/
-  const ui = paths.find((p) => p.includes("src/app/shared/ui/"));
-  if (ui) {
-    const tail = ui.split("src/app/shared/ui/")[1] || "";
+  // UI component folder focus: src/app/components/<x>/
+  const component = paths.find((p) => p.includes("src/app/components/"));
+  if (component) {
+    const tail = component.split("src/app/components/")[1] || "";
     const name = (tail.split("/")[0] || "").trim();
-    if (name) return `Ui${titleize(name)} component`;
+    if (name) return `${titleize(name)} component`;
   }
 
   // Front page focus: src/app/pages/<x>/
