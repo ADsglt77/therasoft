@@ -122,4 +122,3 @@ Lors de l'exécution, vous pouvez :
 - **[Enter]** : Confirmer et créer le commit
 - **[e]** : Éditer le type et/ou la description
 - **[q]** : Annuler l'opération
-
