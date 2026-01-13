@@ -1,0 +1,23 @@
+@use '../../../styles/tokens' as *;
+
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-4 $spacing-12;
+  border-radius: $radius-16;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+// Variants
+:host[class*="badge--"] {
+  --badge-color: var(--color-warning);
+  background-color: color-mix(in srgb, var(--badge-color) 40%, transparent);
+  border: 2px solid var(--badge-color);
+}
+
+:host.ui-badge--warning { --badge-color: var(--color-warning); }
+:host.ui-badge--success { --badge-color: var(--color-success); }
+:host.ui-badge--danger { --badge-color: var(--color-danger); }
+:host.ui-badge--repos { --badge-color: var(--color-primary-300); }

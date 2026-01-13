@@ -1,0 +1,26 @@
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
+
+:host {
+  display: block;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: $spacing-12;
+  padding: $spacing-8;
+  border-radius: $radius-8;
+  text-decoration: none;
+  color: inherit;
+  @include transition();
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--bg) 15%, transparent);
+  }
+
+  .icon {
+    @include icon-center;
+  }
+}

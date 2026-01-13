@@ -1,0 +1,53 @@
+@use '../../../styles/tokens' as *;
+@use '../../../styles/mixins' as *;
+
+:host {
+  display: block;
+  padding: $spacing-16;
+  @include surface(5%, 10%);
+  border-radius: $radius-16;
+  @include transition();
+
+  &:hover {
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--bg) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bg) 25%, transparent);
+  }
+  
+  .card {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-8;
+    min-width: 0;
+  }
+  
+  .title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+    min-width: 0;
+  }
+  
+  .icon {
+    color: var(--color-primary-300);
+    flex-shrink: 0;
+  }
+  
+  .description {
+    opacity: 0.7;
+    margin: $spacing-12;
+  }
+  
+  .point {
+    display: flex;
+    align-items: center;
+    gap: $spacing-4;
+  }
+}
