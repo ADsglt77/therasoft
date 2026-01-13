@@ -1,21 +1,21 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
+import readline from "node:readline";
+
 /**
- * Multi-commit helper (no push)
- * Format: "<emoji> - (<type>) <description>"
- *
- * Usage:
- *   node scripts/commit.mjs
- *   node scripts/commit.mjs --dry-run
- *   node scripts/commit.mjs --yes
+ * =========================
+ * CONFIG
+ * =========================
  */
 
-import { spawnSync } from "child_process";
-import readline from "readline/promises";
-import { stdin as input, stdout as output } from "process";
+// Ordre de passage des groupes (tu peux changer)
+const GROUP_ORDER = ["ui", "backend", "db", "feat", "fix", "refactor", "perf", "test", "docs", "ci", "chore"];
 
-// --- Commit types (message) ---
+// gitemoji + types (tu peux ajouter/enlever)
 const EMOJI_MAP = {
   ui: "🎨",
+  backend: "🛠️",
+  db: "🗄️",
   feat: "✨",
   fix: "🐛",
   evol: "🚀",
@@ -26,454 +26,338 @@ const EMOJI_MAP = {
   perf: "⚡️",
   ci: "👷",
 };
+
 const VALID_TYPES = Object.keys(EMOJI_MAP);
 
-// --- CLI opts ---
-const argv = new Set(process.argv.slice(2));
-const OPTS = {
-  dryRun: argv.has("--dry-run"),
-  yes: argv.has("--yes"),
-};
+// Heuristiques de regroupement par fichier (adaptées à /frontend + /backend)
+function classifyFile(filePathLower) {
+  // CI
+  if (filePathLower.startsWith(".github/") || filePathLower.includes("/.github/") || filePathLower.includes("workflow")) return "ci";
 
-// --- Shell helpers ---
-function run(cmd, args, { allowFail = false } = {}) {
-  const res = spawnSync(cmd, args, {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // Docs
+  if (filePathLower.endsWith(".md") || filePathLower.includes("/docs/")) return "docs";
 
-  if (res.status !== 0 && !allowFail) {
-    const msg = (res.stderr || res.stdout || "").trim() || `${cmd} failed`;
+  // Tests
+  if (filePathLower.includes(".spec.") || filePathLower.includes(".test.") || filePathLower.includes("/test") || filePathLower.includes("/__tests__/")) return "test";
+
+  // DB / Prisma
+  if (filePathLower.includes("prisma/") || filePathLower.includes("migrations/") || filePathLower.includes("schema.prisma")) return "db";
+
+  // Frontend UI (ton style Angular)
+  if (
+    filePathLower.startsWith("frontend/") &&
+    (filePathLower.includes("/shared/ui/") ||
+      filePathLower.includes("/components/") ||
+      filePathLower.endsWith(".scss") ||
+      filePathLower.endsWith(".css"))
+  ) return "ui";
+
+  // Backend
+  if (filePathLower.startsWith("backend/") || filePathLower.includes("/backend/")) return "backend";
+
+  // Tooling / config
+  if (
+    filePathLower === "package.json" ||
+    filePathLower.endsWith("package-lock.json") ||
+    filePathLower.endsWith("pnpm-lock.yaml") ||
+    filePathLower.endsWith("bun.lockb") ||
+    filePathLower.includes("docker") ||
+    filePathLower.includes("compose") ||
+    filePathLower.includes("tsconfig") ||
+    filePathLower.includes("eslint") ||
+    filePathLower.includes("prettier") ||
+    filePathLower.includes("/scripts/")
+  ) return "chore";
+
+  // Default
+  return "feat";
+}
+
+/**
+ * =========================
+ * GIT helpers (safe)
+ * =========================
+ */
+function git(args, opts = {}) {
+  try {
+    return execFileSync("git", args, { encoding: "utf8", ...opts }).trimEnd();
+  } catch (e) {
+    const stderr = e?.stderr?.toString?.() || "";
+    const msg = stderr || e?.message || "git command failed";
     throw new Error(msg);
   }
-  return {
-    ok: res.status === 0,
-    stdout: (res.stdout || "").toString(),
-    stderr: (res.stderr || "").toString(),
-    status: res.status,
-  };
 }
-function git(args, opts) {
-  return run("git", args, opts).stdout.trimEnd();
+
+function repoRoot() {
+  return git(["rev-parse", "--show-toplevel"]);
 }
-function inGitRepo() {
-  const r = run("git", ["rev-parse", "--is-inside-work-tree"], { allowFail: true });
-  return r.ok && r.stdout.trim() === "true";
+
+function ensureGitRepo() {
+  try {
+    git(["rev-parse", "--git-dir"]);
+  } catch {
+    console.error("❌ Pas un dépôt Git.");
+    process.exit(1);
+  }
 }
-function hasStagedChanges() {
-  const out = run("git", ["diff", "--cached", "--name-only"], { allowFail: true }).stdout.trim();
-  return Boolean(out);
+
+/**
+ * IMPORTANT: ne pas casser un staging partiel
+ */
+function ensureNoStagedChanges() {
+  const staged = git(["diff", "--name-only", "--cached", "-z"], { cwd: repoRoot() });
+  if (staged && staged.length > 0) {
+    console.error("❌ Tu as déjà des changements 'staged'.");
+    console.error("   Pour éviter de casser un staging partiel, ce script s'arrête.");
+    console.error("   ➜ Fais un commit normal, ou: git reset (pour unstager) puis relance.");
+    process.exit(1);
+  }
 }
-function sanitizeOneLine(s) {
-  return String(s ?? "").replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
+
+/**
+ * Parse `git status --porcelain=v1 -z`
+ * gère espaces, renommages, etc.
+ */
+function getStatusEntries() {
+  const out = execFileSync("git", ["status", "--porcelain=v1", "-z"], {
+    encoding: "utf8",
+    cwd: repoRoot(),
+  });
+
+  if (!out) return [];
+
+  const tokens = out.split("\0").filter(Boolean);
+  const entries = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const line = tokens[i];
+    const x = line[0]; // index status
+    const y = line[1]; // working tree status
+    // line format: "XY path"  OR for rename/copy with -z: "R  old" "\0" "new"
+    const rest = line.slice(3); // skip "XY "
+    const isRenameOrCopy = (x === "R" || x === "C" || y === "R" || y === "C");
+    if (isRenameOrCopy) {
+      const oldPath = rest;
+      const newPath = tokens[++i]; // next token is new path
+      entries.push({ x, y, path: newPath, oldPath });
+    } else {
+      entries.push({ x, y, path: rest });
+    }
+  }
+  return entries;
 }
+
+function getUnstagedChangedFilesOnly() {
+  // On veut gérer le working tree (pas de staged, vérifié plus haut)
+  const entries = getStatusEntries();
+
+  // Tout ce qui a y != ' ' ou x == '?' (untracked)
+  const files = [];
+  for (const e of entries) {
+    const isUntracked = e.x === "?" && e.y === "?";
+    const isWorkingTreeChanged = e.y && e.y !== " ";
+    if (isUntracked || isWorkingTreeChanged) {
+      files.push(e.path);
+    }
+  }
+
+  // unique
+  return [...new Set(files)].sort();
+}
+
+/**
+ * =========================
+ * Message generation
+ * =========================
+ */
+
 function formatDescription(desc) {
-  let d = sanitizeOneLine(desc).replace(/\.$/, "");
-  if (!d) d = "Update files";
-  d = d.charAt(0).toUpperCase() + d.slice(1);
-  if (d.length > 60) d = d.slice(0, 57).trimEnd() + "...";
-  return d;
+  let s = (desc || "").trim();
+  if (!s) s = "Update changes";
+  s = s.replace(/\.$/, "");
+  s = s.charAt(0).toUpperCase() + s.slice(1);
+  // 72-ish max, simple
+  if (s.length > 72) s = s.slice(0, 69) + "...";
+  return s;
 }
+
 function buildCommitMessage(type, description) {
-  const emoji = EMOJI_MAP[type] ?? "🔧";
+  const emoji = EMOJI_MAP[type] || "🔧";
   return `${emoji} - (${type}) ${formatDescription(description)}`;
 }
 
-// --- Robust status parsing (supports spaces/renames) ---
+function guessDescription(type, files) {
+  // petite heuristique simple mais utile
+  const count = files.length;
+  const sample = files[0]?.split("/").pop() || "files";
+
+  if (type === "ui") return count === 1 ? `Update UI: ${sample}` : `Update UI components (${count} files)`;
+  if (type === "backend") return count === 1 ? `Update backend: ${sample}` : `Update backend (${count} files)`;
+  if (type === "db") return count === 1 ? `Update database: ${sample}` : `Update database (${count} files)`;
+  if (type === "docs") return count === 1 ? `Update docs: ${sample}` : `Update documentation (${count} files)`;
+  if (type === "test") return count === 1 ? `Update tests: ${sample}` : `Update tests (${count} files)`;
+  if (type === "ci") return count === 1 ? `Update CI: ${sample}` : `Update CI config (${count} files)`;
+  if (type === "chore") return count === 1 ? `Chore: ${sample}` : `Chore updates (${count} files)`;
+
+  // default feat
+  return count === 1 ? `Update ${sample}` : `Update features (${count} files)`;
+}
+
 /**
- * Uses: git status --porcelain=v1 -z
- * tokens pattern:
- *  XY <path>\0
- *  R  <old>\0<new>\0
+ * =========================
+ * Interactive helpers
+ * =========================
  */
-function getPorcelainZ() {
-  const raw = run("git", ["status", "--porcelain=v1", "-z"], { allowFail: true }).stdout;
-  if (!raw) return [];
-  const tokens = raw.split("\0").filter(Boolean);
-
-  const out = [];
-  let i = 0;
-  while (i < tokens.length) {
-    const entry = tokens[i++];
-    if (!entry) continue;
-
-    const status = entry.slice(0, 2); // " M", "A ", "??", "R "
-    let rest = entry.slice(3); // path starts at index 3 (after "XY ")
-
-    // rename/copy appear as: "R  old" then next token is "new"
-    if (status[0] === "R" || status[0] === "C") {
-      const oldPath = rest;
-      const newPath = tokens[i++] ?? "";
-      out.push({
-        x: status[0],
-        y: status[1],
-        status: "R",
-        path: newPath,
-        fromPath: oldPath,
-      });
-      continue;
-    }
-
-    out.push({
-      x: status[0],
-      y: status[1],
-      status: status.trim() || "??",
-      path: rest,
-      fromPath: null,
-    });
-  }
-  return out;
+function rlCreate() {
+  return readline.createInterface({ input: process.stdin, output: process.stdout });
+}
+function question(rl, q) {
+  return new Promise((resolve) => rl.question(q, resolve));
 }
 
-function iconForStatus(s) {
-  if (s === "??") return "➕";
-  if (s.includes("D")) return "➖";
-  if (s.includes("A")) return "➕";
-  return "📝";
+function printGroup(groupType, files) {
+  console.log(`\n📦 Groupe: ${groupType} (${files.length} fichiers)`);
+  files.slice(0, 12).forEach((f) => console.log(`   • ${f}`));
+  if (files.length > 12) console.log(`   … +${files.length - 12} autres`);
 }
 
-// --- Grouping rules (ui / backend / chore + others) ---
-function detectGroup(filePath) {
-  const p = filePath.replace(/\\/g, "/").toLowerCase();
-
-  // UI (Angular UI primitives & app components & styles)
-  if (
-    p.includes("src/app/shared/ui/") ||
-    p.includes("src/app/components/") ||
-    p.endsWith(".scss") ||
-    p.endsWith(".css") ||
-    p.includes("/styles/")
-  )
-    return "ui";
-
-  // Backend
-  if (p.startsWith("backend/") || p.includes("/backend/") || p.includes("src/server") || p.includes("/api/"))
-    return "backend";
-
-  // Docs
-  if (p.endsWith(".md") || p.includes("/docs/") || p.includes("readme")) return "docs";
-
-  // CI
-  if (p.includes(".github/") || p.includes("/workflows/") || p.includes("/ci/")) return "ci";
-
-  // Tests
-  if (p.includes("__tests__") || p.includes("/tests/") || p.includes(".spec.") || p.includes(".test.")) return "test";
-
-  // Chore/tooling/config
-  if (
-    p.endsWith("package.json") ||
-    p.includes("lock") ||
-    p.includes("tsconfig") ||
-    p.includes("eslint") ||
-    p.includes("prettier") ||
-    p.includes("docker") ||
-    p.includes("/scripts/") ||
-    p.endsWith(".yml") ||
-    p.endsWith(".yaml")
-  )
-    return "chore";
-
-  return "other";
+function stageFiles(files) {
+  // -- pour éviter ambiguïtés, et gérer les fichiers commençant par -
+  git(["add", "--", ...files], { cwd: repoRoot() });
+}
+function unstageFiles(files) {
+  // on ne touche pas aux changements, juste l'index
+  git(["reset", "--", ...files], { cwd: repoRoot() });
+}
+function showStagedDiffStat() {
+  const stat = git(["diff", "--cached", "--stat"], { cwd: repoRoot() });
+  console.log("\n🧾 Diff (staged) --stat\n" + (stat || "(vide)") + "\n");
+}
+function showStagedDiffFull() {
+  const diff = git(["diff", "--cached"], { cwd: repoRoot() });
+  console.log("\n🧾 Diff (staged)\n" + (diff || "(vide)") + "\n");
 }
 
-// --- Commit type (message) detection inside a group ---
-function detectCommitType(groupName, changes) {
-  const paths = changes.map((c) => c.path.toLowerCase());
-  const statusList = changes.map((c) => c.status);
-
-  const added = statusList.filter((s) => s.includes("A") || s === "??").length;
-  const deleted = statusList.filter((s) => s.includes("D")).length;
-  const hasRename = changes.some((c) => c.fromPath);
-
-  // hard mapping by group
-  if (groupName === "ui") return "ui";
-  if (groupName === "docs") return "docs";
-  if (groupName === "ci") return "ci";
-  if (groupName === "test") return "test";
-
-  if (groupName === "chore") return "chore";
-
-  // backend: decide feat/fix/refactor by heuristics
-  if (groupName === "backend") {
-    if (paths.some((p) => p.includes("fix") || p.includes("bug") || p.includes("error"))) return "fix";
-    if (hasRename || (added > 0 && deleted > 0)) return "refactor";
-    return added > 0 ? "feat" : "chore";
-  }
-
-  // fallback
-  if (paths.some((p) => p.includes("fix") || p.includes("bug") || p.includes("error") || p.includes("typo"))) return "fix";
-  if (hasRename || (added > 0 && deleted > 0)) return "refactor";
-  return added > 0 ? "feat" : "chore";
+async function editMessageFlow(rl, defaultType, defaultDesc) {
+  console.log(`\nTypes: ${VALID_TYPES.join(", ")}`);
+  const t = (await question(rl, `Type [${defaultType}]: `)).trim() || defaultType;
+  const type = VALID_TYPES.includes(t) ? t : defaultType;
+  const d = (await question(rl, `Description [${defaultDesc}]: `)).trim() || defaultDesc;
+  return { type, desc: formatDescription(d) };
 }
 
-// --- Description generation per group ---
-function titleize(name) {
-  return name
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]+/g, " ")
-    .trim()
-    .split(/\s+/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-function pickFocus(changes) {
-  const paths = changes.map((c) => c.path.replace(/\\/g, "/"));
-
-  // UI component folder focus: src/app/components/<x>/
-  const component = paths.find((p) => p.includes("src/app/components/"));
-  if (component) {
-    const tail = component.split("src/app/components/")[1] || "";
-    const name = (tail.split("/")[0] || "").trim();
-    if (name) return `${titleize(name)} component`;
-  }
-
-  // Front page focus: src/app/pages/<x>/
-  const page = paths.find((p) => p.includes("src/app/pages/"));
-  if (page) {
-    const tail = page.split("src/app/pages/")[1] || "";
-    const name = (tail.split("/")[0] || "").trim();
-    if (name) return `${titleize(name)} page`;
-  }
-
-  // Backend focus
-  if (paths.some((p) => /auth/i.test(p))) return "Auth";
-  if (paths.some((p) => /routes/i.test(p))) return "API routes";
-
-  // Single file
-  if (paths.length === 1) return titleize(paths[0].split("/").pop() || "files");
-
-  // Dominant folder
-  const buckets = new Map();
-  for (const p of paths) {
-    const top = p.split("/")[0] || "root";
-    buckets.set(top, (buckets.get(top) || 0) + 1);
-  }
-  const [top] = [...buckets.entries()].sort((a, b) => b[1] - a[1])[0] || ["files"];
-  return titleize(top);
-}
-
-function pickVerb(type, changes) {
-  const s = changes.map((c) => c.status);
-  const added = s.filter((x) => x.includes("A") || x === "??").length;
-  const deleted = s.filter((x) => x.includes("D")).length;
-  const renamed = changes.some((c) => c.fromPath);
-
-  if (deleted > 0 && added === 0) return "Remove";
-  if (renamed) return "Refactor";
-  if (type === "fix") return "Fix";
-  if (type === "refactor") return "Refactor";
-  if (type === "perf") return "Improve";
-  if (type === "feat" || type === "ui" || type === "test") return added > 0 ? "Add" : "Update";
-  return "Update";
-}
-
-function generateDescription(type, changes) {
-  const focus = pickFocus(changes);
-  const verb = pickVerb(type, changes);
-  return `${verb} ${focus}`;
-}
-
-// --- staging per group (safe + batching for Windows) ---
-function resetIndex() {
-  run("git", ["reset"]);
-}
-
-function stagePaths(paths) {
-  // Use git add -A -- <paths...> in chunks (Windows arg limit)
-  const CHUNK = 40;
-  for (let i = 0; i < paths.length; i += CHUNK) {
-    const slice = paths.slice(i, i + CHUNK);
-    run("git", ["add", "-A", "--", ...slice]);
-  }
-}
-
-function uniquePathsForCommit(changes) {
-  // For rename, include both old & new to capture properly
-  const set = new Set();
-  for (const c of changes) {
-    if (c.path) set.add(c.path);
-    if (c.fromPath) set.add(c.fromPath);
-  }
-  return [...set];
-}
-
-// --- main flow ---
+/**
+ * =========================
+ * MAIN
+ * =========================
+ */
 async function main() {
-  console.log("🚀 Multi-commit generator (no push)\n");
+  ensureGitRepo();
+  ensureNoStagedChanges();
 
-  if (!inGitRepo()) {
-    console.error("❌ Not a git repository.");
-    process.exit(1);
+  const files = getUnstagedChangedFilesOnly();
+  if (files.length === 0) {
+    console.log("ℹ️  Aucun changement détecté.");
+    return;
   }
 
-  // Safety: existing staged changes can mess grouping.
-  if (hasStagedChanges()) {
-    const rl0 = readline.createInterface({ input, output });
-    console.log("⚠️ You already have staged changes.");
-    console.log("To safely create multiple commits, the script needs a clean index.");
-    console.log("\nOptions:");
-    console.log("  1) Reset index (keeps working tree) and continue  [recommended]");
-    console.log("  2) Abort");
-    const ans = (await rl0.question("\nChoose (1/2): ")).trim();
-    rl0.close();
+  // Group by type
+  const groups = new Map();
+  for (const f of files) {
+    const t = classifyFile(f.toLowerCase());
+    if (!groups.has(t)) groups.set(t, []);
+    groups.get(t).push(f);
+  }
 
-    if (ans !== "1") {
-      console.log("❌ Aborted.");
-      process.exit(0);
+  // Order groups
+  const orderedTypes = [
+    ...GROUP_ORDER.filter((t) => groups.has(t)),
+    ...[...groups.keys()].filter((t) => !GROUP_ORDER.includes(t)),
+  ];
+
+  console.log(`🚀 Multi-commit: ${files.length} fichier(s) détecté(s)`);
+  console.log(`➡️  Groupes: ${orderedTypes.join(", ")}`);
+
+  const rl = rlCreate();
+
+  try {
+    for (const type of orderedTypes) {
+      const groupFiles = groups.get(type);
+      if (!groupFiles || groupFiles.length === 0) continue;
+
+      printGroup(type, groupFiles);
+
+      // Stage group
+      stageFiles(groupFiles);
+
+      // propose message
+      const defaultDesc = guessDescription(type, groupFiles);
+      let message = buildCommitMessage(type, defaultDesc);
+
+      while (true) {
+        console.log(`\n📝 Commit proposé:\n   ${message}\n`);
+        console.log("Options:");
+        console.log("  [Enter] commit");
+        console.log("  [e]     éditer type/description");
+        console.log("  [d]     voir diff --stat (staged)");
+        console.log("  [D]     voir diff complet (staged)");
+        console.log("  [s]     skip (ne commit pas ce groupe)");
+        console.log("  [q]     arrêter (laisse les changements non commit)\n");
+
+        const ans = (await question(rl, "Choix: ")).trim();
+
+        if (ans === "" ) {
+          // commit
+          try {
+            git(["commit", "-m", message], { cwd: repoRoot() });
+            console.log(`✅ Commit créé: ${message}`);
+          } catch (e) {
+            console.error("❌ Erreur git commit:", e.message);
+            // on laisse staged pour debug
+            process.exitCode = 1;
+          }
+          break;
+        }
+
+        if (ans.toLowerCase() === "e") {
+          const { type: newType, desc } = await editMessageFlow(rl, type, defaultDesc);
+          message = buildCommitMessage(newType, desc);
+          continue;
+        }
+
+        if (ans === "d") {
+          showStagedDiffStat();
+          continue;
+        }
+        if (ans === "D") {
+          showStagedDiffFull();
+          continue;
+        }
+
+        if (ans.toLowerCase() === "s") {
+          // unstage group and continue
+          unstageFiles(groupFiles);
+          console.log("⏭️  Groupe ignoré (aucun commit).");
+          break;
+        }
+
+        if (ans.toLowerCase() === "q") {
+          // unstage current group before quitting (plus propre)
+          unstageFiles(groupFiles);
+          console.log("🛑 Arrêt demandé. Aucun autre commit.");
+          return;
+        }
+
+        console.log("⚠️  Choix invalide.");
+      }
     }
-    resetIndex();
-    console.log("✅ Index reset.");
+  } finally {
+    rl.close();
   }
 
-  const all = getPorcelainZ();
-  if (!all.length) {
-    console.log("ℹ️ No changes detected.");
-    process.exit(0);
-  }
-
-  // Build groups
-  const groups = new Map(); // name -> changes[]
-  for (const c of all) {
-    const g = detectGroup(c.path);
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g).push(c);
-  }
-
-  // Preferred ordering
-  const ORDER = ["ui", "backend", "chore", "docs", "ci", "test", "other"];
-  const sortedGroups = [...groups.entries()].sort(
-    ([a], [b]) => (ORDER.indexOf(a) === -1 ? 999 : ORDER.indexOf(a)) - (ORDER.indexOf(b) === -1 ? 999 : ORDER.indexOf(b))
-  );
-
-  console.log("📦 Detected commit groups:");
-  for (const [name, changes] of sortedGroups) {
-    console.log(`  - ${name}: ${changes.length} file(s)`);
-  }
-
-  const rl = readline.createInterface({ input, output });
-
-  for (const [groupName, changes] of sortedGroups) {
-    console.log(`\n==============================`);
-    console.log(`🧩 Group: ${groupName} (${changes.length} file(s))`);
-
-    // Show preview
-    changes.slice(0, 12).forEach((c) => {
-      console.log(`  ${iconForStatus(c.status)} ${c.path}`);
-    });
-    if (changes.length > 12) console.log(`  ... +${changes.length - 12} more`);
-
-    // Propose message
-    let type = detectCommitType(groupName, changes);
-    let desc = generateDescription(type, changes);
-    let msg = buildCommitMessage(type, desc);
-
-    console.log("\n📝 Proposed commit message:");
-    console.log(`   ${msg}`);
-
-    console.log("\nOptions:");
-    console.log("  [Enter] Commit this group");
-    console.log("  e       Edit type/description");
-    console.log("  r       Regenerate suggestion");
-    console.log("  s       Show group diff --stat (preview)");
-    console.log("  k       Skip this group");
-    console.log("  q       Quit");
-
-    if (OPTS.yes) {
-      if (OPTS.dryRun) {
-        console.log("🧪 Dry-run: would commit:", msg);
-        continue;
-      }
-      // stage only this group + commit
-      resetIndex();
-      stagePaths(uniquePathsForCommit(changes));
-      run("git", ["commit", "-m", msg]);
-      console.log("✅ Commit created:", msg);
-      continue;
-    }
-
-    // interactive loop for this group
-    while (true) {
-      const ans = (await rl.question("Choice [Enter/e/r/s/k/q]: ")).trim().toLowerCase();
-
-      if (ans === "q") {
-        console.log("👋 Bye.");
-        rl.close();
-        process.exit(0);
-      }
-
-      if (ans === "k") {
-        console.log("⏭️ Skipped.");
-        break;
-      }
-
-      if (ans === "s") {
-        // stage temporarily to show stat, then reset index back
-        resetIndex();
-        stagePaths(uniquePathsForCommit(changes));
-        const stat = git(["diff", "--cached", "--stat"], { allowFail: true });
-        console.log("\n📊 Staged diff --stat:\n");
-        console.log(stat || "(empty)");
-        // reset again to avoid mixing with next group until confirmed
-        resetIndex();
-        console.log("\n📝 Current message:", msg);
-        continue;
-      }
-
-      if (ans === "r") {
-        type = detectCommitType(groupName, changes);
-        desc = generateDescription(type, changes);
-        msg = buildCommitMessage(type, desc);
-        console.log("🔁 Regenerated:", msg);
-        continue;
-      }
-
-      if (ans === "e") {
-        console.log(`Types: ${VALID_TYPES.join(", ")}`);
-        const t = (await rl.question(`Type [${type}]: `)).trim().toLowerCase();
-        if (t && VALID_TYPES.includes(t)) type = t;
-
-        const d = (await rl.question(`Description [${formatDescription(desc)}]: `)).trim();
-        if (d) desc = d;
-
-        msg = buildCommitMessage(type, desc);
-        console.log("📝 Updated:", msg);
-        continue;
-      }
-
-      // Enter => commit
-      if (OPTS.dryRun) {
-        console.log("🧪 Dry-run: would commit:", msg);
-        break;
-      }
-
-      resetIndex();
-      stagePaths(uniquePathsForCommit(changes));
-      try {
-        run("git", ["commit", "-m", msg]);
-        console.log("✅ Commit created:", msg);
-      } catch (e) {
-        console.error("❌ Commit failed:", e?.message || e);
-      }
-      break;
-    }
-  }
-
-  rl.close();
-
-  // Show remaining
-  const remaining = run("git", ["status", "--porcelain=v1"], { allowFail: true }).stdout.trim();
-  console.log("\n==============================");
-  if (!remaining) {
-    console.log("✅ All changes committed.");
-  } else {
-    console.log("ℹ️ Remaining uncommitted changes:\n");
-    console.log(remaining);
-    console.log("\nTip: rerun the script or commit manually.");
-  }
+  console.log("\n🎉 Terminé. (Tu peux push à la main.)");
 }
 
 main().catch((e) => {
-  console.error("❌ Error:", e?.message || e);
+  console.error("❌ Erreur:", e?.message || e);
   process.exit(1);
 });

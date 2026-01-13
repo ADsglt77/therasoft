@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, MonthComponent } from '../../components';
+import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, MonthComponent, SelectOption } from '../../components';
 import { NotificationService } from '../../core/services/notification.service';
 
 /**
@@ -36,5 +36,21 @@ export class PlaygroundPageComponent {
     { icon: 'star', text: 'Point 2' },
     { icon: 'heart', text: 'Point 3' }
   ];
+
+  // Options pour le select
+  selectOptions: SelectOption[] = [
+    { value: 'option1', label: 'Option 1' },
+    { value: 'option2', label: 'Option 2' },
+    { value: 'option3', label: 'Option 3' },
+    { value: 'option4', label: 'Option 4' },
+  ];
+
+  selectedValue: string = 'option2';
+
+  onSelectChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectedValue = select.value;
+    console.log('Selected value:', this.selectedValue);
+  }
 }
 
