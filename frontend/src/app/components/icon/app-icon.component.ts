@@ -1,6 +1,6 @@
-import { Component, Input, ChangeDetectionStrategy, ViewEncapsulation } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, ViewEncapsulation, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X } from 'lucide-angular';
+import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight } from 'lucide-angular';
 
 /**
  * Composant wrapper pour utiliser les icônes Lucide
@@ -21,6 +21,11 @@ export class AppIconComponent {
   @Input() strokeWidth: number = 2;
   @Input() color?: string;
   @Input() class: string = '';
+
+  @HostBinding('style.--icon-size')
+  get iconSize(): string {
+    return `${this.size}px`;
+  }
 
   // Mapping des noms d'icônes vers les composants Lucide
   private iconMap: Record<string, any> = {
@@ -49,6 +54,14 @@ export class AppIconComponent {
     eyeoff: EyeOff,
     x: X,
     close: X,
+    'chevron-left': ChevronLeft,
+    chevronleft: ChevronLeft,
+    'chevron-right': ChevronRight,
+    chevronright: ChevronRight,
+    'arrow-left': ArrowLeft,
+    arrowleft: ArrowLeft,
+    'arrow-right': ArrowRight,
+    arrowright: ArrowRight,
   };
 
   get iconComponent(): any {

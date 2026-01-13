@@ -23,4 +23,8 @@
     border-bottom: 1px solid color-mix(in srgb, var(--bg) 60%, transparent);
     padding: 1rem;
   }
+
+  &.calendar {
+    width: 100%;
+  }
 }

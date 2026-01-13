@@ -1,6 +1,7 @@
 @use '../../../styles/tokens' as *;
 
 :host {
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   justify-content: center;

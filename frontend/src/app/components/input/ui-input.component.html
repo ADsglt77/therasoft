@@ -2,31 +2,52 @@
   <label [for]="displayId" class="label">{{ label }}</label>
 }
 <div class="input-wrapper">
-  <input 
-    [type]="displayType"
-    [placeholder]="displayPlaceholder"
-    [value]="value"
-    [name]="displayName"
-    [id]="displayId"
-    [required]="required"
-    [disabled]="disabled"
-    class="input"
-    [class.error]="getDisplayMessageType() === 'error'"
-    [class.success]="getDisplayMessageType() === 'success'"
-    [class.warning]="getDisplayMessageType() === 'warning'"
-    [class.info]="getDisplayMessageType() === 'info'"
-    [class.input--with-toggle]="showPasswordToggle"
-    (input)="onInput($event)"
-  />
-  @if (showPasswordToggle) {
-    <button 
-      type="button"
-      class="password-toggle"
-      (click)="togglePasswordVisibility()"
-      [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-      tabindex="0">
-      <app-icon [name]="passwordToggleIcon" [size]="20" [color]="'var(--color-gray-500)'"></app-icon>
-    </button>
+  @if (type === 'select') {
+    <select
+      #selectElement
+      [value]="value"
+      [name]="displayName"
+      [id]="displayId"
+      [required]="required"
+      [disabled]="disabled"
+      class="input input--select"
+      [class.error]="getDisplayMessageType() === 'error'"
+      [class.success]="getDisplayMessageType() === 'success'"
+      [class.warning]="getDisplayMessageType() === 'warning'"
+      [class.info]="getDisplayMessageType() === 'info'"
+      (change)="onChange($event)"
+    >
+      @for (option of options; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  } @else {
+    <input 
+      [type]="displayType"
+      [placeholder]="displayPlaceholder"
+      [value]="value"
+      [name]="displayName"
+      [id]="displayId"
+      [required]="required"
+      [disabled]="disabled"
+      class="input"
+      [class.error]="getDisplayMessageType() === 'error'"
+      [class.success]="getDisplayMessageType() === 'success'"
+      [class.warning]="getDisplayMessageType() === 'warning'"
+      [class.info]="getDisplayMessageType() === 'info'"
+      [class.input--with-toggle]="showPasswordToggle"
+      (input)="onInput($event)"
+    />
+    @if (showPasswordToggle) {
+      <button 
+        type="button"
+        class="password-toggle"
+        (click)="togglePasswordVisibility()"
+        [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+        tabindex="0">
+        <app-icon [name]="passwordToggleIcon" [size]="20" [color]="'var(--color-gray-500)'"></app-icon>
+      </button>
+    }
   }
 </div>
 @if (hasMessage) {

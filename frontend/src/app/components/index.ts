@@ -44,5 +44,10 @@ export { AuthComponent } from './auth/auth.component';
 
 // Inputs
 export { UiInputComponent } from './input/ui-input.component';
-export type { InputType } from './input/ui-input.component';
+export type { InputType, SelectOption } from './input/ui-input.component';
+
+// Calendar
+export { DayComponent } from './calendar/day/day.component';
+export type { DayType } from './calendar/day/day.component';
+export { MonthComponent } from './calendar/month/month.component';
 

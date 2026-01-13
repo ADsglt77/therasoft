@@ -1,0 +1,33 @@
+<div class="header">
+    <div class="title">
+        <app-icon name="calendar" [size]="30"></app-icon>
+        <h4>Calendrier</h4>
+    </div>
+    <div class="month">
+        <app-icon name="arrow-left" [size]="15" [strokeWidth]="3" (click)="previousMonth()" class="nav-icon"></app-icon>
+        <h4>{{ monthName }}</h4>
+        <app-icon name="arrow-right" [size]="15" [strokeWidth]="3" (click)="nextMonth()" class="nav-icon"></app-icon>
+    </div>
+    <div class="year">
+        <ui-input 
+            type="select" 
+            [value]="currentYear.toString()" 
+            [options]="yearOptions"
+            (change)="onYearChange($event)">
+        </ui-input>
+    </div>
+</div>
+<div class="calendar-grid">
+    @for (dayName of weekDays; track dayName) {
+    <div class="week-day">{{ dayName }}</div>
+    }
+    @for (day of days; track trackByDay($index, day)) {
+        <app-day 
+            [dayNumber]="day.dayNumber" 
+            [type]="day.type" 
+            [location]="day.location"
+            [disabled]="day.disabled || false"
+            [isToday]="day.isToday || false">
+        </app-day>
+    }
+</div>

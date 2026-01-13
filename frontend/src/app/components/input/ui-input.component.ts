@@ -1,10 +1,15 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostBinding, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostBinding, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppIconComponent } from '../icon/app-icon.component';
 
-export type InputType = 'text' | 'email' | 'password';
+export type InputType = 'text' | 'email' | 'password' | 'select';
 export type InputMessageType = 'error' | 'info' | 'success' | 'warning';
+
+export interface SelectOption {
+  value: string | number;
+  label: string;
+}
 
 @Component({
   selector: 'ui-input',
@@ -14,7 +19,7 @@ export type InputMessageType = 'error' | 'info' | 'success' | 'warning';
   styleUrl: './ui-input.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UiInputComponent implements OnChanges {
+export class UiInputComponent implements OnChanges, AfterViewInit {
   @Input() type: InputType = 'text';
   @Input() placeholder: string = '';
   @Input() value: string = '';
@@ -28,14 +33,21 @@ export class UiInputComponent implements OnChanges {
   @Input() minLength: number = 0; // Longueur minimale pour la validation auto
   @Input() touched: boolean = false; // État "touched" du champ (pour la validation)
   @Input() dirty: boolean = false; // État "dirty" du champ (pour la validation)
+  @Input() options: SelectOption[] = []; // Options pour le select
   @Output() input = new EventEmitter<Event>(); // Émet l'événement input vers le parent
+  @Output() change = new EventEmitter<Event>(); // Émet l'événement change vers le parent (pour select)
+
+  @ViewChild('selectElement', { static: false }) selectElement?: ElementRef<HTMLSelectElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
 
   private computedMessage: string = '';
   private computedMessageType: InputMessageType | '' = '';
+  private lastValue: string = '';
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef) {
+    this.lastValue = this.value;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // Recalculer le message automatique si la valeur, le type, ou les contraintes changent
@@ -43,18 +55,61 @@ export class UiInputComponent implements OnChanges {
       this.computeAutoMessage();
       this.cdr.markForCheck();
     }
+    // Forcer la mise à jour du select si la valeur ou les options changent
+    if (this.type === 'select' && (changes['value'] || changes['options'])) {
+      // Utiliser setTimeout pour s'assurer que le DOM est mis à jour
+      setTimeout(() => {
+        this.updateSelectValue();
+      }, 0);
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Forcer la mise à jour du select après l'initialisation de la vue
+    if (this.type === 'select') {
+      setTimeout(() => {
+        this.updateSelectValue();
+      }, 0);
+    }
+  }
+
+  /**
+   * Met à jour la valeur du select si nécessaire
+   */
+  private updateSelectValue(): void {
+    if (this.type === 'select' && this.selectElement && this.value) {
+      // Vérifier que la valeur existe dans les options avant de la définir
+      const valueExists = this.options.some(opt => String(opt.value) === String(this.value));
+      if (valueExists && this.selectElement.nativeElement.value !== this.value) {
+        this.selectElement.nativeElement.value = this.value;
+        this.lastValue = this.value;
+        this.cdr.markForCheck();
+      }
+    }
   }
 
   /**
    * Gère l'événement input pour mettre à jour la valeur et recalculer le message
    */
   onInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
+    const target = event.target as HTMLInputElement | HTMLSelectElement;
     this.value = target.value;
     this.computeAutoMessage();
     this.cdr.markForCheck();
     // Émettre l'événement vers le parent
     this.input.emit(event);
+  }
+
+  /**
+   * Gère l'événement change pour le select
+   */
+  onChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.value = target.value;
+    this.computeAutoMessage();
+    this.cdr.markForCheck();
+    // Émettre l'événement change vers le parent
+    this.change.emit(event);
   }
 
   /**
@@ -119,6 +174,9 @@ export class UiInputComponent implements OnChanges {
     const messageType = this.getDisplayMessageType();
     if (messageType) {
       classes.push(`ui-input--${messageType}`);
+    }
+    if (this.type === 'select') {
+      classes.push('ui-input--select');
     }
     return classes.join(' ');
   }
