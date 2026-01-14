@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
-import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 
 /**
@@ -12,7 +11,7 @@ import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 @Component({
   selector: 'app-dashboard-planning-day-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiButtonComponent, UiBadgeComponent],
+  imports: [CommonModule, AppIconComponent, UiBadgeComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
 })
