@@ -27,7 +27,10 @@
             [type]="day.type" 
             [location]="day.location"
             [disabled]="day.disabled || false"
-            [isToday]="day.isToday || false">
+            [isToday]="day.isToday || false"
+            [year]="day.year"
+            [month]="day.month"
+            (dayClick)="onDayClick($event)">
         </app-day>
     }
 </div>

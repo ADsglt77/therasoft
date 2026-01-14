@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostBinding, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DayComponent, DayType } from '../day/day.component';
 import { AppIconComponent } from '../../icon/app-icon.component';
@@ -10,6 +10,8 @@ interface DayData {
   location?: string;
   disabled?: boolean;
   isToday?: boolean;
+  year: number;
+  month: number;
 }
 
 // Constantes
@@ -35,6 +37,9 @@ export class MonthComponent implements OnInit {
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth();
   currentYear = this.currentDate.getFullYear();
+
+  // Événement émis quand un jour est sélectionné
+  @Output() daySelected = new EventEmitter<{ year: number; month: number; day: number }>();
 
   // Cache pour optimiser les performances
   private _today: Date | null = null;
@@ -203,6 +208,8 @@ export class MonthComponent implements OnInit {
       location,
       disabled,
       isToday: this.isToday(year, month, day),
+      year,
+      month,
     };
   }
 
@@ -250,7 +257,14 @@ export class MonthComponent implements OnInit {
    */
   trackByDay(index: number, day: DayData): string {
     // Utiliser une combinaison unique pour chaque jour
-    return `${day.dayNumber}-${day.disabled ? 'disabled' : 'enabled'}-${day.isToday ? 'today' : 'normal'}`;
+    return `${day.year}-${day.month}-${day.dayNumber}-${day.disabled ? 'disabled' : 'enabled'}-${day.isToday ? 'today' : 'normal'}`;
+  }
+
+  /**
+   * Gère le clic sur un jour
+   */
+  onDayClick(event: { year: number; month: number; day: number }): void {
+    this.daySelected.emit(event);
   }
 }
 
