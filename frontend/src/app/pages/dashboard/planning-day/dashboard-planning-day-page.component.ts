@@ -65,5 +65,40 @@ export class DashboardPlanningDayPageComponent {
     const dayOfWeek = this.date.getDay();
     return dayOfWeek === 0 || dayOfWeek === 6;
   }
+
+  get daysDifference(): number | null {
+    if (!this.date) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(this.date);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = today.getTime() - selectedDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  get dateBadgeText(): string {
+    if (this.isWeekend) return 'Jour de repos';
+    
+    const days = this.daysDifference;
+    if (days === null) return '';
+    if (days === 0) return 'Aujourd\'hui';
+    if (days > 0) {
+      // Passé
+      if (days === 1) return 'Il y a 1 jour';
+      return `Il y a ${days} jours`;
+    } else {
+      // Futur
+      const daysFuture = Math.abs(days);
+      if (daysFuture === 1) return 'Dans 1 jour';
+      return `Dans ${daysFuture} jours`;
+    }
+  }
+
+  get badgeVariant(): 'success' | 'repos' {
+    if (this.isToday) return 'success';
+    return 'repos';
+  }
 }
 

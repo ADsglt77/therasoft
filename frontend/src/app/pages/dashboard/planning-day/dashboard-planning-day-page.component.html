@@ -5,19 +5,14 @@
   </div>
 
   <div class="content">
-    @if (isToday) {
+    @if (daysDifference !== null) {
     <div class="info-badge">
-      <app-icon name="calendar" [size]="18"></app-icon>
-      <ui-badge variant="success" text="Aujourd'hui"></ui-badge>
+      <app-icon name="calendar" [size]="28"></app-icon>
+      <ui-badge [variant]="badgeVariant" [text]="dateBadgeText"></ui-badge>
     </div>
     }
 
-    @if (isWeekend) {
-    <div class="info-badge">
-      <app-icon name="calendar" [size]="18"></app-icon>
-      <ui-badge variant="repos" text="Jour de repos"></ui-badge>
-    </div>
-    } @else {
+    @if (!isWeekend) {
     <div class="planning-section">
       <h3>Vacations programmées</h3>
       <p class="placeholder">Les vacations pour ce jour seront affichées ici</p>

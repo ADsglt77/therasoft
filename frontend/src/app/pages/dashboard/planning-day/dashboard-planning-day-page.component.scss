@@ -9,22 +9,18 @@
     margin-bottom: $spacing-24;
 
     app-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       cursor: pointer;
       border: 2px solid var(--color-white);
       border-radius: $radius-full;
       @include transition();
       padding: $spacing-2;
+      box-sizing: content-box;
   
       &:hover {
           opacity: 0.7;
       }
     }
   }
-
-  
 
   .content {
     @include surface(5%, 10%);
