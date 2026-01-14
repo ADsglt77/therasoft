@@ -1,15 +1,12 @@
 {
-  "name": "therasoft",
-  "version": "1.0.0",
-  "description": "Portail Médecin - Application de gestion médicale",
-  "private": true,
-  "scripts": {
-    "commit": "node scripts/commit.mjs"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
-}
-
-
-
+    "name": "therasoft",
+    "version": "1.0.0",
+    "description": "Portail Médecin - Application de gestion médicale",
+    "private": true,
+    "scripts": {
+      "commit": "node scripts/commit.mjs"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+  }
