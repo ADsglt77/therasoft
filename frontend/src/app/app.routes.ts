@@ -34,8 +34,8 @@ export const appRoutes: Routes = [
     path: 'dashboard',
     canActivate: [authGuard], // Protection de la route dashboard
     loadComponent: () =>
-      import('./layout/dashboard-layout/dashboard-layout.component').then(
-        (m) => m.DashboardLayoutComponent
+      import('./pages/dashboard/main-page.component').then(
+        (m) => m.DashboardMainPageComponent
       ),
     children: [
       {
