@@ -69,3 +69,58 @@ a {
   }
 }
 
+// ============================================
+// SCROLLBAR - Custom Scrollbar Styles (Glass Effect)
+// ============================================
+
+// Webkit browsers (Chrome, Safari, Edge)
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--bg) 3%, transparent);
+  border-radius: $radius-full;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-primary-300) 40%, transparent);
+  border-radius: $radius-full;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  @include transition();
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary-300) 60%, transparent);
+    background-clip: padding-box;
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--color-primary-500) 70%, transparent);
+    background-clip: padding-box;
+  }
+}
+
+// Masquer les flèches haut/bas
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-corner {
+  background: color-mix(in srgb, var(--bg) 3%, transparent);
+}
+
+// Firefox
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-primary-300) 40%, transparent) color-mix(in srgb, var(--bg) 3%, transparent);
+}
+
+// Smooth scroll behavior
+html {
+  scroll-behavior: smooth;
+}
+
