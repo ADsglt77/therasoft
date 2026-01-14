@@ -8,7 +8,7 @@ Generate Git commit messages and a multi-commit plan using this exact format:
 Example: "✨ - (feat) Replace old images"
 
 ALLOWED TYPES (MUST USE ONE OF THESE)
-ui | component | page | route | layout | service | style | feat | fix | evol | refactor | perf | test | docs | ci | chore | build | deps | config | db | api | auth | security | ux | i18n | a11y
+ui | component | page | route | layout | service | style | feat | fix | evol | refactor | perf | test | docs | ci | chore | build | deps | config | db | api | auth | security | ux
 
 EMOJI MAPPING (MUST MATCH)
 - ui        -> 🎨
@@ -35,8 +35,6 @@ EMOJI MAPPING (MUST MATCH)
 - auth      -> 🔐
 - security  -> 🛡️
 - ux        -> 🧠
-- i18n      -> 🌍
-- a11y      -> ♿️
 
 DESCRIPTION RULES (STRICT)
 - English only
