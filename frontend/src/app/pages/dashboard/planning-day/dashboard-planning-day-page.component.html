@@ -1,6 +1,28 @@
 <div class="dashboard-planning-day-page">
-  <h2>Planning du jour</h2>
-  <p>Jour: {{ day }}</p>
-  <p>Planning pour ce jour (à implémenter)</p>
-</div>
+  <div class="header">
+    <app-icon name="arrow-left" [size]="20" (click)="goBack()"></app-icon>
+    <h2>Planning du {{ formattedDate }}</h2>
+  </div>
 
+  <div class="content">
+    @if (isToday) {
+    <div class="info-badge">
+      <app-icon name="calendar" [size]="18"></app-icon>
+      <ui-badge variant="success" text="Aujourd'hui"></ui-badge>
+    </div>
+    }
+
+    @if (isWeekend) {
+    <div class="info-badge">
+      <app-icon name="calendar" [size]="18"></app-icon>
+      <ui-badge variant="repos" text="Jour de repos"></ui-badge>
+    </div>
+    } @else {
+    <div class="planning-section">
+      <h3>Vacations programmées</h3>
+      <p class="placeholder">Les vacations pour ce jour seront affichées ici</p>
+      <!-- TODO: Afficher les vacations réelles depuis l'API -->
+    </div>
+    }
+  </div>
+</div>
