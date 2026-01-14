@@ -1,6 +1,14 @@
 @use '../../../../styles/tokens' as *;
 
 .dashboard-planning-page {
+
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-16;
+  height: calc(100vh - $spacing-16);
+  padding: 0 $spacing-16 $spacing-16 0;
+  overflow: auto;
+
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

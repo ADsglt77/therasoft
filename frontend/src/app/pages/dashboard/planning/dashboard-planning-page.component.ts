@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { UiCardComponent, CardPoint } from '../../../components/card/ui-card.component';
+import { MonthComponent } from '../../../components/calendar/month/month.component';
 
 /**
  * Page Planning Dashboard
@@ -8,7 +10,7 @@ import { UiCardComponent, CardPoint } from '../../../components/card/ui-card.com
 @Component({
   selector: 'app-dashboard-planning-page',
   standalone: true,
-  imports: [CommonModule, UiCardComponent],
+  imports: [CommonModule, UiCardComponent, MonthComponent],
   templateUrl: './dashboard-planning-page.component.html',
   styleUrl: './dashboard-planning-page.component.scss',
 })
@@ -55,5 +57,17 @@ export class DashboardPlanningPageComponent {
       ]
     }
   ];
+
+  constructor(private router: Router) {}
+
+  onDaySelected(dayData: { year: number; month: number; day: number }): void {
+    // Formater la date au format YYYY-MM-DD pour la route
+    const month = String(dayData.month + 1).padStart(2, '0');
+    const day = String(dayData.day).padStart(2, '0');
+    const dateStr = `${dayData.year}-${month}-${day}`;
+    
+    // Naviguer vers la page planning-day
+    this.router.navigate(['/dashboard/planning', dateStr]);
+  }
 }
 
