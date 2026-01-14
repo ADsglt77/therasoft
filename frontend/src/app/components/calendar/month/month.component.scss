@@ -31,20 +31,18 @@
     text-align: center;
 }
 
-.nav-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.month app-icon {
     cursor: pointer;
     border: 2px solid var(--color-white);
     border-radius: $radius-full;
     @include transition();
     padding: $spacing-2;
+    box-sizing: content-box;
 
     &:hover {
         opacity: 0.7;
     }
-}
+  }
 
 .calendar-grid {
     display: grid;
