@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostBinding, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppIconComponent } from '../icon/app-icon.component';
@@ -19,7 +19,7 @@ export interface SelectOption {
   styleUrl: './ui-input.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UiInputComponent implements OnChanges, AfterViewInit {
+export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() type: InputType = 'text';
   @Input() placeholder: string = '';
   @Input() value: string = '';
@@ -40,6 +40,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit {
   @ViewChild('selectElement', { static: false }) selectElement?: ElementRef<HTMLSelectElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
+  isDropdownOpen: boolean = false; // État pour le dropdown
 
   private computedMessage: string = '';
   private computedMessageType: InputMessageType | '' = '';
@@ -70,7 +71,57 @@ export class UiInputComponent implements OnChanges, AfterViewInit {
       setTimeout(() => {
         this.updateSelectValue();
       }, 0);
+      // Fermer le dropdown en cliquant à l'extérieur
+      document.addEventListener('click', this.handleClickOutside.bind(this));
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.type === 'select') {
+      document.removeEventListener('click', this.handleClickOutside.bind(this));
+    }
+  }
+
+  private handleClickOutside(event: MouseEvent): void {
+    if (this.isDropdownOpen) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.input-wrapper')) {
+        this.isDropdownOpen = false;
+        this.cdr.markForCheck();
+      }
+    }
+  }
+
+  toggleDropdown(): void {
+    if (!this.disabled) {
+      this.isDropdownOpen = !this.isDropdownOpen;
+      this.cdr.markForCheck();
+    }
+  }
+
+  selectOption(option: SelectOption): void {
+    this.value = String(option.value);
+    this.isDropdownOpen = false;
+    this.computeAutoMessage();
+    this.cdr.markForCheck();
+    
+    // Mettre à jour le select caché et émettre l'événement
+    if (this.selectElement) {
+      this.selectElement.nativeElement.value = this.value;
+      const changeEvent = new Event('change', { bubbles: true });
+      this.selectElement.nativeElement.dispatchEvent(changeEvent);
+      this.change.emit(changeEvent);
+    }
+  }
+
+  get selectedLabel(): string {
+    if (!this.value) return this.placeholder || '';
+    const option = this.options.find(opt => String(opt.value) === String(this.value));
+    return option?.label || '';
+  }
+
+  isSelected(optionValue: string | number): boolean {
+    return String(optionValue) === String(this.value);
   }
 
   /**

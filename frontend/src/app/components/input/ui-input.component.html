@@ -3,18 +3,47 @@
 }
 <div class="input-wrapper">
   @if (type === 'select') {
-    <select
-      #selectElement
-      [value]="value"
-      [name]="displayName"
-      [id]="displayId"
-      [required]="required"
+    <button
+      type="button"
       [disabled]="disabled"
       class="input input--select"
       [class.error]="getDisplayMessageType() === 'error'"
       [class.success]="getDisplayMessageType() === 'success'"
       [class.warning]="getDisplayMessageType() === 'warning'"
       [class.info]="getDisplayMessageType() === 'info'"
+      [class.input--select-open]="isDropdownOpen"
+      (click)="toggleDropdown()"
+    >
+      {{ selectedLabel || placeholder || 'Sélectionner...' }}
+    </button>
+    <app-icon 
+      name="chevron-down" 
+      [size]="18" 
+      class="select-icon"
+      [class.select-icon--open]="isDropdownOpen">
+    </app-icon>
+    @if (isDropdownOpen) {
+      <div class="dropdown-list">
+        @for (option of options; track option.value) {
+          <span
+            class="dropdown-option"
+            [class.dropdown-option--selected]="isSelected(option.value)"
+            (click)="selectOption(option)"
+          >
+            {{ option.label }}
+          </span>
+        }
+      </div>
+    }
+    <!-- Select caché pour la compatibilité avec les formulaires -->
+    <select
+      #selectElement
+      [value]="value"
+      [name]="displayName"
+      [id]="displayId + '-hidden'"
+      [required]="required"
+      [disabled]="disabled"
+      style="display: none;"
       (change)="onChange($event)"
     >
       @for (option of options; track option.value) {
