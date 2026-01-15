@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, MonthComponent, SelectOption } from '../../components';
+import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarMonthComponent, NavCalendarDayComponent } from '../../components';
 import { NotificationService } from '../../core/services/notification.service';
 
 /**
@@ -9,17 +9,29 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-playground-page',
   standalone: true,
-  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, MonthComponent],
+  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarMonthComponent, NavCalendarDayComponent],
   templateUrl: './playground-page.component.html',
   styleUrl: './playground-page.component.scss',
 })
 
 export class PlaygroundPageComponent {
-  constructor(private notificationService: NotificationService) {}
+  // Calendar demo data
+  currentYear = new Date().getFullYear();
+  currentMonth = new Date().getMonth();
+  monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+  yearOptions: SelectOption[] = [];
+
+  constructor(private notificationService: NotificationService) {
+    // Générer les options d'années
+    for (let i = this.currentYear - 5; i <= this.currentYear + 5; i++) {
+      this.yearOptions.push({ value: i.toString(), label: i.toString() });
+    }
+  }
 
   showNotification(variant: NotificationVariant): void {
     this.notificationService.show(variant, `Here the message you want to show - ${variant}`);
   }
+  
   points1: CardPoint[] = [
     { icon: 'sparkles', text: 'Point 1' },
     { icon: 'check', text: 'Point 2' },
@@ -51,6 +63,35 @@ export class PlaygroundPageComponent {
     const select = event.target as HTMLSelectElement;
     this.selectedValue = select.value;
     console.log('Selected value:', this.selectedValue);
+  }
+
+  onPreviousMonth(): void {
+    console.log('Previous month');
+  }
+
+  onNextMonth(): void {
+    console.log('Next month');
+  }
+
+  onYearChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    console.log('Year changed:', select.value);
+  }
+
+  onPreviousDay(): void {
+    console.log('Previous day');
+  }
+
+  onNextDay(): void {
+    console.log('Next day');
+  }
+
+  onGoBack(): void {
+    console.log('Go back');
+  }
+
+  onDayClick(event: { year: number; month: number; day: number }): void {
+    console.log('Day clicked:', event);
   }
 }
 

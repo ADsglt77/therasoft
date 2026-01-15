@@ -33,11 +33,7 @@
     <ui-input type="text" placeholder="Texte" label="Nom"></ui-input>
     <ui-input type="email" label="Email"></ui-input>
     <ui-input type="password" label="Mot de passe"></ui-input>
-    <ui-input 
-      type="select" 
-      label="Sélection" 
-      [value]="selectedValue"
-      [options]="selectOptions"
+    <ui-input type="select" label="Sélection" [value]="selectedValue" [options]="selectOptions"
       (change)="onSelectChange($event)">
     </ui-input>
   </div>
@@ -57,6 +53,16 @@
     <app-menu-dashboard></app-menu-dashboard>
   </div>
   <div class="components calendar">
-    <app-month></app-month>
+    <div class="days">
+      <app-day-card [dayNumber]="15" type="travail" location="Site A" [isToday]="false"></app-day-card>
+      <app-day-card [dayNumber]="16" type="repos" [isToday]="true"></app-day-card>
+      <app-day-card [dayNumber]="17" type="travail" location="Site B" [disabled]="true"></app-day-card>
+    </div>
+    <app-nav-calendar-month [monthName]="monthName" [currentYear]="currentYear" [yearOptions]="yearOptions"
+      (previousMonth)="onPreviousMonth()" (nextMonth)="onNextMonth()" (yearChange)="onYearChange($event)">
+    </app-nav-calendar-month>
+    <app-nav-calendar-day [dayOfWeek]="'Mercredi'" [monthName]="monthName" (previousDay)="onPreviousDay()"
+      (nextDay)="onNextDay()" (goBack)="onGoBack()">
+    </app-nav-calendar-day>
   </div>
 </div>
