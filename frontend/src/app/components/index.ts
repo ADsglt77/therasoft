@@ -47,7 +47,8 @@ export { UiInputComponent } from './input/ui-input.component';
 export type { InputType, SelectOption } from './input/ui-input.component';
 
 // Calendar
-export { DayComponent } from './calendar/day/day.component';
-export type { DayType } from './calendar/day/day.component';
-export { MonthComponent } from './calendar/month/month.component';
+export { DayCardComponent } from './calendar/day-card/day-card.component';
+export type { DayType } from './calendar/day-card/day-card.component';
+export { NavCalendarMonthComponent } from './calendar/nav-calendar-month/nav-calendar-month.component';
+export { NavCalendarDayComponent } from './calendar/nav-calendar-day/nav-calendar-day.component';
 
