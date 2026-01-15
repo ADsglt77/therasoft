@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
+import { NavCalendarDayComponent } from '../../../components/calendar/nav-calendar-day/nav-calendar-day.component';
 
 /**
  * Page Planning Day Dashboard
@@ -11,7 +12,7 @@ import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 @Component({
   selector: 'app-dashboard-planning-day-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiBadgeComponent],
+  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarDayComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
 })
@@ -99,6 +100,38 @@ export class DashboardPlanningDayPageComponent {
   get badgeVariant(): 'success' | 'repos' {
     if (this.isToday) return 'success';
     return 'repos';
+  }
+
+  get monthName(): string {
+    if (!this.date) return '';
+    return this.date.toLocaleDateString('fr-FR', { month: 'long' });
+  }
+
+  get dayOfWeek(): string {
+    if (!this.date) return '';
+    return this.date.toLocaleDateString('fr-FR', { weekday: 'long' });
+  }
+
+  previousDay(): void {
+    if (!this.date || !this.day) return;
+    const newDate = new Date(this.date);
+    newDate.setDate(newDate.getDate() - 1);
+    this.navigateToDate(newDate);
+  }
+
+  nextDay(): void {
+    if (!this.date || !this.day) return;
+    const newDate = new Date(this.date);
+    newDate.setDate(newDate.getDate() + 1);
+    this.navigateToDate(newDate);
+  }
+
+  private navigateToDate(date: Date): void {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    this.router.navigate(['/dashboard/planning', dateStr]);
   }
 }
 

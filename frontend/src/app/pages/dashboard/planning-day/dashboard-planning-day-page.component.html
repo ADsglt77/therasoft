@@ -1,8 +1,11 @@
 <div class="dashboard-planning-day-page">
-  <div class="header">
-    <app-icon name="arrow-left" [size]="20" (click)="goBack()"></app-icon>
-    <h2>Planning du {{ formattedDate }}</h2>
-  </div>
+  <app-nav-calendar-day
+    [dayOfWeek]="dayOfWeek"
+    [monthName]="monthName"
+    (previousDay)="previousDay()"
+    (nextDay)="nextDay()"
+    (goBack)="goBack()">
+  </app-nav-calendar-day>
 
   <div class="content">
     @if (daysDifference !== null) {
