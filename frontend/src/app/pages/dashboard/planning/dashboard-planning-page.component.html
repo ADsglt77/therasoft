@@ -10,6 +10,30 @@
     }
   </div>
 
-  <app-month (daySelected)="onDaySelected($event)"></app-month>
+  <app-nav-calendar-month
+    [monthName]="monthName"
+    [currentYear]="currentYear"
+    [yearOptions]="yearOptions"
+    (previousMonth)="previousMonth()"
+    (nextMonth)="nextMonth()"
+    (yearChange)="onYearChange($event)">
+  </app-nav-calendar-month>
+  <div class="calendar-grid">
+    @for (dayName of weekDays; track dayName) {
+      <div class="week-day">{{ dayName }}</div>
+    }
+    @for (day of days; track trackByDay($index, day)) {
+      <app-day-card 
+        [dayNumber]="day.dayNumber" 
+        [type]="day.type" 
+        [location]="day.location"
+        [disabled]="day.disabled || false"
+        [isToday]="day.isToday || false"
+        [year]="day.year"
+        [month]="day.month"
+        (dayClick)="onDayClick($event)">
+      </app-day-card>
+    }
+  </div>
 </div>
 
