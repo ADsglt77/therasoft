@@ -39,6 +39,7 @@
   }
 
   .profil {
+    position: relative;
     display: flex;
     align-items: center;
     gap: $spacing-16;
@@ -54,6 +55,8 @@
     }
 
     .icon-logout-wrapper {
+      position: absolute;
+      right: 0px;
       cursor: pointer;
       @include icon-center;
       --logout-icon-color: var(--color-gray-500);
