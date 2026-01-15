@@ -1,0 +1,39 @@
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-16;
+    padding: $spacing-16;
+    @include surface(5%, 10%);
+    border-radius: $radius-16;
+}
+
+.header div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-16;
+    text-transform: capitalize;
+}
+
+.header .month h4 {
+    min-width: 125px;
+    text-align: center;
+}
+
+.month app-icon {
+    cursor: pointer;
+    border: 2px solid var(--color-white);
+    border-radius: $radius-full;
+    @include transition();
+    padding: $spacing-2;
+    box-sizing: content-box;
+
+    &:hover {
+        opacity: 0.7;
+    }
+}
+
