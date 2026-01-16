@@ -49,13 +49,16 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     // Connexion
     const { accessToken, refreshToken, medecin } = await authService.login(input);
 
-    // Définir le cookie refresh token
+    // Supprimer l'ancien cookie s'il existe (avec l'ancien path)
+    res.clearCookie('refresh_token', { path: '/api/auth' });
+    
+    // Définir le cookie refresh token avec le nouveau path
     const isProduction = env.nodeEnv === 'production';
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      path: '/api/auth',
+      path: '/api', // Accessible depuis toutes les routes API
       maxAge: env.refreshTokenTtlDays * 24 * 60 * 60 * 1000, // en millisecondes
     });
 
@@ -97,7 +100,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      path: '/api/auth',
+      path: '/api', // Accessible depuis toutes les routes API
       maxAge: env.refreshTokenTtlDays * 24 * 60 * 60 * 1000,
     });
 
@@ -123,14 +126,14 @@ router.post('/logout', async (req: Request, res: Response, next: NextFunction) =
 
     // Supprimer le cookie
     res.clearCookie('refresh_token', {
-      path: '/api/auth',
+      path: '/api',
     });
 
     res.status(204).send();
   } catch (error) {
     // Même en cas d'erreur, on supprime le cookie
     res.clearCookie('refresh_token', {
-      path: '/api/auth',
+      path: '/api',
     });
     res.status(204).send();
   }
