@@ -1,4 +1,4 @@
-@if (label) {
+@if (label && type !== 'file') {
   <label [for]="displayId" class="label">{{ label }}</label>
 }
 <div class="input-wrapper">
@@ -7,10 +7,7 @@
       type="button"
       [disabled]="disabled"
       class="input input--select"
-      [class.error]="getDisplayMessageType() === 'error'"
-      [class.success]="getDisplayMessageType() === 'success'"
-      [class.warning]="getDisplayMessageType() === 'warning'"
-      [class.info]="getDisplayMessageType() === 'info'"
+      [ngClass]="getInputClasses()"
       [class.input--select-open]="isDropdownOpen"
       (click)="toggleDropdown()"
     >
@@ -50,6 +47,51 @@
         <option [value]="option.value">{{ option.label }}</option>
       }
     </select>
+  } @else if (type === 'file') {
+    <div 
+      #dropZone
+      class="file-drop-zone"
+      [class.file-drop-zone--dragging]="isDragging"
+      [class.file-drop-zone--disabled]="disabled"
+      [class.file-drop-zone--has-files]="selectedFiles.length > 0"
+      (click)="openFileSelector()"
+    >
+      <input
+        #fileInput
+        type="file"
+        [accept]="accept"
+        [multiple]="multiple"
+        [disabled]="disabled"
+        style="display: none;"
+        (change)="onFileInputChange($event)"
+      />
+      <div class="file-drop-zone-content">
+        <div class="file-drop-zone-icons">
+          <app-icon [name]="fileTypeIcon" [size]="32" [color]="'var(--color-gray-500)'"></app-icon>
+        </div>
+        <span class="file-drop-zone-text">{{ fileDisplayName }}</span>
+      </div>
+      @if (selectedFiles.length > 0) {
+        <div class="file-list">
+          @for (file of selectedFiles; track $index) {
+            <div class="file-item">
+              <app-icon [name]="fileTypeIcon" [size]="16" [color]="'var(--color-gray-500)'"></app-icon>
+              <span class="file-item-name">{{ file.name }}</span>
+              <span class="file-item-size">({{ formatFileSize(file.size) }})</span>
+              <button
+                type="button"
+                class="file-item-remove"
+                (click)="removeFile($index); $event.stopPropagation()"
+                [disabled]="disabled"
+                [attr.aria-label]="'Supprimer ' + file.name"
+              >
+                <app-icon name="x" [size]="14"></app-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
   } @else {
     <input 
       [type]="displayType"
@@ -60,10 +102,7 @@
       [required]="required"
       [disabled]="disabled"
       class="input"
-      [class.error]="getDisplayMessageType() === 'error'"
-      [class.success]="getDisplayMessageType() === 'success'"
-      [class.warning]="getDisplayMessageType() === 'warning'"
-      [class.info]="getDisplayMessageType() === 'info'"
+      [ngClass]="getInputClasses()"
       [class.input--with-toggle]="showPasswordToggle"
       (input)="onInput($event)"
     />

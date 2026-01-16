@@ -143,6 +143,148 @@
     color: var(--color-gray-500);
   }
 
+  // Styles pour le type file (drag & drop)
+  .file-drop-zone {
+    @include input-base;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-12;
+    cursor: pointer;
+    position: relative;
+    @include transition(all, 200ms);
+
+    &:hover:not(&--disabled) {
+      border-color: var(--color-primary-300);
+      background: color-mix(in srgb, var(--color-primary-500) 5%, transparent);
+    }
+
+    &--dragging {
+      border-color: var(--color-primary-500);
+      background: color-mix(in srgb, var(--color-primary-500) 10%, transparent);
+      transform: scale(1.02);
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &--has-files {
+      min-height: auto;
+    }
+
+    &-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-8;
+      flex: 1;
+      position: relative;
+      width: 100%;
+    }
+
+    &-icons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-8;
+      width: 100%;
+    }
+
+    &-text {
+      color: var(--color-gray-300);
+      text-align: center;
+      font-size: $font-size-h5;
+    }
+
+    // Style partagé pour les boutons de suppression (non utilisé actuellement mais gardé pour cohérence)
+    &-clear-all {
+      background: none;
+      border: none;
+      color: var(--color-gray-500);
+      cursor: pointer;
+      padding: $spacing-4;
+      border-radius: $radius-4;
+      @include transition(background-color, 150ms);
+      @include icon-center;
+      position: absolute;
+      top: $spacing-8;
+      right: $spacing-8;
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+        color: var(--color-danger);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+  }
+
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-8;
+    width: 100%;
+    margin-top: $spacing-8;
+    padding-top: $spacing-12;
+    border-top: 1px solid color-mix(in srgb, var(--bg) 10%, transparent);
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+    padding: $spacing-8 $spacing-12;
+    background: color-mix(in srgb, var(--bg) 5%, transparent);
+    border-radius: $radius-4;
+    @include transition(background-color, 150ms);
+
+    &:hover {
+      background: color-mix(in srgb, var(--bg) 10%, transparent);
+    }
+
+    &-name {
+      flex: 1;
+      color: var(--color-gray-100);
+      font-size: $font-size-h5;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &-size {
+      color: var(--color-gray-500);
+      font-size: $font-size-span;
+      flex-shrink: 0;
+    }
+
+    &-remove {
+      background: none;
+      border: none;
+      color: var(--color-gray-500);
+      cursor: pointer;
+      padding: $spacing-4;
+      border-radius: $radius-4;
+      @include transition(background-color, 150ms);
+      @include icon-center;
+
+      &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+        color: var(--color-danger);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+  }
+
   .message {
     margin-top: -4px;
 

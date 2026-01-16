@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppIconComponent } from '../icon/app-icon.component';
 
-export type InputType = 'text' | 'email' | 'password' | 'select';
+export type InputType = 'text' | 'email' | 'password' | 'select' | 'file';
 export type InputMessageType = 'error' | 'info' | 'success' | 'warning';
 
 export interface SelectOption {
@@ -34,13 +34,28 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() touched: boolean = false; // État "touched" du champ (pour la validation)
   @Input() dirty: boolean = false; // État "dirty" du champ (pour la validation)
   @Input() options: SelectOption[] = []; // Options pour le select
+  @Input() accept: string = '*/*'; // Types de fichiers acceptés (pour file)
+  @Input() multiple: boolean = false; // Permettre plusieurs fichiers (pour file)
+  @Input() maxSize: number = 0; // Taille maximale en bytes (0 = illimité, pour file)
   @Output() input = new EventEmitter<Event>(); // Émet l'événement input vers le parent
   @Output() change = new EventEmitter<Event>(); // Émet l'événement change vers le parent (pour select)
+  @Output() filesSelected = new EventEmitter<File[]>(); // Émet les fichiers sélectionnés (pour file)
+  @Output() fileError = new EventEmitter<{ file: File; error: string }>(); // Émet les erreurs de fichier (pour file)
 
   @ViewChild('selectElement', { static: false }) selectElement?: ElementRef<HTMLSelectElement>;
+  @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
   isDropdownOpen: boolean = false; // État pour le dropdown
+  selectedFiles: File[] = []; // Fichiers sélectionnés (pour file)
+  isDragging: boolean = false; // État de drag (pour file)
+  
+  // Références aux listeners pour pouvoir les supprimer
+  private dragOverHandler?: (e: DragEvent) => void;
+  private dragLeaveHandler?: (e: DragEvent) => void;
+  private dropHandler?: (e: DragEvent) => void;
+  private dragEnterHandler?: (e: DragEvent) => void;
 
   private computedMessage: string = '';
   private computedMessageType: InputMessageType | '' = '';
@@ -74,11 +89,19 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       // Fermer le dropdown en cliquant à l'extérieur
       document.addEventListener('click', this.handleClickOutside.bind(this));
     }
+    
+    // Initialiser les événements drag & drop pour le type file
+    if (this.type === 'file' && this.dropZone) {
+      this.setupDragAndDrop();
+    }
   }
 
   ngOnDestroy(): void {
     if (this.type === 'select') {
       document.removeEventListener('click', this.handleClickOutside.bind(this));
+    }
+    if (this.type === 'file' && this.dropZone) {
+      this.removeDragAndDropListeners();
     }
   }
 
@@ -174,42 +197,36 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Validation automatique pour le mot de passe
+    const isTouched = this.touched || this.dirty;
+
+    // Validation pour le mot de passe
     if (this.type === 'password') {
       const length = this.value?.length || 0;
-      
-      // Warning si le mot de passe est en cours de saisie mais trop court
       if (length > 0 && length < 10) {
         const missing = 10 - length;
         this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait 10 caractères`;
         this.computedMessageType = 'warning';
         return;
       }
-      
-      // Erreur si le champ est requis et vide (seulement si touched)
-      if (this.required && !this.value && (this.touched || this.dirty)) {
-        this.computedMessage = 'Ce champ est requis';
-        this.computedMessageType = 'error';
-        return;
-      }
+      if (this.checkRequired(isTouched)) return;
     }
 
-    // Validation pour les autres types
+    // Validation pour text et email
     if (this.type === 'text' || this.type === 'email') {
-      const length = this.value?.length || 0;
-      
-      // Erreur si le champ est requis et vide (seulement si touched)
-      if (this.required && !this.value && (this.touched || this.dirty)) {
+      if (this.checkRequired(isTouched)) return;
+      if (this.checkMinLength(isTouched)) return;
+    }
+
+    // Validation pour le type file
+    if (this.type === 'file') {
+      if (this.required && this.selectedFiles.length === 0 && isTouched) {
         this.computedMessage = 'Ce champ est requis';
         this.computedMessageType = 'error';
         return;
       }
-      
-      // Erreur si minLength n'est pas respecté (seulement si touched)
-      if (this.minLength > 0 && length > 0 && length < this.minLength && (this.touched || this.dirty)) {
-        const missing = this.minLength - length;
-        this.computedMessage = `Minimum ${this.minLength} caractères requis`;
-        this.computedMessageType = 'error';
+      if (this.selectedFiles.length > 0) {
+        this.computedMessage = `${this.selectedFiles.length} fichier(s) sélectionné(s)`;
+        this.computedMessageType = 'success';
         return;
       }
     }
@@ -217,6 +234,31 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     // Pas de message par défaut
     this.computedMessage = '';
     this.computedMessageType = '';
+  }
+
+  /**
+   * Vérifie si le champ requis est vide
+   */
+  private checkRequired(isTouched: boolean): boolean {
+    if (this.required && !this.value && isTouched) {
+      this.computedMessage = 'Ce champ est requis';
+      this.computedMessageType = 'error';
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Vérifie si la longueur minimale est respectée
+   */
+  private checkMinLength(isTouched: boolean): boolean {
+    const length = this.value?.length || 0;
+    if (this.minLength > 0 && length > 0 && length < this.minLength && isTouched) {
+      this.computedMessage = `Minimum ${this.minLength} caractères requis`;
+      this.computedMessageType = 'error';
+      return true;
+    }
+    return false;
   }
 
   @HostBinding('class')
@@ -228,6 +270,12 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
     if (this.type === 'select') {
       classes.push('ui-input--select');
+    }
+    if (this.type === 'file' && this.isDragging) {
+      classes.push('ui-input--dragging');
+    }
+    if (this.type === 'file' && this.selectedFiles.length > 0) {
+      classes.push('ui-input--has-files');
     }
     return classes.join(' ');
   }
@@ -246,32 +294,30 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     return this.messageType || this.computedMessageType;
   }
 
+  /**
+   * Retourne les classes CSS pour l'input selon le type de message
+   */
+  getInputClasses(): Record<string, boolean> {
+    const messageType = this.getDisplayMessageType();
+    return {
+      error: messageType === 'error',
+      success: messageType === 'success',
+      warning: messageType === 'warning',
+      info: messageType === 'info',
+    };
+  }
+
+  private readonly typeDefaults = {
+    email: { placeholder: 'Email', name: 'email' },
+    password: { placeholder: 'Mot de passe', name: 'password' },
+  } as const;
+
   get displayPlaceholder(): string {
-    if (this.placeholder) {
-      return this.placeholder;
-    }
-    switch (this.type) {
-      case 'email':
-        return 'Email';
-      case 'password':
-        return 'Mot de passe';
-      default:
-        return '';
-    }
+    return this.placeholder || this.typeDefaults[this.type as keyof typeof this.typeDefaults]?.placeholder || '';
   }
 
   get displayName(): string {
-    if (this.name) {
-      return this.name;
-    }
-    switch (this.type) {
-      case 'email':
-        return 'email';
-      case 'password':
-        return 'password';
-      default:
-        return 'text';
-    }
+    return this.name || this.typeDefaults[this.type as keyof typeof this.typeDefaults]?.name || 'text';
   }
 
   get displayId(): string {
@@ -310,6 +356,241 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    */
   get showPasswordToggle(): boolean {
     return this.type === 'password';
+  }
+
+  // ============================================
+  // Méthodes pour le type file
+  // ============================================
+
+  /**
+   * Configure les événements drag & drop
+   */
+  private setupDragAndDrop(): void {
+    if (!this.dropZone) return;
+    
+    const element = this.dropZone.nativeElement;
+    
+    // Créer les handlers avec bind pour pouvoir les supprimer
+    this.dragOverHandler = this.handleDragOver;
+    this.dragLeaveHandler = this.handleDragLeave.bind(this);
+    this.dropHandler = this.handleDrop.bind(this);
+    this.dragEnterHandler = this.handleDragEnter.bind(this);
+    
+    // Ajouter les listeners
+    element.addEventListener('dragover', this.dragOverHandler);
+    element.addEventListener('dragleave', this.dragLeaveHandler);
+    element.addEventListener('drop', this.dropHandler);
+    element.addEventListener('dragenter', this.dragEnterHandler);
+  }
+
+  /**
+   * Supprime les listeners drag & drop
+   */
+  private removeDragAndDropListeners(): void {
+    if (!this.dropZone) return;
+    
+    const element = this.dropZone.nativeElement;
+    
+    // Supprimer les listeners
+    if (this.dragOverHandler) {
+      element.removeEventListener('dragover', this.dragOverHandler);
+    }
+    if (this.dragLeaveHandler) {
+      element.removeEventListener('dragleave', this.dragLeaveHandler);
+    }
+    if (this.dropHandler) {
+      element.removeEventListener('drop', this.dropHandler);
+    }
+    if (this.dragEnterHandler) {
+      element.removeEventListener('dragenter', this.dragEnterHandler);
+    }
+  }
+
+  /**
+   * Gère les événements dragover et dragenter
+   */
+  private handleDragEnter(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.disabled) {
+      this.isDragging = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  private handleDragOver = this.handleDragEnter.bind(this);
+
+  /**
+   * Gère l'événement dragleave
+   */
+  private handleDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Gère l'événement drop
+   */
+  private handleDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+    
+    if (this.disabled) return;
+    
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.processFiles(Array.from(files));
+    }
+    
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Gère la sélection de fichiers via le bouton
+   */
+  onFileInputChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const files = target.files;
+    if (files && files.length > 0) {
+      this.processFiles(Array.from(files));
+    }
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Traite les fichiers sélectionnés
+   */
+  private processFiles(files: File[]): void {
+    const validFiles: File[] = [];
+    const errors: { file: File; error: string }[] = [];
+
+    for (const file of files) {
+      const error = this.validateFile(file);
+      if (error) {
+        errors.push({ file, error });
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    errors.forEach(error => this.fileError.emit(error));
+
+    if (validFiles.length > 0) {
+      this.selectedFiles = this.multiple 
+        ? [...this.selectedFiles, ...validFiles]
+        : [validFiles[0]];
+      this.filesSelected.emit(this.selectedFiles);
+      this.updateFileInputValue();
+      this.computeAutoMessage();
+    }
+  }
+
+  /**
+   * Valide un fichier et retourne un message d'erreur si invalide
+   */
+  private validateFile(file: File): string | null {
+    if (this.accept !== '*/*' && !this.isFileTypeValid(file)) {
+      return `Type de fichier non autorisé. Types acceptés: ${this.accept}`;
+    }
+    if (this.maxSize > 0 && file.size > this.maxSize) {
+      const maxSizeMB = (this.maxSize / 1024 / 1024).toFixed(2);
+      return `Fichier trop volumineux. Taille maximale: ${maxSizeMB} MB`;
+    }
+    return null;
+  }
+
+  /**
+   * Vérifie si le type de fichier est valide
+   */
+  private isFileTypeValid(file: File): boolean {
+    if (this.accept === '*/*') return true;
+    
+    const acceptedTypes = this.accept.split(',').map(type => type.trim());
+    return acceptedTypes.some(type => {
+      if (type.endsWith('/*')) {
+        const baseType = type.split('/')[0];
+        return file.type.startsWith(baseType + '/');
+      }
+      return file.type === type;
+    });
+  }
+
+  /**
+   * Met à jour la valeur de l'input file
+   */
+  private updateFileInputValue(): void {
+    if (this.fileInput) {
+      // Réinitialiser l'input pour permettre de sélectionner le même fichier
+      this.fileInput.nativeElement.value = '';
+    }
+  }
+
+  /**
+   * Supprime un fichier de la liste
+   */
+  removeFile(index: number): void {
+    if (this.disabled) return;
+    this.selectedFiles.splice(index, 1);
+    this.filesSelected.emit(this.selectedFiles);
+    this.computeAutoMessage();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Supprime tous les fichiers
+   */
+  clearFiles(): void {
+    if (this.disabled) return;
+    this.selectedFiles = [];
+    this.filesSelected.emit([]);
+    this.updateFileInputValue();
+    this.computeAutoMessage();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Ouvre le sélecteur de fichiers
+   */
+  openFileSelector(): void {
+    if (this.disabled || !this.fileInput) return;
+    this.fileInput.nativeElement.click();
+  }
+
+  /**
+   * Formate la taille d'un fichier
+   */
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  /**
+   * Retourne le nom du fichier (ou les noms si plusieurs)
+   */
+  get fileDisplayName(): string {
+    if (this.selectedFiles.length === 0) {
+      return this.placeholder || 'Glissez-déposez vos fichiers ici ou cliquez pour sélectionner';
+    }
+    if (this.selectedFiles.length === 1) {
+      return this.selectedFiles[0].name;
+    }
+    return `${this.selectedFiles.length} fichier(s) sélectionné(s)`;
+  }
+
+  /**
+   * Détermine quelle icône afficher selon le type de fichier accepté
+   */
+  get fileTypeIcon(): string {
+    if (this.accept.includes('image')) {
+      return 'image';
+    }
+    return 'file';
   }
 }
 
