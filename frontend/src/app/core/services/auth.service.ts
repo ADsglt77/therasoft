@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, BehaviorSubject, shareReplay } from 'rxjs';
+import { Observable, tap, BehaviorSubject, shareReplay, catchError, throwError } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
 import { TokenStorageService } from './token-storage.service';
 import { Router } from '@angular/router';
@@ -124,6 +124,9 @@ export class AuthService extends ApiClientService {
       .pipe(
         tap((response) => {
           this.tokenStorage.setAccessToken(response.accessToken);
+        }),
+        catchError((error) => {
+          return throwError(() => error);
         })
       );
   }
