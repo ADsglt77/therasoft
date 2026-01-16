@@ -5,6 +5,7 @@ import { UiCardComponent, CardPoint } from '../../../components/card/ui-card.com
 import { DayCardComponent, DayType } from '../../../components/calendar/day-card/day-card.component';
 import { NavCalendarMonthComponent } from '../../../components/calendar/nav-calendar-month/nav-calendar-month.component';
 import { SelectOption } from '../../../components/input/ui-input.component';
+import { PlanningService, Vacation } from '../../../core/services/planning.service';
 
 interface DayData {
   dayNumber: number;
@@ -78,12 +79,15 @@ export class DashboardPlanningPageComponent implements OnInit {
 
   // Constantes publiques
   readonly weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] as const;
-  private readonly sites = ['Site A', 'Site B', 'Site C', 'Site D', 'Site E'] as const;
 
   // État du calendrier
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth();
   currentYear = this.currentDate.getFullYear();
+
+  // Vacations chargées depuis l'API
+  private vacations: Vacation[] = [];
+  private vacationsByDate: Map<string, Vacation[]> = new Map();
 
   // Cache pour optimiser les performances
   private _today: Date | null = null;
@@ -94,10 +98,12 @@ export class DashboardPlanningPageComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private planningService: PlanningService
   ) {}
 
   ngOnInit(): void {
+    this.loadVacations();
     this.cdr.markForCheck();
   }
 
@@ -185,6 +191,46 @@ export class DashboardPlanningPageComponent implements OnInit {
   }
 
   /**
+   * Charge les vacations pour le mois actuel
+   */
+  private loadVacations(): void {
+    this.planningService.getVacationsForMonth(this.currentYear, this.currentMonth).subscribe({
+      next: (response) => {
+        this.vacations = response.vacations;
+        // Créer un Map pour accéder rapidement aux vacations par date
+        this.vacationsByDate.clear();
+        this.vacations.forEach(vacation => {
+          const dateKey = vacation.date.substring(0, 10); // YYYY-MM-DD
+          if (!this.vacationsByDate.has(dateKey)) {
+            this.vacationsByDate.set(dateKey, []);
+          }
+          this.vacationsByDate.get(dateKey)!.push(vacation);
+        });
+        // Invalider le cache des jours pour recalculer avec les nouvelles données
+        this._cachedDays = null;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des vacations:', error);
+        // En cas d'erreur, on continue avec un tableau vide
+        this.vacations = [];
+        this.vacationsByDate.clear();
+        this._cachedDays = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  /**
+   * Récupère la ville pour une date donnée
+   */
+  private getVilleForDate(year: number, month: number, day: number): string | undefined {
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const vacations = this.vacationsByDate.get(dateKey);
+    return vacations?.[0]?.ville;
+  }
+
+  /**
    * Calcule les jours à afficher pour le mois actuel
    */
   private calculateDays(): DayData[] {
@@ -211,10 +257,9 @@ export class DashboardPlanningPageComponent implements OnInit {
       const dayOfWeek = date.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
-      // Assigner un site de manière cyclique pour les jours de travail
-      const location = !isWeekend ? this.sites[(i - 1) % this.sites.length] : undefined;
-      
-      days.push(this.createDayData(i, isWeekend ? 'repos' : 'travail', location, false, this.currentYear, this.currentMonth, i));
+      const ville = this.getVilleForDate(this.currentYear, this.currentMonth, i);
+      const type: DayType = ville ? 'travail' : 'repos';
+      days.push(this.createDayData(i, type, ville, false, this.currentYear, this.currentMonth, i));
     }
     
     // Calculer combien de jours il reste pour compléter 5 semaines
@@ -262,6 +307,8 @@ export class DashboardPlanningPageComponent implements OnInit {
     this.currentDate = new Date(this.currentYear, this.currentMonth, 1);
     this._cachedDays = null; // Invalider le cache
     this._cachedMonthName = null; // Invalider le cache du nom du mois
+    // Recharger les vacations pour le nouveau mois
+    this.loadVacations();
     this.cdr.markForCheck();
   }
 
