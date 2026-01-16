@@ -37,6 +37,25 @@
       (change)="onSelectChange($event)">
     </ui-input>
   </div>
+  <ui-input
+  type="file"
+  label="Upload de fichiers"
+  placeholder="Glissez-déposez vos fichiers ici"
+  accept="*/*"
+  [multiple]="true"
+  (filesSelected)="onFilesSelected($event)"
+  (fileError)="onFileError($event)">
+</ui-input>
+<ui-input
+  type="file"
+  label="Upload d'images uniquement"
+  placeholder="Glissez-déposez vos images"
+  accept="image/*"
+  [multiple]="false"
+  [maxSize]="5242880"
+  (filesSelected)="onFilesSelected($event)"
+  (fileError)="onFileError($event)">
+</ui-input>
   <div class="components notifications">
     <ui-button color="primary500" (click)="showNotification('warning')">Show Warning</ui-button>
     <ui-button color="primary500" (click)="showNotification('success')">Show Success</ui-button>

@@ -93,5 +93,15 @@ export class PlaygroundPageComponent {
   onDayClick(event: { year: number; month: number; day: number }): void {
     console.log('Day clicked:', event);
   }
+
+  onFilesSelected(files: File[]): void {
+    console.log('Files selected:', files);
+    this.notificationService.show('success', `${files.length} fichier(s) sélectionné(s) avec succès`);
+  }
+
+  onFileError(error: { file: File; error: string }): void {
+    console.error('File error:', error);
+    this.notificationService.show('danger', `Erreur: ${error.error} - ${error.file.name}`);
+  }
 }
 
