@@ -5,24 +5,50 @@ import argon2 from 'argon2';
 import dotenv from 'dotenv';
 import { resolve } from 'path';
 
-dotenv.config({ path: resolve(process.cwd(), '.env') });
+if (!process.env.DATABASE_URL) {
+  const envPath = resolve(__dirname, '..', '..', '.env');
+  dotenv.config({ path: envPath });
+}
 
 let databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   console.error('❌ DATABASE_URL non défini');
+  console.error('   Vérifiez que la variable d\'environnement DATABASE_URL est définie');
+  console.error('   Ou qu\'un fichier .env existe avec DATABASE_URL');
   process.exit(1);
 }
 
-if (databaseUrl.includes('@db:') && !process.env.DOCKER_CONTAINER) {
+if (databaseUrl.includes('@db:') && !process.env.DATABASE_URL?.includes('@db:')) {
   databaseUrl = databaseUrl.replace('@db:', '@localhost:');
 }
+
+console.log(`🔌 Connexion à la base de données...`);
+console.log(`   URL: ${databaseUrl.replace(/:[^:@]+@/, ':****@')}`);
 
 const pool = new Pool({ connectionString: databaseUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+async function waitForDatabase(maxRetries = 10, delay = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await pool.query('SELECT 1');
+      console.log('✅ Base de données connectée\n');
+      return;
+    } catch (error) {
+      if (i < maxRetries - 1) {
+        console.log(`⏳ Attente de la base de données... (${i + 1}/${maxRetries})`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw new Error(`Impossible de se connecter à la base de données après ${maxRetries} tentatives`);
+      }
+    }
+  }
+}
+
 async function main() {
+  await waitForDatabase();
   console.log('🌱 Début du seed...\n');
 
   console.log('🧹 Nettoyage de la base de données...');
@@ -121,7 +147,49 @@ async function main() {
   console.log(`✅ ${createdPatients.length} patients créés\n`);
 
   console.log('📅 Création des vacations...');
-  const sites = ['Site A - Centre Hospitalier', 'Site B - Clinique', 'Site C - Cabinet'];
+  const villesAvecSites = [
+    {
+      ville: 'Paris',
+      sites: ['Hôpital Pitié-Salpêtrière', 'Hôpital Necker', 'Clinique de la Porte de Saint-Cloud']
+    },
+    {
+      ville: 'Lyon',
+      sites: ['Hôpital Édouard Herriot', 'Centre Hospitalier Lyon Sud', 'Clinique du Val d\'Ouest']
+    },
+    {
+      ville: 'Marseille',
+      sites: ['Hôpital de la Timone', 'Hôpital Nord', 'Clinique Clairval']
+    },
+    {
+      ville: 'Toulouse',
+      sites: ['CHU Toulouse - Purpan', 'CHU Toulouse - Rangueil', 'Clinique Pasteur']
+    },
+    {
+      ville: 'Nice',
+      sites: ['CHU Nice - Hôpital Pasteur', 'Hôpital Lenval', 'Clinique Saint-Georges']
+    },
+    {
+      ville: 'Nantes',
+      sites: ['CHU Nantes - Hôtel-Dieu', 'CHU Nantes - Hôpital Nord', 'Clinique Jules Verne']
+    },
+    {
+      ville: 'Strasbourg',
+      sites: ['Hôpitaux Universitaires de Strasbourg', 'Clinique Sainte-Anne', 'Centre Paul Strauss']
+    },
+    {
+      ville: 'Montpellier',
+      sites: ['CHU Montpellier - Hôpital Lapeyronie', 'CHU Montpellier - Hôpital Gui de Chauliac', 'Clinique Clémentville']
+    },
+    {
+      ville: 'Bordeaux',
+      sites: ['CHU Bordeaux - Hôpital Pellegrin', 'CHU Bordeaux - Hôpital Haut-Lévêque', 'Clinique Tivoli']
+    },
+    {
+      ville: 'Lille',
+      sites: ['CHU Lille - Hôpital Claude Huriez', 'CHU Lille - Hôpital Roger Salengro', 'Clinique de la Louvière']
+    }
+  ];
+  
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
   const medecins = [medecin1, medecin2];
   const horaires = ['08:00', '09:30', '11:00', '14:00', '15:30', '17:00'];
@@ -147,11 +215,15 @@ async function main() {
       const horaire = new Date(date);
       horaire.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+      const villeAvecSites = villesAvecSites[Math.floor(Math.random() * villesAvecSites.length)];
+      const site = villeAvecSites.sites[Math.floor(Math.random() * villeAvecSites.sites.length)];
+
       const vacation = await prisma.vacation.create({
         data: {
           date,
           horaire,
-          site: sites[Math.floor(Math.random() * sites.length)],
+          ville: villeAvecSites.ville,
+          site: site,
           modalite: modalites[Math.floor(Math.random() * modalites.length)],
           medecinId: medecin.id,
         },
@@ -240,6 +312,18 @@ async function main() {
 main()
   .catch((e) => {
     console.error('❌ Erreur lors du seed:', e);
+    
+    if (e.code === 'ECONNREFUSED') {
+      console.error('\n💡 Vérifications:');
+      console.error('   1. La base de données est-elle démarrée ?');
+      console.error('   2. DATABASE_URL est-elle correctement configurée ?');
+      console.error('   3. Dans Docker, vérifiez: docker compose ps db');
+      console.error('   4. Attendez quelques secondes que la DB soit prête après le démarrage');
+    } else if (e.code === 'P1001') {
+      console.error('\n💡 La base de données n\'est pas accessible');
+      console.error('   Vérifiez que le service db est démarré: docker compose ps');
+    }
+    
     process.exit(1);
   })
   .finally(async () => {

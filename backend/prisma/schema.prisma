@@ -62,6 +62,7 @@ model Vacation {
   horaire DateTime @db.Time(0)
 
   site     String
+  ville    String
   modalite ModaliteType
 
   medecinId Int     @map("id_medecin")
