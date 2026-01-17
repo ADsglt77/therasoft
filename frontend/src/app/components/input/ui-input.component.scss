@@ -12,17 +12,80 @@
     display: flex;
     align-items: center;
     width: 100%;
+
+    .select-icon {
+      position: absolute;
+      right: $spacing-16;
+      pointer-events: none;
+      color: var(--color-gray-300);
+      z-index: 1;
+      @include transition(color transform, 150ms);
+      transform: rotate(0deg);
+    }
+
+    .input--select:focus ~ .select-icon {
+      color: var(--color-gray-100);
+      transform: rotate(180deg);
+    }
+
+    .input--select:disabled ~ .select-icon {
+      color: var(--color-gray-500);
+      transform: rotate(0deg);
+    }
+
+    .select-icon--open {
+      color: var(--color-gray-100);
+      transform: rotate(180deg);
+    }
+
+    .dropdown-list {
+      position: absolute;
+      top: calc(100% + $spacing-4);
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      border: 1px solid color-mix(in srgb, var(--bg) 20%, transparent);
+      border-radius: $radius-8;
+      padding: $spacing-4;
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-2;
+    }
+
+    .dropdown-option {
+      padding: $spacing-12 $spacing-16;
+      background: color-mix(in srgb, var(--bg) 5%, transparent);
+      color: var(--color-gray-100);
+      text-align: left;
+      cursor: pointer;
+      border-radius: $radius-4;
+      @include transition(background-color, 150ms);
+      width: 100%;
+      display: block;
+
+      &:hover {
+        background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+        color: var(--color-gray-100);
+      }
+
+      &--selected {
+        background: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+        color: var(--color-gray-100);
+      }
+    }
   }
 
   // Styles pour le type password (toggle)
   .password-toggle {
     position: absolute;
     right: $spacing-8;
-    top: 50%;
-    transform: translateY(-50%);
     cursor: pointer;
-    pointer-events: auto;
-    z-index: 1;
+    background: none;
+    border: none;
+    color: var(--color-gray-500);
   }
 
   // Styles pour le type file (drag & drop)
@@ -121,17 +184,45 @@
   .input {
     @include input-base;
 
-    $states: (
-      'error': var(--color-danger),
-      'success': var(--color-success),
-      'warning': var(--color-warning),
-      'info': var(--color-primary-300)
-    );
+    &.error {
+      border-color: var(--color-danger);
+    }
 
-    @each $state, $color in $states {
-      &.#{$state} {
-        border-color: $color;
+    &.success {
+      border-color: var(--color-success);
+    }
+
+    &.warning {
+      border-color: var(--color-warning);
+    }
+
+    &.info {
+      border-color: var(--color-primary-300);
+    }
+
+    &--select {
+      cursor: pointer;
+      appearance: none;
+      padding-right: $spacing-40;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .select-value {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
+
+      &:disabled {
+        cursor: not-allowed;
+      }
+    }
+
+    &--select-open {
+      border-color: var(--color-primary-300);
     }
 
     &--with-toggle {
@@ -140,17 +231,22 @@
   }
 
   .message {
-    $messageStates: (
-      'error': var(--color-danger),
-      'info': var(--color-gray-500),
-      'success': var(--color-success),
-      'warning': var(--color-warning)
-    );
+    margin-top: -4px;
 
-    @each $state, $color in $messageStates {
-      &--#{$state} {
-        color: $color;
-      }
+    &--error {
+      color: var(--color-danger);
+    }
+
+    &--info {
+      color: var(--color-gray-500);
+    }
+
+    &--success {
+      color: var(--color-success);
+    }
+
+    &--warning {
+      color: var(--color-warning);
     }
   }
 }

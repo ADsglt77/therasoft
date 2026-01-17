@@ -42,13 +42,13 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Output() filesSelected = new EventEmitter<File[]>(); // Émet les fichiers sélectionnés (pour file)
   @Output() fileError = new EventEmitter<{ file: File; error: string }>(); // Émet les erreurs de fichier (pour file)
 
-  @ViewChild('selectElement', { static: false }) selectElement?: ElementRef<HTMLSelectElement>;
   @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
   selectedFiles: File[] = []; // Fichiers sélectionnés (pour file)
   isDragging: boolean = false; // État de drag (pour file)
+  isDropdownOpen: boolean = false; // État pour le dropdown select
   
   // Références aux listeners pour pouvoir les supprimer
   private dragOverHandler?: (e: DragEvent) => void;
@@ -68,15 +68,12 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       this.computeAutoMessage();
       this.cdr.markForCheck();
     }
-    // Mettre à jour le select si la valeur ou les options changent
-    if (this.type === 'select' && (changes['value'] || changes['options'])) {
-      this.updateSelectValue();
-    }
   }
 
   ngAfterViewInit(): void {
     if (this.type === 'select') {
-      this.updateSelectValue();
+      // Fermer le dropdown en cliquant à l'extérieur
+      document.addEventListener('click', this.handleClickOutside.bind(this));
     }
     if (this.type === 'file' && this.dropZone) {
       this.setupDragAndDrop();
@@ -84,22 +81,50 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.type === 'select') {
+      document.removeEventListener('click', this.handleClickOutside.bind(this));
+    }
     if (this.type === 'file' && this.dropZone) {
       this.removeDragAndDropListeners();
     }
   }
 
-  /**
-   * Met à jour la valeur du select si nécessaire
-   */
-  private updateSelectValue(): void {
-    if (this.type !== 'select' || !this.selectElement || !this.value) return;
-    
-    const valueExists = this.options.some(opt => String(opt.value) === String(this.value));
-    if (valueExists && this.selectElement.nativeElement.value !== this.value) {
-      this.selectElement.nativeElement.value = this.value;
+  private handleClickOutside(event: MouseEvent): void {
+    if (this.isDropdownOpen) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.input-wrapper')) {
+        this.isDropdownOpen = false;
+        this.cdr.markForCheck();
+      }
+    }
+  }
+
+  toggleDropdown(): void {
+    if (!this.disabled) {
+      this.isDropdownOpen = !this.isDropdownOpen;
       this.cdr.markForCheck();
     }
+  }
+
+  selectOption(option: SelectOption): void {
+    this.value = String(option.value);
+    this.isDropdownOpen = false;
+    this.computeAutoMessage();
+    this.cdr.markForCheck();
+    
+    // Émettre l'événement change
+    const changeEvent = new Event('change', { bubbles: true });
+    this.change.emit(changeEvent);
+  }
+
+  get selectedLabel(): string {
+    if (!this.value) return this.placeholder || '';
+    const option = this.options.find(opt => String(opt.value) === String(this.value));
+    return option?.label || '';
+  }
+
+  isSelected(optionValue: string | number): boolean {
+    return String(optionValue) === String(this.value);
   }
 
   /**
@@ -114,17 +139,6 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.input.emit(event);
   }
 
-  /**
-   * Gère l'événement change pour le select
-   */
-  onChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.value = target.value;
-    this.computeAutoMessage();
-    this.cdr.markForCheck();
-    // Émettre l'événement change vers le parent
-    this.change.emit(event);
-  }
 
   /**
    * Calcule automatiquement le message de validation en fonction du type d'input
@@ -247,7 +261,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   /**
    * Retourne les classes CSS pour l'input selon le type de message
    */
-  getInputClasses(): Record<string, boolean> {
+  getInputStateClasses(): Record<string, boolean> {
     const messageType = this.getDisplayMessageType();
     return {
       error: messageType === 'error',
@@ -363,10 +377,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.dragCounter++;
-    if (!this.disabled && !this.isDragging) {
-      this.isDragging = true;
-      this.cdr.markForCheck();
-    }
+    this.setDraggingState(true);
   }
 
   /**
@@ -375,7 +386,14 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   private handleDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    if (!this.disabled && !this.isDragging) {
+    this.setDraggingState(true);
+  }
+
+  /**
+   * Définit l'état de dragging
+   */
+  private setDraggingState(value: boolean): void {
+    if (!this.disabled && !this.isDragging && value) {
       this.isDragging = true;
       this.cdr.markForCheck();
     }
@@ -504,7 +522,6 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-
   /**
    * Ouvre le sélecteur de fichiers
    */
@@ -521,7 +538,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
   }
 
   /**
