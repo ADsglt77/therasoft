@@ -1,126 +1,69 @@
 @if (label && type !== 'file') {
-  <label [for]="displayId" class="label">{{ label }}</label>
-}
-<div class="input-wrapper">
-  @if (type === 'select') {
-    <button
-      type="button"
-      [disabled]="disabled"
-      class="input input--select"
-      [ngClass]="getInputClasses()"
-      [class.input--select-open]="isDropdownOpen"
-      (click)="toggleDropdown()"
-    >
-      {{ selectedLabel || placeholder || 'Sélectionner...' }}
-    </button>
-    <app-icon 
-      name="chevron-down" 
-      [size]="18" 
-      class="select-icon"
-      [class.select-icon--open]="isDropdownOpen">
-    </app-icon>
-    @if (isDropdownOpen) {
-      <div class="dropdown-list">
-        @for (option of options; track option.value) {
-          <span
-            class="dropdown-option"
-            [class.dropdown-option--selected]="isSelected(option.value)"
-            (click)="selectOption(option)"
-          >
-            {{ option.label }}
-          </span>
-        }
-      </div>
-    }
-    <!-- Select caché pour la compatibilité avec les formulaires -->
-    <select
-      #selectElement
-      [value]="value"
-      [name]="displayName"
-      [id]="displayId + '-hidden'"
-      [required]="required"
-      [disabled]="disabled"
-      style="display: none;"
-      (change)="onChange($event)"
-    >
-      @for (option of options; track option.value) {
-        <option [value]="option.value">{{ option.label }}</option>
-      }
-    </select>
-  } @else if (type === 'file') {
-    <div 
-      #dropZone
-      class="file-drop-zone"
-      [class.file-drop-zone--dragging]="isDragging"
-      [class.file-drop-zone--disabled]="disabled"
-      [class.file-drop-zone--has-files]="selectedFiles.length > 0"
-      (click)="openFileSelector()"
-    >
-      <input
-        #fileInput
-        type="file"
-        [accept]="accept"
-        [multiple]="multiple"
-        [disabled]="disabled"
-        style="display: none;"
-        (change)="onFileInputChange($event)"
-      />
-      <div class="file-drop-zone-content">
-        <div class="file-drop-zone-icons">
-          <app-icon [name]="fileTypeIcon" [size]="32" [color]="'var(--color-gray-500)'"></app-icon>
-        </div>
-        <span class="file-drop-zone-text">{{ fileDisplayName }}</span>
-      </div>
-      @if (selectedFiles.length > 0) {
-        <div class="file-list">
-          @for (file of selectedFiles; track $index) {
-            <div class="file-item">
-              <app-icon [name]="fileTypeIcon" [size]="16" [color]="'var(--color-gray-500)'"></app-icon>
-              <span class="file-item-name">{{ file.name }}</span>
-              <span class="file-item-size">({{ formatFileSize(file.size) }})</span>
-              <button
-                type="button"
-                class="file-item-remove"
-                (click)="removeFile($index); $event.stopPropagation()"
-                [disabled]="disabled"
-                [attr.aria-label]="'Supprimer ' + file.name"
-              >
-                <app-icon name="x" [size]="14"></app-icon>
-              </button>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  } @else {
-    <input 
-      [type]="displayType"
-      [placeholder]="displayPlaceholder"
-      [value]="value"
-      [name]="displayName"
-      [id]="displayId"
-      [required]="required"
-      [disabled]="disabled"
-      class="input"
-      [ngClass]="getInputClasses()"
-      [class.input--with-toggle]="showPasswordToggle"
-      (input)="onInput($event)"
-    />
-    @if (showPasswordToggle) {
-      <button 
-        type="button"
-        class="password-toggle"
-        (click)="togglePasswordVisibility()"
-        [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-        tabindex="0">
-        <app-icon [name]="passwordToggleIcon" [size]="20" [color]="'var(--color-gray-500)'"></app-icon>
-      </button>
-    }
-  }
-</div>
-@if (hasMessage) {
-  <span [class]="'message message--' + getDisplayMessageType()">
-    {{ getDisplayMessage() }}
-  </span>
+<label [for]="displayId" class="label">{{ label }}</label>
 }
 
+@if (type === 'select') {
+<select #selectElement [value]="value" [name]="displayName" [id]="displayId" [required]="required" [disabled]="disabled"
+  class="input" [ngClass]="getInputClasses()" (change)="onChange($event)">
+  @if (!value) {
+  <option value="" disabled>{{ placeholder || 'Sélectionner...' }}</option>
+  }
+  @for (option of options; track option.value) {
+  <option [value]="option.value">{{ option.label }}</option>
+  }
+</select>
+} @else if (type === 'file') {
+<div #dropZone class="file-drop-zone" [class.file-drop-zone--dragging]="isDragging"
+  [class.file-drop-zone--disabled]="disabled" [class.file-drop-zone--has-files]="selectedFiles.length > 0"
+  (click)="openFileSelector()">
+  <input #fileInput type="file" [accept]="accept" [multiple]="multiple" [disabled]="disabled" style="display: none;"
+    (change)="onFileInputChange($event)" />
+  <div class="file-drop-zone-content">
+    <app-icon [name]="fileTypeIcon" [size]="32" [color]="'var(--color-gray-500)'"></app-icon>
+    <span>{{ fileDisplayName }}</span>
+  </div>
+  @if (selectedFiles.length > 0) {
+  <div class="file-list">
+    @for (file of selectedFiles; track $index) {
+    <div class="file-item">
+      <app-icon [name]="fileTypeIcon" [size]="16" [color]="'var(--color-gray-500)'"></app-icon>
+      <span class="file-item-name">{{ file.name }}</span>
+      <span class="file-item-size">({{ formatFileSize(file.size) }})</span>
+      <app-icon 
+        class="file-item-remove" 
+        name="x" 
+        [size]="14"
+        (click)="removeFile($index); $event.stopPropagation()"
+        [attr.aria-label]="'Supprimer ' + file.name"
+        [style.cursor]="disabled ? 'not-allowed' : 'pointer'"
+        [style.opacity]="disabled ? '0.5' : '1'">
+      </app-icon>
+    </div>
+    }
+  </div>
+  }
+</div>
+} @else {
+<div class="input-wrapper">
+  <input [type]="displayType" [placeholder]="displayPlaceholder" [value]="value" [name]="displayName" [id]="displayId"
+    [required]="required" [disabled]="disabled" class="input" [ngClass]="getInputClasses()"
+    [class.input--with-toggle]="showPasswordToggle" (input)="onInput($event)" />
+  @if (showPasswordToggle) {
+  <app-icon 
+    class="password-toggle" 
+    [name]="passwordToggleIcon" 
+    [size]="20" 
+    [color]="'var(--color-gray-500)'"
+    (click)="togglePasswordVisibility()"
+    [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+    tabindex="0"
+    style="cursor: pointer;">
+  </app-icon>
+  }
+</div>
+}
+@if (hasMessage) {
+<span [class]="'message message--' + getDisplayMessageType()">
+  {{ getDisplayMessage() }}
+</span>
+}

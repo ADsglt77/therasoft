@@ -12,142 +12,25 @@
     display: flex;
     align-items: center;
     width: 100%;
-
-    .select-icon {
-      position: absolute;
-      right: $spacing-16;
-      pointer-events: none;
-      color: var(--color-gray-300);
-      z-index: 1;
-      @include transition(color transform, 150ms);
-      transform: rotate(0deg);
-    }
-
-    .input--select:focus ~ .select-icon {
-      color: var(--color-gray-100);
-      transform: rotate(180deg);
-    }
-
-    .input--select:disabled ~ .select-icon {
-      color: var(--color-gray-500);
-      transform: rotate(0deg);
-    }
-
-    .select-icon--open {
-      color: var(--color-gray-100);
-      transform: rotate(180deg);
-    }
-
-    .dropdown-list {
-      position: absolute;
-      top: calc(100% + $spacing-4);
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      backdrop-filter: blur(10px);
-      border: 1px solid color-mix(in srgb, var(--bg) 20%, transparent);
-      border-radius: $radius-8;
-      padding: $spacing-4;
-      max-height: 200px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: $spacing-2;
-    }
-
-    .dropdown-option {
-      padding: $spacing-12 $spacing-16;
-      background: color-mix(in srgb, var(--bg) 5%, transparent);
-      color: var(--color-gray-100);
-      text-align: left;
-      cursor: pointer;
-      border-radius: $radius-4;
-      @include transition(background-color, 150ms);
-      width: 100%;
-      display: block;
-
-      &:hover {
-        background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
-        color: var(--color-gray-100);
-      }
-
-      &--selected {
-        background: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
-        color: var(--color-gray-100);
-      }
-    }
-  }
-  
-  .input {
-    @include input-base;
-
-    &.error {
-      border-color: var(--color-danger);
-    }
-
-    &.success {
-      border-color: var(--color-success);
-    }
-
-    &.warning {
-      border-color: var(--color-warning);
-    }
-
-    &.info {
-      border-color: var(--color-primary-300);
-    }
-
-    &--select {
-      cursor: pointer;
-      appearance: none;
-      padding-right: $spacing-40;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      .select-value {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-      }
-    }
-
-    &--select-open {
-      border-color: var(--color-primary-300);
-    }
-
-    &-hidden {
-      display: none;
-    }
   }
 
-  // Styles pour les options du select (très limités dans les navigateurs)
-  .input--select option {
-    background: color-mix(in srgb, var(--bg) 95%, transparent);
-    color: var(--color-gray-100);
-    padding: $spacing-8;
-  }
-
+  // Styles pour le type password (toggle)
   .password-toggle {
     position: absolute;
     right: $spacing-8;
+    top: 50%;
+    transform: translateY(-50%);
     cursor: pointer;
-    background: none;
-    border: none;
-    color: var(--color-gray-500);
+    pointer-events: auto;
+    z-index: 1;
   }
 
   // Styles pour le type file (drag & drop)
   .file-drop-zone {
     @include input-base;
-    min-height: 120px;
     display: flex;
+    flex-grow: 1;
+    min-height: 100%;
     flex-direction: column;
     gap: $spacing-12;
     cursor: pointer;
@@ -170,10 +53,6 @@
       cursor: not-allowed;
     }
 
-    &--has-files {
-      min-height: auto;
-    }
-
     &-content {
       display: flex;
       flex-direction: column;
@@ -181,47 +60,6 @@
       justify-content: center;
       gap: $spacing-8;
       flex: 1;
-      position: relative;
-      width: 100%;
-    }
-
-    &-icons {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: $spacing-8;
-      width: 100%;
-    }
-
-    &-text {
-      color: var(--color-gray-300);
-      text-align: center;
-      font-size: $font-size-h5;
-    }
-
-    // Style partagé pour les boutons de suppression (non utilisé actuellement mais gardé pour cohérence)
-    &-clear-all {
-      background: none;
-      border: none;
-      color: var(--color-gray-500);
-      cursor: pointer;
-      padding: $spacing-4;
-      border-radius: $radius-4;
-      @include transition(background-color, 150ms);
-      @include icon-center;
-      position: absolute;
-      top: $spacing-8;
-      right: $spacing-8;
-
-      &:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--color-danger) 20%, transparent);
-        color: var(--color-danger);
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
     }
   }
 
@@ -233,75 +71,86 @@
     margin-top: $spacing-8;
     padding-top: $spacing-12;
     border-top: 1px solid color-mix(in srgb, var(--bg) 10%, transparent);
-  }
 
-  .file-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-8;
-    padding: $spacing-8 $spacing-12;
-    background: color-mix(in srgb, var(--bg) 5%, transparent);
-    border-radius: $radius-4;
-    @include transition(background-color, 150ms);
-
-    &:hover {
-      background: color-mix(in srgb, var(--bg) 10%, transparent);
-    }
-
-    &-name {
-      flex: 1;
-      color: var(--color-gray-100);
-      font-size: $font-size-h5;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &-size {
-      color: var(--color-gray-500);
-      font-size: $font-size-span;
-      flex-shrink: 0;
-    }
-
-    &-remove {
-      background: none;
-      border: none;
-      color: var(--color-gray-500);
-      cursor: pointer;
-      padding: $spacing-4;
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-8;
+      padding: $spacing-8 $spacing-12;
+      background: color-mix(in srgb, var(--bg) 5%, transparent);
       border-radius: $radius-4;
       @include transition(background-color, 150ms);
-      @include icon-center;
-
-      &:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--color-danger) 20%, transparent);
-        color: var(--color-danger);
+  
+      &:hover {
+        background: color-mix(in srgb, var(--bg) 10%, transparent);
       }
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
+  
+      &-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
+  
+      &-size {
+        color: var(--color-gray-500);
+      }
+  
+      &-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: $spacing-12;
+        border-radius: $radius-4;
+        @include transition(background-color, 150ms);
+        @include icon-center;
+  
+        &:hover:not(:disabled) {
+          background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+          color: var(--color-danger);
+        }
+  
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+      }
+    }
+  }
+
+  .input {
+    @include input-base;
+
+    $states: (
+      'error': var(--color-danger),
+      'success': var(--color-success),
+      'warning': var(--color-warning),
+      'info': var(--color-primary-300)
+    );
+
+    @each $state, $color in $states {
+      &.#{$state} {
+        border-color: $color;
+      }
+    }
+
+    &--with-toggle {
+      padding-right: $spacing-40;
     }
   }
 
   .message {
-    margin-top: -4px;
+    $messageStates: (
+      'error': var(--color-danger),
+      'info': var(--color-gray-500),
+      'success': var(--color-success),
+      'warning': var(--color-warning)
+    );
 
-    &--error {
-      color: var(--color-danger);
-    }
-
-    &--info {
-      color: var(--color-gray-500);
-    }
-
-    &--success {
-      color: var(--color-success);
-    }
-
-    &--warning {
-      color: var(--color-warning);
+    @each $state, $color in $messageStates {
+      &--#{$state} {
+        color: $color;
+      }
     }
   }
 }

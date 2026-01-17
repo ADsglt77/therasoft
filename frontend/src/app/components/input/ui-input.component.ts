@@ -47,7 +47,6 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
-  isDropdownOpen: boolean = false; // État pour le dropdown
   selectedFiles: File[] = []; // Fichiers sélectionnés (pour file)
   isDragging: boolean = false; // État de drag (pour file)
   
@@ -56,14 +55,12 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   private dragLeaveHandler?: (e: DragEvent) => void;
   private dropHandler?: (e: DragEvent) => void;
   private dragEnterHandler?: (e: DragEvent) => void;
+  private dragCounter: number = 0; // Compteur pour gérer les événements dragleave sur les enfants
 
   private computedMessage: string = '';
   private computedMessageType: InputMessageType | '' = '';
-  private lastValue: string = '';
 
-  constructor(private cdr: ChangeDetectorRef) {
-    this.lastValue = this.value;
-  }
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     // Recalculer le message automatique si la valeur, le type, ou les contraintes changent
@@ -71,94 +68,37 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       this.computeAutoMessage();
       this.cdr.markForCheck();
     }
-    // Forcer la mise à jour du select si la valeur ou les options changent
+    // Mettre à jour le select si la valeur ou les options changent
     if (this.type === 'select' && (changes['value'] || changes['options'])) {
-      // Utiliser setTimeout pour s'assurer que le DOM est mis à jour
-      setTimeout(() => {
-        this.updateSelectValue();
-      }, 0);
+      this.updateSelectValue();
     }
   }
 
   ngAfterViewInit(): void {
-    // Forcer la mise à jour du select après l'initialisation de la vue
     if (this.type === 'select') {
-      setTimeout(() => {
-        this.updateSelectValue();
-      }, 0);
-      // Fermer le dropdown en cliquant à l'extérieur
-      document.addEventListener('click', this.handleClickOutside.bind(this));
+      this.updateSelectValue();
     }
-    
-    // Initialiser les événements drag & drop pour le type file
     if (this.type === 'file' && this.dropZone) {
       this.setupDragAndDrop();
     }
   }
 
   ngOnDestroy(): void {
-    if (this.type === 'select') {
-      document.removeEventListener('click', this.handleClickOutside.bind(this));
-    }
     if (this.type === 'file' && this.dropZone) {
       this.removeDragAndDropListeners();
     }
-  }
-
-  private handleClickOutside(event: MouseEvent): void {
-    if (this.isDropdownOpen) {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.input-wrapper')) {
-        this.isDropdownOpen = false;
-        this.cdr.markForCheck();
-      }
-    }
-  }
-
-  toggleDropdown(): void {
-    if (!this.disabled) {
-      this.isDropdownOpen = !this.isDropdownOpen;
-      this.cdr.markForCheck();
-    }
-  }
-
-  selectOption(option: SelectOption): void {
-    this.value = String(option.value);
-    this.isDropdownOpen = false;
-    this.computeAutoMessage();
-    this.cdr.markForCheck();
-    
-    // Mettre à jour le select caché et émettre l'événement
-    if (this.selectElement) {
-      this.selectElement.nativeElement.value = this.value;
-      const changeEvent = new Event('change', { bubbles: true });
-      this.selectElement.nativeElement.dispatchEvent(changeEvent);
-      this.change.emit(changeEvent);
-    }
-  }
-
-  get selectedLabel(): string {
-    if (!this.value) return this.placeholder || '';
-    const option = this.options.find(opt => String(opt.value) === String(this.value));
-    return option?.label || '';
-  }
-
-  isSelected(optionValue: string | number): boolean {
-    return String(optionValue) === String(this.value);
   }
 
   /**
    * Met à jour la valeur du select si nécessaire
    */
   private updateSelectValue(): void {
-    if (this.type === 'select' && this.selectElement && this.value) {
-      // Vérifier que la valeur existe dans les options avant de la définir
-      const valueExists = this.options.some(opt => String(opt.value) === String(this.value));
-      if (valueExists && this.selectElement.nativeElement.value !== this.value) {
-        this.selectElement.nativeElement.value = this.value;
-        this.lastValue = this.value;
-        this.cdr.markForCheck();
-      }
+    if (this.type !== 'select' || !this.selectElement || !this.value) return;
+    
+    const valueExists = this.options.some(opt => String(opt.value) === String(this.value));
+    if (valueExists && this.selectElement.nativeElement.value !== this.value) {
+      this.selectElement.nativeElement.value = this.value;
+      this.cdr.markForCheck();
     }
   }
 
@@ -199,41 +139,56 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
 
     const isTouched = this.touched || this.dirty;
 
-    // Validation pour le mot de passe
-    if (this.type === 'password') {
-      const length = this.value?.length || 0;
-      if (length > 0 && length < 10) {
-        const missing = 10 - length;
-        this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait 10 caractères`;
-        this.computedMessageType = 'warning';
+    // Validation selon le type
+    switch (this.type) {
+      case 'password':
+        this.validatePassword(isTouched);
+        break;
+      case 'text':
+      case 'email':
+        if (this.checkRequired(isTouched)) return;
+        if (this.checkMinLength(isTouched)) return;
+        break;
+      case 'select':
+        if (this.checkRequired(isTouched)) return;
+        break;
+      case 'file':
+        this.validateFileInput(isTouched);
         return;
-      }
-      if (this.checkRequired(isTouched)) return;
-    }
-
-    // Validation pour text et email
-    if (this.type === 'text' || this.type === 'email') {
-      if (this.checkRequired(isTouched)) return;
-      if (this.checkMinLength(isTouched)) return;
-    }
-
-    // Validation pour le type file
-    if (this.type === 'file') {
-      if (this.required && this.selectedFiles.length === 0 && isTouched) {
-        this.computedMessage = 'Ce champ est requis';
-        this.computedMessageType = 'error';
-        return;
-      }
-      if (this.selectedFiles.length > 0) {
-        this.computedMessage = `${this.selectedFiles.length} fichier(s) sélectionné(s)`;
-        this.computedMessageType = 'success';
-        return;
-      }
     }
 
     // Pas de message par défaut
     this.computedMessage = '';
     this.computedMessageType = '';
+  }
+
+  /**
+   * Valide le champ password
+   */
+  private validatePassword(isTouched: boolean): void {
+    const length = this.value?.length || 0;
+    if (length > 0 && length < 10) {
+      const missing = 10 - length;
+      this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait 10 caractères`;
+      this.computedMessageType = 'warning';
+      return;
+    }
+    this.checkRequired(isTouched);
+  }
+
+  /**
+   * Valide le champ file
+   */
+  private validateFileInput(isTouched: boolean): void {
+    if (this.required && this.selectedFiles.length === 0 && isTouched) {
+      this.computedMessage = 'Ce champ est requis';
+      this.computedMessageType = 'error';
+      return;
+    }
+    if (this.selectedFiles.length > 0) {
+      this.computedMessage = `${this.selectedFiles.length} fichier(s) sélectionné(s)`;
+      this.computedMessageType = 'success';
+    }
   }
 
   /**
@@ -268,14 +223,9 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     if (messageType) {
       classes.push(`ui-input--${messageType}`);
     }
-    if (this.type === 'select') {
-      classes.push('ui-input--select');
-    }
-    if (this.type === 'file' && this.isDragging) {
-      classes.push('ui-input--dragging');
-    }
-    if (this.type === 'file' && this.selectedFiles.length > 0) {
-      classes.push('ui-input--has-files');
+    if (this.type === 'file') {
+      if (this.isDragging) classes.push('ui-input--dragging');
+      if (this.selectedFiles.length > 0) classes.push('ui-input--has-files');
     }
     return classes.join(' ');
   }
@@ -307,17 +257,17 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     };
   }
 
-  private readonly typeDefaults = {
+  private readonly typeDefaults: Record<string, { placeholder: string; name: string }> = {
     email: { placeholder: 'Email', name: 'email' },
     password: { placeholder: 'Mot de passe', name: 'password' },
-  } as const;
+  };
 
   get displayPlaceholder(): string {
-    return this.placeholder || this.typeDefaults[this.type as keyof typeof this.typeDefaults]?.placeholder || '';
+    return this.placeholder || this.typeDefaults[this.type]?.placeholder || '';
   }
 
   get displayName(): string {
-    return this.name || this.typeDefaults[this.type as keyof typeof this.typeDefaults]?.name || 'text';
+    return this.name || this.typeDefaults[this.type]?.name || 'text';
   }
 
   get displayId(): string {
@@ -371,16 +321,16 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     const element = this.dropZone.nativeElement;
     
     // Créer les handlers avec bind pour pouvoir les supprimer
-    this.dragOverHandler = this.handleDragOver;
+    this.dragOverHandler = this.handleDragOver.bind(this);
     this.dragLeaveHandler = this.handleDragLeave.bind(this);
     this.dropHandler = this.handleDrop.bind(this);
     this.dragEnterHandler = this.handleDragEnter.bind(this);
     
     // Ajouter les listeners
+    element.addEventListener('dragenter', this.dragEnterHandler);
     element.addEventListener('dragover', this.dragOverHandler);
     element.addEventListener('dragleave', this.dragLeaveHandler);
     element.addEventListener('drop', this.dropHandler);
-    element.addEventListener('dragenter', this.dragEnterHandler);
   }
 
   /**
@@ -407,18 +357,29 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Gère les événements dragover et dragenter
+   * Gère l'événement dragenter
    */
   private handleDragEnter(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    if (!this.disabled) {
+    this.dragCounter++;
+    if (!this.disabled && !this.isDragging) {
       this.isDragging = true;
       this.cdr.markForCheck();
     }
   }
 
-  private handleDragOver = this.handleDragEnter.bind(this);
+  /**
+   * Gère l'événement dragover (nécessaire pour permettre le drop)
+   */
+  private handleDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.disabled && !this.isDragging) {
+      this.isDragging = true;
+      this.cdr.markForCheck();
+    }
+  }
 
   /**
    * Gère l'événement dragleave
@@ -426,8 +387,12 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   private handleDragLeave(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    this.isDragging = false;
-    this.cdr.markForCheck();
+    this.dragCounter--;
+    // Ne désactiver le dragging que si on quitte complètement la zone
+    if (this.dragCounter === 0) {
+      this.isDragging = false;
+      this.cdr.markForCheck();
+    }
   }
 
   /**
@@ -437,6 +402,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.isDragging = false;
+    this.dragCounter = 0; // Réinitialiser le compteur
     
     if (this.disabled) return;
     
@@ -467,14 +433,14 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     const validFiles: File[] = [];
     const errors: { file: File; error: string }[] = [];
 
-    for (const file of files) {
+    files.forEach(file => {
       const error = this.validateFile(file);
       if (error) {
         errors.push({ file, error });
-        continue;
+      } else {
+        validFiles.push(file);
       }
-      validFiles.push(file);
-    }
+    });
 
     errors.forEach(error => this.fileError.emit(error));
 
@@ -508,13 +474,12 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   private isFileTypeValid(file: File): boolean {
     if (this.accept === '*/*') return true;
     
-    const acceptedTypes = this.accept.split(',').map(type => type.trim());
-    return acceptedTypes.some(type => {
-      if (type.endsWith('/*')) {
-        const baseType = type.split('/')[0];
-        return file.type.startsWith(baseType + '/');
+    return this.accept.split(',').some(type => {
+      const trimmed = type.trim();
+      if (trimmed.endsWith('/*')) {
+        return file.type.startsWith(trimmed.split('/')[0] + '/');
       }
-      return file.type === type;
+      return file.type === trimmed;
     });
   }
 
@@ -539,17 +504,6 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  /**
-   * Supprime tous les fichiers
-   */
-  clearFiles(): void {
-    if (this.disabled) return;
-    this.selectedFiles = [];
-    this.filesSelected.emit([]);
-    this.updateFileInputValue();
-    this.computeAutoMessage();
-    this.cdr.markForCheck();
-  }
 
   /**
    * Ouvre le sélecteur de fichiers
@@ -567,7 +521,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
   }
 
   /**
@@ -587,10 +541,8 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    * Détermine quelle icône afficher selon le type de fichier accepté
    */
   get fileTypeIcon(): string {
-    if (this.accept.includes('image')) {
-      return 'image';
-    }
-    return 'file';
+    return this.accept.includes('image') ? 'image' : 'file';
   }
+
 }
 
