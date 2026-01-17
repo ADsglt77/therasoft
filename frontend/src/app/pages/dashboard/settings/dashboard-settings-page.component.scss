@@ -1,39 +1,32 @@
 @use '../../../../styles/tokens' as *;
 @use '../../../../styles/mixins' as *;
 
-.dashboard-settings-page {
-  .content {
-    display: flex;
-    flex-direction: column;
-  }
+:host {
+  display: flex;
+  flex-direction: column;
 
-  .form {
+  form {
     display: flex;
     flex-direction: column;
     margin-top: 16px;
 
-    .field-wrapper {
+    .profile-fields-container {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 10px;
+      flex-direction: row;
+      gap: $spacing-24;
     }
 
-    .name-fields {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-
-      @media (max-width: 600px) {
-        grid-template-columns: 1fr;
-      }
+    .container-inputs {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-8;
     }
 
     .form-actions {
       display: flex;
       justify-content: flex-end;
-      margin-top: 8px;
+      margin-top: $spacing-16;
     }
   }
 }
-
