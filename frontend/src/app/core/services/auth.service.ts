@@ -34,6 +34,7 @@ export interface MeResponse {
   nom: string;
   prenom: string;
   role: string;
+  avatarUrl?: string;
 }
 
 @Injectable({
