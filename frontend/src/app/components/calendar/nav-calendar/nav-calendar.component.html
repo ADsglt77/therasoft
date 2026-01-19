@@ -3,11 +3,16 @@
         <app-icon name="calendar" [size]="30"></app-icon>
         <h4>Calendrier</h4>
     </div>
-    <div class="month">
-        <app-icon name="arrow-left" [size]="15" [strokeWidth]="3" (click)="onPreviousMonth()"></app-icon>
-        <h4>{{ monthName }}</h4>
-        <app-icon name="arrow-right" [size]="15" [strokeWidth]="3" (click)="onNextMonth()"></app-icon>
+    <div [class]="centerClass">
+        <app-icon name="arrow-left" [size]="15" [strokeWidth]="3" (click)="onPrevious()"></app-icon>
+        <h4>{{ centerText }}</h4>
+        <app-icon name="arrow-right" [size]="15" [strokeWidth]="3" (click)="onNext()"></app-icon>
     </div>
+    @if (mode === 'day') {
+    <div class="month-info">
+        <h4>{{ monthName }}</h4>
+    </div>
+    } @else {
     <div class="year">
         <ui-input 
             type="select" 
@@ -16,7 +21,6 @@
             (change)="onYearChange($event)">
         </ui-input>
     </div>
+    }
 </div>
-
-
 
