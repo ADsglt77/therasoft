@@ -1,7 +1,7 @@
 @use '../../../../styles/tokens' as *;
 @use '../../../../styles/mixins' as *;
 
-.dashboard-planning-page {
+:host {
   display: flex;
   flex-direction: column;
   gap: $spacing-16;
@@ -9,11 +9,13 @@
   padding: 0 $spacing-16 $spacing-16 0;
   overflow: auto;
 
+  /*
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 24px;
   }
+  */
 
   .calendar-grid {
     display: grid;
