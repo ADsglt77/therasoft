@@ -1,9 +1,24 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
+import { TimetableComponent } from '../../../components/timetable/timetable.component';
+import { PlanningService, Rdv } from '../../../core/services/planning.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { Subscription } from 'rxjs';
+
+/**
+ * Interface pour les slots du timetable
+ */
+interface TimetableSlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  disabled: boolean;
+}
 
 /**
  * Page Planning Day Dashboard
@@ -12,25 +27,40 @@ import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/
 @Component({
   selector: 'app-dashboard-planning-day-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarComponent],
+  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarComponent, TimetableComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
 })
-export class DashboardPlanningDayPageComponent {
+export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   day: string | null = null;
   formattedDate: string = '';
   date: Date | null = null;
+  
+  timetableSlots: TimetableSlot[] = [];
+  isLoadingRdvs = false;
+  private subscriptions = new Subscription();
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private planningService: PlanningService,
+    private notificationService: NotificationService
   ) {
     this.route.paramMap.subscribe(params => {
       this.day = params.get('day');
       if (this.day) {
         this.parseDate(this.day);
+        this.loadRdvs();
       }
     });
+  }
+
+  ngOnInit(): void {
+    // Le chargement est déjà géré dans le constructeur via paramMap
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   parseDate(dateStr: string): void {
@@ -48,6 +78,49 @@ export class DashboardPlanningDayPageComponent {
         month: 'long',
         day: 'numeric'
       });
+    }
+  }
+
+  loadRdvs(): void {
+    if (!this.date) return;
+
+    // Ne pas charger les rendez-vous les weekends
+    if (this.isWeekend) {
+      this.isLoadingRdvs = false;
+      this.timetableSlots = [];
+      return;
+    }
+
+    this.isLoadingRdvs = true;
+    this.timetableSlots = []; // Réinitialiser avant le chargement
+    const sub = this.planningService.getMyRdvsForDate(this.date).subscribe({
+      next: (response) => {
+        this.timetableSlots = (response.rdvs || []).map((rdv: Rdv) => {
+          return {
+            id: rdv.id.toString(),
+            startTime: this.planningService.formatTime(rdv.heureDebut),
+            endTime: this.planningService.formatTime(rdv.heureFin),
+            title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+            disabled: false,
+          };
+        });
+        this.isLoadingRdvs = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des rendez-vous:', error);
+        this.notificationService.show('danger', 'Erreur lors du chargement des rendez-vous');
+        this.timetableSlots = []; // S'assurer que c'est un tableau vide en cas d'erreur
+        this.isLoadingRdvs = false;
+      },
+    });
+    this.subscriptions.add(sub);
+  }
+
+  onTimetableActionClick(slotId: string): void {
+    const slot = this.timetableSlots.find((s) => s.id === slotId);
+    if (slot) {
+      this.notificationService.show('information', `Voir le dossier pour: ${slot.title}`);
+      // TODO: Naviguer vers la page de détail du rendez-vous
     }
   }
 
@@ -137,6 +210,7 @@ export class DashboardPlanningDayPageComponent {
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
     this.router.navigate(['/dashboard/planning', dateStr]);
+    // Le chargement des rendez-vous sera déclenché automatiquement via paramMap
   }
 }
 

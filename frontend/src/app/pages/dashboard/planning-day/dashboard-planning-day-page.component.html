@@ -1,28 +1,34 @@
-<div class="dashboard-planning-day-page">
-  <app-nav-calendar
-    mode="day"
-    [dayOfWeek]="dayOfWeek"
-    [monthName]="monthName"
-    [dayNumber]="dayNumber"
-    (previous)="previousDay()"
-    (next)="nextDay()"
-    (goBack)="goBack()">
-  </app-nav-calendar>
+<app-nav-calendar mode="day" [dayOfWeek]="dayOfWeek" [monthName]="monthName" [dayNumber]="dayNumber"
+  (previous)="previousDay()" (next)="nextDay()" (goBack)="goBack()">
+</app-nav-calendar>
 
-  <div class="content">
-    @if (daysDifference !== null) {
-    <div class="info-badge">
-      <app-icon name="calendar" [size]="28"></app-icon>
-      <ui-badge [variant]="badgeVariant" [text]="dateBadgeText"></ui-badge>
+<div class="content">
+  @if (daysDifference !== null) {
+  <div class="info-badge">
+    <app-icon name="calendar" [size]="28"></app-icon>
+    <ui-badge [variant]="badgeVariant" [text]="dateBadgeText"></ui-badge>
+  </div>
+  }
+
+  @if (date) {
+  <div class="planning-section">
+    @if (isWeekend) {
+    <p class="placeholder">Jour de repos</p>
+    } @else if (isLoadingRdvs) {
+    <p class="placeholder">Chargement des rendez-vous...</p>
+    } @else {
+    @if (timetableSlots.length === 0) {
+    <p class="placeholder">Aucun rendez-vous programmé pour ce jour</p>
+    } @else {
+    <div class="timetable-list">
+      @for (slot of timetableSlots; track slot.id) {
+      <app-timetable [startTime]="slot.startTime" [endTime]="slot.endTime" [title]="slot.title"
+        [disabled]="slot.disabled" (actionClick)="onTimetableActionClick(slot.id)">
+      </app-timetable>
+      }
     </div>
     }
-
-    @if (!isWeekend) {
-    <div class="planning-section">
-      <h3>Vacations programmées</h3>
-      <p class="placeholder">Les vacations pour ce jour seront affichées ici</p>
-      <!-- TODO: Afficher les vacations réelles depuis l'API -->
-    </div>
     }
   </div>
+  }
 </div>
