@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostBinding, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DayCardComponent, DayType } from '../day-card/day-card.component';
-import { NavCalendarMonthComponent } from '../nav-calendar-month/nav-calendar-month.component';
+import { DayCardComponent, DayType } from './day-card/day-card.component';
+import { NavCalendarComponent } from '../nav-calendar/nav-calendar.component';
 import { SelectOption } from '../../input/ui-input.component';
 
 interface DayData {
@@ -23,7 +23,7 @@ const YEAR_RANGE = 5; // Années avant/après l'année actuelle
 @Component({
   selector: 'app-month',
   standalone: true,
-  imports: [CommonModule, DayCardComponent, NavCalendarMonthComponent],
+  imports: [CommonModule, DayCardComponent, NavCalendarComponent],
   templateUrl: './month.component.html',
   styleUrl: './month.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
