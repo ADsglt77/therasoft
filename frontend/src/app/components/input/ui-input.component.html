@@ -1,5 +1,5 @@
 @if (label && type !== 'file') {
-<label [for]="displayId" class="label">{{ label }}</label>
+  <label [for]="displayId" class="label">{{ label }}</label>
 }
 @if (type === 'file') {
 <div #dropZone class="file-drop-zone" [class.file-drop-zone--dragging]="isDragging"
@@ -80,7 +80,7 @@
     />
     @if (showPasswordToggle) {
       <app-icon 
-        class="password-toggle" 
+        class="password-toggle"
         [name]="passwordToggleIcon" 
         [size]="20" 
         [color]="'var(--color-gray-500)'"
@@ -94,7 +94,7 @@
 </div>
 }
 @if (hasMessage) {
-<span [class]="'message message--' + getDisplayMessageType()">
-  {{ getDisplayMessage() }}
-</span>
+  <span [class]="'message message--' + getDisplayMessageType()">
+    {{ getDisplayMessage() }}
+  </span>
 }

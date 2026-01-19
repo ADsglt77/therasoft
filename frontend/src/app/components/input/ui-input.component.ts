@@ -37,10 +37,12 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() accept: string = '*/*'; // Types de fichiers acceptés (pour file)
   @Input() multiple: boolean = false; // Permettre plusieurs fichiers (pour file)
   @Input() maxSize: number = 0; // Taille maximale en bytes (0 = illimité, pour file)
+  @Input() initialFiles: File[] = []; // Fichiers initiaux à afficher (pour file)
   @Output() input = new EventEmitter<Event>(); // Émet l'événement input vers le parent
   @Output() change = new EventEmitter<Event>(); // Émet l'événement change vers le parent (pour select)
   @Output() filesSelected = new EventEmitter<File[]>(); // Émet les fichiers sélectionnés (pour file)
   @Output() fileError = new EventEmitter<{ file: File; error: string }>(); // Émet les erreurs de fichier (pour file)
+  @Output() fileRemoved = new EventEmitter<File[]>(); // Émet les fichiers restants après suppression (pour file)
 
   @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
@@ -68,17 +70,49 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       this.computeAutoMessage();
       this.cdr.markForCheck();
     }
+    // Synchroniser initialFiles avec selectedFiles si initialFiles change
+    if (changes['initialFiles'] && this.type === 'file') {
+      this.syncFilesFromInitial();
+    }
+  }
+
+  /**
+   * Synchronise selectedFiles avec initialFiles
+   */
+  private syncFilesFromInitial(): void {
+    const currentFiles = this.initialFiles || [];
+    
+    if (this.selectedFiles.length !== currentFiles.length || 
+        (currentFiles.length > 0 && this.filesAreDifferent(this.selectedFiles, currentFiles))) {
+      this.selectedFiles = currentFiles.length > 0 ? [...currentFiles] : [];
+      this.computeAutoMessage();
+      this.cdr.detectChanges();
+    }
+  }
+
+  /**
+   * Vérifie si deux tableaux de fichiers sont différents
+   */
+  private filesAreDifferent(files1: File[], files2: File[]): boolean {
+    return files1.some((file, index) => 
+      !files2[index] || file.name !== files2[index].name || file.size !== files2[index].size
+    );
   }
 
   ngAfterViewInit(): void {
     if (this.type === 'select') {
-      // Fermer le dropdown en cliquant à l'extérieur
       document.addEventListener('click', this.handleClickOutside.bind(this));
     }
     if (this.type === 'file' && this.dropZone) {
       this.setupDragAndDrop();
+      if (this.selectedFiles.length === 0 && this.initialFiles?.length > 0) {
+        this.selectedFiles = [...this.initialFiles];
+        this.computeAutoMessage();
+        setTimeout(() => this.cdr.markForCheck(), 0);
+      }
     }
   }
+
 
   ngOnDestroy(): void {
     if (this.type === 'select') {
@@ -113,8 +147,8 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
     
     // Émettre l'événement change
-    const changeEvent = new Event('change', { bubbles: true });
-    this.change.emit(changeEvent);
+      const changeEvent = new Event('change', { bubbles: true });
+      this.change.emit(changeEvent);
   }
 
   get selectedLabel(): string {
@@ -180,13 +214,13 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    * Valide le champ password
    */
   private validatePassword(isTouched: boolean): void {
-    const length = this.value?.length || 0;
-    if (length > 0 && length < 10) {
-      const missing = 10 - length;
-      this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait 10 caractères`;
-      this.computedMessageType = 'warning';
-      return;
-    }
+      const length = this.value?.length || 0;
+      if (length > 0 && length < 10) {
+        const missing = 10 - length;
+        this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait 10 caractères`;
+        this.computedMessageType = 'warning';
+        return;
+      }
     this.checkRequired(isTouched);
   }
 
@@ -195,14 +229,14 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    */
   private validateFileInput(isTouched: boolean): void {
     if (this.required && this.selectedFiles.length === 0 && isTouched) {
-      this.computedMessage = 'Ce champ est requis';
-      this.computedMessageType = 'error';
-      return;
-    }
-    if (this.selectedFiles.length > 0) {
-      this.computedMessage = `${this.selectedFiles.length} fichier(s) sélectionné(s)`;
-      this.computedMessageType = 'success';
-    }
+        this.computedMessage = 'Ce champ est requis';
+        this.computedMessageType = 'error';
+        return;
+      }
+    // Ne pas afficher de message de succès pour les fichiers sélectionnés
+    // Le fichier est visible dans la liste, pas besoin de message
+    this.computedMessage = '';
+    this.computedMessageType = '';
   }
 
   /**
@@ -210,21 +244,21 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    */
   private checkRequired(isTouched: boolean): boolean {
     if (this.required && !this.value && isTouched) {
-      this.computedMessage = 'Ce champ est requis';
-      this.computedMessageType = 'error';
+        this.computedMessage = 'Ce champ est requis';
+        this.computedMessageType = 'error';
       return true;
     }
     return false;
-  }
-
+      }
+      
   /**
    * Vérifie si la longueur minimale est respectée
    */
   private checkMinLength(isTouched: boolean): boolean {
     const length = this.value?.length || 0;
     if (this.minLength > 0 && length > 0 && length < this.minLength && isTouched) {
-      this.computedMessage = `Minimum ${this.minLength} caractères requis`;
-      this.computedMessageType = 'error';
+        this.computedMessage = `Minimum ${this.minLength} caractères requis`;
+        this.computedMessageType = 'error';
       return true;
     }
     return false;
@@ -469,6 +503,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       this.filesSelected.emit(this.selectedFiles);
       this.updateFileInputValue();
       this.computeAutoMessage();
+      this.cdr.markForCheck();
     }
   }
 
@@ -516,10 +551,16 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    */
   removeFile(index: number): void {
     if (this.disabled) return;
+    
     this.selectedFiles.splice(index, 1);
-    this.filesSelected.emit(this.selectedFiles);
+    if (this.selectedFiles.length === 0) {
+      this.selectedFiles = [];
+    }
+    
     this.computeAutoMessage();
-    this.cdr.markForCheck();
+    this.filesSelected.emit(this.selectedFiles);
+    this.fileRemoved.emit(this.selectedFiles);
+    this.cdr.detectChanges();
   }
 
   /**
