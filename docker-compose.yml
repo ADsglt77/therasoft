@@ -13,6 +13,9 @@ services:
   backend:
     build: ./backend
     # Port non exposé publiquement, accessible uniquement via NGINX
+    # Port 5555 pour Prisma Studio (quand utilisé)
+    ports:
+      - "5555:5555"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -26,6 +29,7 @@ services:
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       NODE_ENV: ${NODE_ENV:-development}
+      DOCKER_CONTAINER: "true"
     stdin_open: true
     tty: true
 

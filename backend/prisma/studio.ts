@@ -1,22 +1,11 @@
 import { execSync } from 'child_process';
-import dotenv from 'dotenv';
-import { resolve } from 'path';
 
-dotenv.config({ path: resolve(process.cwd(), '.env') });
+const dbUrl = 'postgresql://postgres:postgres@db:5432/portail_medecin?schema=public';
 
-let databaseUrl = process.env.DATABASE_URL;
+console.log('📊 Prisma Studio: http://localhost:5555\n');
 
-if (databaseUrl?.includes('@db:') && !process.env.DOCKER_CONTAINER) {
-  databaseUrl = databaseUrl.replace('@db:', '@localhost:');
-}
-
-if (!databaseUrl) {
-  console.error('❌ DATABASE_URL non défini');
-  process.exit(1);
-}
-
-execSync(`npx prisma studio --url "${databaseUrl}"`, {
+execSync(`HOST=0.0.0.0 npx prisma studio --url "${dbUrl}" --port 5555 --browser none`, {
   stdio: 'inherit',
-  shell: process.platform === 'win32' ? 'powershell.exe' : '/bin/bash',
+  shell: '/bin/sh',
 });
 
