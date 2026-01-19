@@ -1,0 +1,16 @@
+<div class="time-column">
+  <span class="time-start">{{ startTime }}</span>
+  <div class="time-line"></div>
+  <span class="time-end">{{ endTime }}</span>
+</div>
+
+<div class="card" [class.card--compact]="compact">
+  <h4 class="title">{{ title }}</h4>
+  <ui-button
+    color="primary700"
+    [disabled]="disabled"
+    (click)="onActionClick()"
+    class="button">
+    VOIR LE DOSSIER
+  </ui-button>
+</div>

@@ -52,3 +52,5 @@ export type { DayType } from './calendar/month/day-card/day-card.component';
 export { NavCalendarComponent } from './calendar/nav-calendar/nav-calendar.component';
 export type { CalendarMode } from './calendar/nav-calendar/nav-calendar.component';
 
+// Timetable
+export { TimetableComponent } from './timetable/timetable.component';
