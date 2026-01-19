@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiButtonComponent } from '../button/ui-button.component';
+import { UiBadgeComponent } from '../badge/ui-badge.component';
 
 /**
  * Composant Timetable - Affiche un créneau horaire avec une carte d'information
@@ -13,7 +13,6 @@ import { UiButtonComponent } from '../button/ui-button.component';
  *     [endTime]="slot.endTime"
  *     [title]="slot.title"
  *     [disabled]="slot.disabled"
- *     [compact]="slot.compact"
  *     (actionClick)="onActionClick(slot)">
  *   </app-timetable>
  * }
@@ -22,7 +21,7 @@ import { UiButtonComponent } from '../button/ui-button.component';
 @Component({
   selector: 'app-timetable',
   standalone: true,
-  imports: [CommonModule, UiButtonComponent],
+  imports: [CommonModule, UiBadgeComponent],
   templateUrl: './timetable.component.html',
   styleUrl: './timetable.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,7 +31,6 @@ export class TimetableComponent {
   @Input() endTime: string = '';
   @Input() title: string = '';
   @Input() disabled: boolean = false;
-  @Input() compact: boolean = false;
 
   @Output() actionClick = new EventEmitter<void>();
 

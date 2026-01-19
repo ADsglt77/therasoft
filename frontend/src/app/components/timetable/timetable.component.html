@@ -1,16 +1,16 @@
 <div class="time-column">
-  <span class="time-start">{{ startTime }}</span>
+  <p class="time-start">{{ startTime }}</p>
   <div class="time-line"></div>
-  <span class="time-end">{{ endTime }}</span>
+  <p class="time-end">{{ endTime }}</p>
 </div>
 
-<div class="card" [class.card--compact]="compact">
-  <h4 class="title">{{ title }}</h4>
-  <ui-button
-    color="primary700"
-    [disabled]="disabled"
+<div class="card">
+  <h6 class="title">{{ title }}</h6>
+  <ui-badge
+    variant="repos"
+    text="VOIR LE DOSSIER"
+    [class.disabled]="disabled"
     (click)="onActionClick()"
-    class="button">
-    VOIR LE DOSSIER
-  </ui-button>
+    class="badge">
+  </ui-badge>
 </div>
