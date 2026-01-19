@@ -39,6 +39,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() maxSize: number = 0; // Taille maximale en bytes (0 = illimité, pour file)
   @Input() initialFiles: File[] = []; // Fichiers initiaux à afficher (pour file)
   @Output() input = new EventEmitter<Event>(); // Émet l'événement input vers le parent
+  @Output() blur = new EventEmitter<Event>(); // Émet l'événement blur vers le parent
   @Output() change = new EventEmitter<Event>(); // Émet l'événement change vers le parent (pour select)
   @Output() filesSelected = new EventEmitter<File[]>(); // Émet les fichiers sélectionnés (pour file)
   @Output() fileError = new EventEmitter<{ file: File; error: string }>(); // Émet les erreurs de fichier (pour file)
