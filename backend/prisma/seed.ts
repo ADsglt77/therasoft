@@ -79,7 +79,7 @@ async function main() {
     data: {
       nom: 'User',
       prenom: 'Test',
-      specialite: '',
+      specialite: 'Radiologie',
       email: 'user@user.user',
       passwordHash,
       role: Role.MEDECIN,
@@ -87,58 +87,52 @@ async function main() {
     },
   });
 
-  console.log(`✅ ${2} médecins créés\n`);
+  const medecin3 = await prisma.medecin.create({
+    data: {
+      nom: 'User2',
+      prenom: 'Test',
+      specialite: 'Imagerie médicale',
+      email: 'user2@user.user',
+      passwordHash,
+      role: Role.MEDECIN,
+      isActive: true,
+    },
+  });
+
+  console.log(`✅ ${3} médecins créés\n`);
 
   console.log('👤 Création des patients...');
   const patients = [
-    {
-      nom: 'Lefebvre',
-      prenom: 'Marie',
-      dateNaissance: new Date('1985-03-15'),
-      sexe: Sexe.F,
-    },
-    {
-      nom: 'Moreau',
-      prenom: 'Paul',
-      dateNaissance: new Date('1978-07-22'),
-      sexe: Sexe.M,
-    },
-    {
-      nom: 'Petit',
-      prenom: 'Julie',
-      dateNaissance: new Date('1992-11-08'),
-      sexe: Sexe.F,
-    },
-    {
-      nom: 'Garcia',
-      prenom: 'Lucas',
-      dateNaissance: new Date('1980-05-30'),
-      sexe: Sexe.M,
-    },
-    {
-      nom: 'Roux',
-      prenom: 'Emma',
-      dateNaissance: new Date('1995-09-12'),
-      sexe: Sexe.F,
-    },
-    {
-      nom: 'Simon',
-      prenom: 'Thomas',
-      dateNaissance: new Date('1987-01-25'),
-      sexe: Sexe.M,
-    },
-    {
-      nom: 'Laurent',
-      prenom: 'Camille',
-      dateNaissance: new Date('1990-06-18'),
-      sexe: Sexe.X,
-    },
-    {
-      nom: 'Michel',
-      prenom: 'Antoine',
-      dateNaissance: new Date('1975-12-03'),
-      sexe: Sexe.M,
-    },
+    { nom: 'Lefebvre', prenom: 'Marie', dateNaissance: new Date('1985-03-15'), sexe: Sexe.F },
+    { nom: 'Moreau', prenom: 'Paul', dateNaissance: new Date('1978-07-22'), sexe: Sexe.M },
+    { nom: 'Petit', prenom: 'Julie', dateNaissance: new Date('1992-11-08'), sexe: Sexe.F },
+    { nom: 'Garcia', prenom: 'Lucas', dateNaissance: new Date('1980-05-30'), sexe: Sexe.M },
+    { nom: 'Roux', prenom: 'Emma', dateNaissance: new Date('1995-09-12'), sexe: Sexe.F },
+    { nom: 'Simon', prenom: 'Thomas', dateNaissance: new Date('1987-01-25'), sexe: Sexe.M },
+    { nom: 'Laurent', prenom: 'Camille', dateNaissance: new Date('1990-06-18'), sexe: Sexe.X },
+    { nom: 'Michel', prenom: 'Antoine', dateNaissance: new Date('1975-12-03'), sexe: Sexe.M },
+    { nom: 'Bernard', prenom: 'Sophie', dateNaissance: new Date('1988-04-20'), sexe: Sexe.F },
+    { nom: 'Dubois', prenom: 'Pierre', dateNaissance: new Date('1982-09-14'), sexe: Sexe.M },
+    { nom: 'Leroy', prenom: 'Claire', dateNaissance: new Date('1993-12-05'), sexe: Sexe.F },
+    { nom: 'Morel', prenom: 'David', dateNaissance: new Date('1979-06-28'), sexe: Sexe.M },
+    { nom: 'Girard', prenom: 'Isabelle', dateNaissance: new Date('1986-02-11'), sexe: Sexe.F },
+    { nom: 'Bonnet', prenom: 'Nicolas', dateNaissance: new Date('1984-08-23'), sexe: Sexe.M },
+    { nom: 'Dupont', prenom: 'Amélie', dateNaissance: new Date('1991-10-07'), sexe: Sexe.F },
+    { nom: 'Lambert', prenom: 'Julien', dateNaissance: new Date('1983-05-19'), sexe: Sexe.M },
+    { nom: 'Martin', prenom: 'Céline', dateNaissance: new Date('1989-07-30'), sexe: Sexe.F },
+    { nom: 'Robert', prenom: 'François', dateNaissance: new Date('1977-11-16'), sexe: Sexe.M },
+    { nom: 'Richard', prenom: 'Valérie', dateNaissance: new Date('1994-03-22'), sexe: Sexe.F },
+    { nom: 'Petit', prenom: 'Marc', dateNaissance: new Date('1981-01-08'), sexe: Sexe.M },
+    { nom: 'Durand', prenom: 'Nathalie', dateNaissance: new Date('1987-09-13'), sexe: Sexe.F },
+    { nom: 'Leroy', prenom: 'Sébastien', dateNaissance: new Date('1985-12-25'), sexe: Sexe.M },
+    { nom: 'Moreau', prenom: 'Caroline', dateNaissance: new Date('1990-04-17'), sexe: Sexe.F },
+    { nom: 'Simon', prenom: 'Olivier', dateNaissance: new Date('1976-08-04'), sexe: Sexe.M },
+    { nom: 'Laurent', prenom: 'Patricia', dateNaissance: new Date('1988-06-21'), sexe: Sexe.F },
+    { nom: 'Lefebvre', prenom: 'Stéphane', dateNaissance: new Date('1982-02-14'), sexe: Sexe.M },
+    { nom: 'Michel', prenom: 'Véronique', dateNaissance: new Date('1992-10-29'), sexe: Sexe.F },
+    { nom: 'Garcia', prenom: 'Romain', dateNaissance: new Date('1984-07-06'), sexe: Sexe.M },
+    { nom: 'David', prenom: 'Sandrine', dateNaissance: new Date('1989-05-12'), sexe: Sexe.F },
+    { nom: 'Bertrand', prenom: 'Guillaume', dateNaissance: new Date('1983-11-18'), sexe: Sexe.M },
   ];
 
   const createdPatients = await Promise.all(
@@ -191,81 +185,98 @@ async function main() {
   ];
   
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
-  const medecins = [medecin1, medecin2];
-  const horaires = ['08:00', '09:30', '11:00', '14:00', '15:30', '17:00'];
+  // Seulement les médecins (pas admin)
+  const medecinsActifs = [medecin2, medecin3];
+  const horaires = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
+  console.log('📅 Création des vacations pour toute l\'année 2026...');
   const vacations: Vacation[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const startDate = new Date('2026-01-01');
+  startDate.setHours(0, 0, 0, 0);
+  const endDate = new Date('2026-12-31');
+  endDate.setHours(23, 59, 59, 999);
 
-  for (let day = 0; day < 30; day++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + day);
-
+  let totalDays = 0;
+  for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
     const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
+    
+    totalDays++;
+    const currentDate = new Date(date);
+    
+    // 2-4 vacations par jour par médecin
+    const vacationsPerMedecin = Math.floor(Math.random() * 3) + 2;
+    
+    for (const medecin of medecinsActifs) {
+      const shuffledHoraires = [...horaires].sort(() => Math.random() - 0.5);
+      
+      for (let i = 0; i < vacationsPerMedecin && i < shuffledHoraires.length; i++) {
+        const [hours, minutes] = shuffledHoraires[i].split(':');
+        const horaire = new Date(currentDate);
+        horaire.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-    const vacationsPerDay = Math.floor(Math.random() * 3) + 2;
-    const shuffledMedecins = [...medecins].sort(() => Math.random() - 0.5);
-    const shuffledHoraires = [...horaires].sort(() => Math.random() - 0.5);
+        const villeAvecSites = villesAvecSites[Math.floor(Math.random() * villesAvecSites.length)];
+        const site = villeAvecSites.sites[Math.floor(Math.random() * villeAvecSites.sites.length)];
 
-    for (let i = 0; i < vacationsPerDay && i < shuffledMedecins.length && i < shuffledHoraires.length; i++) {
-      const medecin = shuffledMedecins[i];
-      const [hours, minutes] = shuffledHoraires[i].split(':');
-      const horaire = new Date(date);
-      horaire.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-      const villeAvecSites = villesAvecSites[Math.floor(Math.random() * villesAvecSites.length)];
-      const site = villeAvecSites.sites[Math.floor(Math.random() * villeAvecSites.sites.length)];
-
-      const vacation = await prisma.vacation.create({
-        data: {
-          date,
-          horaire,
-          ville: villeAvecSites.ville,
-          site: site,
-          modalite: modalites[Math.floor(Math.random() * modalites.length)],
-          medecinId: medecin.id,
-        },
-      });
-      vacations.push(vacation);
+        const vacation = await prisma.vacation.create({
+          data: {
+            date: currentDate,
+            horaire,
+            ville: villeAvecSites.ville,
+            site: site,
+            modalite: modalites[Math.floor(Math.random() * modalites.length)],
+            medecinId: medecin.id,
+          },
+        });
+        vacations.push(vacation);
+      }
+    }
+    
+    // Afficher la progression tous les 50 jours
+    if (totalDays % 50 === 0) {
+      console.log(`   Progression: ${totalDays} jours traités, ${vacations.length} vacations créées...`);
     }
   }
-  console.log(`✅ ${vacations.length} vacations créées\n`);
+  console.log(`✅ ${vacations.length} vacations créées pour ${totalDays} jours ouvrés\n`);
 
-  console.log('📋 Création des rendez-vous...');
+  console.log('📋 Création des rendez-vous pour chaque jour avec vacations...');
   const rdvs: Rdv[] = [];
-  const rdvHoraires = [
-    { debut: '08:30', fin: '09:30' },
-    { debut: '10:00', fin: '11:00' },
-    { debut: '11:30', fin: '12:30' },
-    { debut: '14:30', fin: '15:30' },
-    { debut: '16:00', fin: '17:00' }
-  ];
+  const rdvHoraires = ['08:15', '08:45', '09:15', '09:45', '10:15', '10:45', '11:15', '11:45', 
+                       '13:15', '13:45', '14:15', '14:45', '15:15', '15:45', '16:15', '16:45', '17:15'];
+  
+  // Grouper les vacations par date et médecin
+  const vacationsByDateAndMedecin = new Map<string, Vacation[]>();
+  for (const vacation of vacations) {
+    const key = `${vacation.date.toISOString().split('T')[0]}_${vacation.medecinId}`;
+    if (!vacationsByDateAndMedecin.has(key)) {
+      vacationsByDateAndMedecin.set(key, []);
+    }
+    vacationsByDateAndMedecin.get(key)!.push(vacation);
+  }
 
-  for (let day = 0; day < 30; day++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + day);
-
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-    const rdvsPerDay = Math.floor(Math.random() * 4) + 3;
+  let rdvCount = 0;
+  for (const [key, dayVacations] of vacationsByDateAndMedecin.entries()) {
+    const [dateStr] = key.split('_');
+    const date = new Date(dateStr + 'T00:00:00');
+    
+    // Générer 5-10 rdv par jour où il y a des vacations
+    const rdvsPerDay = Math.floor(Math.random() * 6) + 5;
     const shuffledPatients = [...createdPatients].sort(() => Math.random() - 0.5);
     const shuffledHoraires = [...rdvHoraires].sort(() => Math.random() - 0.5);
 
     for (let i = 0; i < rdvsPerDay && i < shuffledPatients.length && i < shuffledHoraires.length; i++) {
-      const patient = shuffledPatients[i];
-      const horaire = shuffledHoraires[i];
+      const patient = shuffledPatients[i % shuffledPatients.length];
+      const [hours, minutes] = shuffledHoraires[i].split(':');
       
-      const [debutHours, debutMinutes] = horaire.debut.split(':');
+      // Créer heureDebut et heureFin (durée variable: 20-45 minutes)
       const heureDebut = new Date(date);
-      heureDebut.setHours(parseInt(debutHours), parseInt(debutMinutes), 0, 0);
+      heureDebut.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      const dureeMinutes = [20, 30, 45][Math.floor(Math.random() * 3)];
+      const heureFin = new Date(heureDebut);
+      heureFin.setMinutes(heureFin.getMinutes() + dureeMinutes);
 
-      const [finHours, finMinutes] = horaire.fin.split(':');
-      const heureFin = new Date(date);
-      heureFin.setHours(parseInt(finHours), parseInt(finMinutes), 0, 0);
-
+      // Utiliser une modalité aléatoire (sera liée à une vacation compatible plus tard)
       const rdv = await prisma.rdv.create({
         data: {
           date,
@@ -276,50 +287,81 @@ async function main() {
         },
       });
       rdvs.push(rdv);
+      rdvCount++;
+    }
+    
+    if (rdvCount % 500 === 0) {
+      console.log(`   Progression: ${rdvCount} rendez-vous créés...`);
     }
   }
   console.log(`✅ ${rdvs.length} rendez-vous créés\n`);
 
-  console.log('🔗 Création des liens Modalite...');
+  console.log('🔗 Création des liens Modalite (liaison rdv <-> vacation)...');
   let modaliteCount = 0;
-  const rdvsToLink = rdvs.slice(0, Math.floor(rdvs.length * 0.6));
   
-  for (const rdv of rdvsToLink) {
-    const compatibleVacations = vacations.filter(
-      (v) =>
-        v.modalite === rdv.modalite &&
-        v.date.toDateString() === rdv.date.toDateString() &&
-        Math.abs(v.horaire.getTime() - rdv.heureDebut.getTime()) < 2 * 60 * 60 * 1000
-    );
-
+  // Grouper les vacations par date et modalité pour optimisation
+  const vacationsByDateAndModalite = new Map<string, Vacation[]>();
+  for (const vacation of vacations) {
+    const key = `${vacation.date.toISOString().split('T')[0]}_${vacation.modalite}`;
+    if (!vacationsByDateAndModalite.has(key)) {
+      vacationsByDateAndModalite.set(key, []);
+    }
+    vacationsByDateAndModalite.get(key)!.push(vacation);
+  }
+  
+  for (const rdv of rdvs) {
+    const dateKey = rdv.date.toISOString().split('T')[0];
+    const key = `${dateKey}_${rdv.modalite}`;
+    const compatibleVacations = vacationsByDateAndModalite.get(key) || [];
+    
     if (compatibleVacations.length > 0) {
-      const vacation = compatibleVacations[Math.floor(Math.random() * compatibleVacations.length)];
+      // Filtrer par proximité horaire (dans un créneau de 2h)
+      const rdvStartMinutes = rdv.heureDebut.getHours() * 60 + rdv.heureDebut.getMinutes();
       
-      try {
-        await prisma.modalite.create({
-          data: {
-            rdvId: rdv.id,
-            vacationId: vacation.id,
-          },
-        });
-        modaliteCount++;
-      } catch {
-        // Ignorer les doublons
+      const nearbyVacations = compatibleVacations.filter((v) => {
+        const vMinutes = v.horaire.getHours() * 60 + v.horaire.getMinutes();
+        const diffMinutes = Math.abs(vMinutes - rdvStartMinutes);
+        return diffMinutes < 120; // 2 heures
+      });
+      
+      if (nearbyVacations.length > 0) {
+        // Prendre une vacation aléatoire parmi les compatibles
+        const vacation = nearbyVacations[Math.floor(Math.random() * nearbyVacations.length)];
+        
+        try {
+          await prisma.modalite.create({
+            data: {
+              rdvId: rdv.id,
+              vacationId: vacation.id,
+            },
+          });
+          modaliteCount++;
+        } catch {
+          // Ignorer les doublons (contrainte unique)
+        }
       }
+    }
+    
+    if (modaliteCount % 500 === 0 && modaliteCount > 0) {
+      console.log(`   Progression: ${modaliteCount} liens créés...`);
     }
   }
   console.log(`✅ ${modaliteCount} liens Modalite créés\n`);
 
   console.log('✨ Seed terminé avec succès !\n');
   console.log('📊 Résumé:');
-  console.log(`   - ${2} médecins`);
+  console.log(`   - ${3} médecins (1 admin, 2 médecins actifs)`);
   console.log(`   - ${createdPatients.length} patients`);
-  console.log(`   - ${vacations.length} vacations`);
+  console.log(`   - ${vacations.length} vacations (année 2026 complète)`);
   console.log(`   - ${rdvs.length} rendez-vous`);
-  console.log(`   - ${modaliteCount} liens Modalite\n`);
+  console.log(`   - ${modaliteCount} liens Modalite (${Math.round(modaliteCount / rdvs.length * 100)}% des rdv liés)\n`);
   console.log('🔑 Identifiants:');
-  console.log('   Email: user@user.user');
-  console.log('   Password: Azertyuiop1!\n');
+  console.log('   Médecin 1:');
+  console.log('     Email: user@user.user');
+  console.log('     Password: Azertyuiop1!');
+  console.log('   Médecin 2:');
+  console.log('     Email: user2@user.user');
+  console.log('     Password: Azertyuiop1!\n');
 }
 
 main()
@@ -342,4 +384,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
