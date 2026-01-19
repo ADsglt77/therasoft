@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarComponent } from '../../components';
+import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarComponent, TimetableComponent } from '../../components';
 import { NotificationService } from '../../core/services/notification.service';
+import { PlanningService, Rdv } from '../../core/services/planning.service';
 
 /**
  * Page UI Playground - Pour tester et visualiser les composants UI
@@ -9,12 +10,12 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-playground-page',
   standalone: true,
-  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarComponent],
+  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarComponent, TimetableComponent],
   templateUrl: './playground-page.component.html',
   styleUrl: './playground-page.component.scss',
 })
 
-export class PlaygroundPageComponent {
+export class PlaygroundPageComponent implements OnInit {
   // Calendar demo data
   currentYear = new Date().getFullYear();
   currentMonth = new Date().getMonth();
@@ -22,11 +23,61 @@ export class PlaygroundPageComponent {
   dayNumber = new Date().getDate();
   yearOptions: SelectOption[] = [];
 
-  constructor(private notificationService: NotificationService) {
+  // Timetable data from API
+  timetableSlots: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    title: string;
+    disabled: boolean;
+    compact: boolean;
+  }> = [];
+  isLoadingRdvs = false;
+
+  constructor(
+    private notificationService: NotificationService,
+    private planningService: PlanningService
+  ) {
     // Générer les options d'années
     for (let i = this.currentYear - 5; i <= this.currentYear + 5; i++) {
       this.yearOptions.push({ value: i.toString(), label: i.toString() });
     }
+  }
+
+  ngOnInit(): void {
+    this.loadRdvs();
+  }
+
+  loadRdvs(): void {
+    this.isLoadingRdvs = true;
+    this.planningService.getRdvsForMonth(this.currentYear, this.currentMonth).subscribe({
+      next: (response) => {
+        // Limiter à 3 exemples pour le playground
+        const rdvsToShow = response.rdvs.slice(0, 3);
+        
+        this.timetableSlots = rdvsToShow.map((rdv) => {
+          // Les heures viennent comme strings ISO depuis l'API
+          // Exemple: "2000-01-01T08:30:00.000Z" ou "08:30:00"
+          const startTime = this.planningService.formatTime(rdv.heureDebut);
+          const endTime = this.planningService.formatTime(rdv.heureFin);
+          
+          return {
+            id: rdv.id.toString(),
+            startTime,
+            endTime,
+            title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+            disabled: false,
+            compact: false,
+          };
+        });
+        this.isLoadingRdvs = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des rendez-vous:', error);
+        this.notificationService.show('danger', 'Erreur lors du chargement des rendez-vous');
+        this.isLoadingRdvs = false;
+      },
+    });
   }
 
   showNotification(variant: NotificationVariant): void {
@@ -103,6 +154,14 @@ export class PlaygroundPageComponent {
   onFileError(error: { file: File; error: string }): void {
     console.error('File error:', error);
     this.notificationService.show('danger', `Erreur: ${error.error} - ${error.file.name}`);
+  }
+
+  onTimetableActionClick(slotId: string): void {
+    console.log('Timetable action clicked for slot:', slotId);
+    const slot = this.timetableSlots.find((s) => s.id === slotId);
+    if (slot) {
+      this.notificationService.show('information', `Voir le dossier pour: ${slot.title}`);
+    }
   }
 }
 

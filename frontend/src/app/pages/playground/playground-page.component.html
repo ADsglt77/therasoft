@@ -37,25 +37,12 @@
       (change)="onSelectChange($event)">
     </ui-input>
   </div>
-  <ui-input
-  type="file"
-  label="Upload de fichiers"
-  placeholder="Glissez-déposez vos fichiers ici"
-  accept="*/*"
-  [multiple]="true"
-  (filesSelected)="onFilesSelected($event)"
-  (fileError)="onFileError($event)">
-</ui-input>
-<ui-input
-  type="file"
-  label="Upload d'images uniquement"
-  placeholder="Glissez-déposez vos images"
-  accept="image/*"
-  [multiple]="false"
-  [maxSize]="5242880"
-  (filesSelected)="onFilesSelected($event)"
-  (fileError)="onFileError($event)">
-</ui-input>
+  <ui-input type="file" label="Upload de fichiers" placeholder="Glissez-déposez vos fichiers ici" accept="*/*"
+    [multiple]="true" (filesSelected)="onFilesSelected($event)" (fileError)="onFileError($event)">
+  </ui-input>
+  <ui-input type="file" label="Upload d'images uniquement" placeholder="Glissez-déposez vos images" accept="image/*"
+    [multiple]="false" [maxSize]="5242880" (filesSelected)="onFilesSelected($event)" (fileError)="onFileError($event)">
+  </ui-input>
   <div class="components notifications">
     <ui-button color="primary500" (click)="showNotification('warning')">Show Warning</ui-button>
     <ui-button color="primary500" (click)="showNotification('success')">Show Success</ui-button>
@@ -80,8 +67,22 @@
     <app-nav-calendar mode="month" [monthName]="monthName" [currentYear]="currentYear" [yearOptions]="yearOptions"
       (previous)="onPreviousMonth()" (next)="onNextMonth()" (yearChange)="onYearChange($event)">
     </app-nav-calendar>
-    <app-nav-calendar mode="day" [dayOfWeek]="'Mercredi'" [monthName]="monthName" [dayNumber]="dayNumber" (previous)="onPreviousDay()"
-      (next)="onNextDay()" (goBack)="onGoBack()">
+    <app-nav-calendar mode="day" [dayOfWeek]="'Mercredi'" [monthName]="monthName" [dayNumber]="dayNumber"
+      (previous)="onPreviousDay()" (next)="onNextDay()" (goBack)="onGoBack()">
     </app-nav-calendar>
   </div>
+    @if (isLoadingRdvs) {
+      <p>Chargement des rendez-vous...</p>
+    } @else if (timetableSlots.length === 0) {
+      <p>Aucun rendez-vous trouvé pour ce mois.</p>
+    } @else {
+      @for (slot of timetableSlots; track slot.id) {
+        <div class="components timetable">
+        <app-timetable [startTime]="slot.startTime" [endTime]="slot.endTime" [title]="slot.title"
+          [disabled]="slot.disabled" [compact]="slot.compact"
+          (actionClick)="onTimetableActionClick(slot.id)">
+        </app-timetable>
+      </div>
+      }
+    }
 </div>
