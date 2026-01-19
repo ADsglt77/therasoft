@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { NavbarLinksComponent } from '../navbar-links/navbar-links.component';
-import { AuthService } from '../../../core/services/auth.service';
-import { NotificationService } from '../../../core/services/notification.service';
+import { NavbarLinksComponent } from '../../navbar-links/navbar-links.component';
+import { AuthService } from '../../../../core/services/auth.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-menu-hamburger',

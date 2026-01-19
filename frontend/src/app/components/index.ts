@@ -31,7 +31,7 @@ export { PasswordStrengthIndicatorComponent } from './password-strength-indicato
 export { NavbarLinksComponent } from './navbar/navbar-links/navbar-links.component';
 
 // Menu Hamburger
-export { MenuHamburgerComponent } from './navbar/menuHamburger/menu-hamburger.component';
+export { MenuHamburgerComponent } from './navbar/menuMain/menuHamburger/menu-hamburger.component';
 
 // Menu Main
 export { MenuMainComponent } from './navbar/menuMain/menu-main.component';

@@ -5,7 +5,7 @@ import { filter } from 'rxjs/operators';
 import { UiButtonComponent } from '../../button/ui-button.component';
 import { UiAvatarComponent } from '../../avatar/ui-avatar.component';
 import { AppIconComponent } from '../../icon/app-icon.component';
-import { MenuHamburgerComponent } from '../menuHamburger/menu-hamburger.component';
+import { MenuHamburgerComponent } from './menuHamburger/menu-hamburger.component';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
 
 @Component({
