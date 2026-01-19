@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
-import { NavCalendarDayComponent } from '../../../components/calendar/nav-calendar-day/nav-calendar-day.component';
+import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 
 /**
  * Page Planning Day Dashboard
@@ -12,7 +12,7 @@ import { NavCalendarDayComponent } from '../../../components/calendar/nav-calend
 @Component({
   selector: 'app-dashboard-planning-day-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarDayComponent],
+  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
 })
@@ -110,6 +110,11 @@ export class DashboardPlanningDayPageComponent {
   get dayOfWeek(): string {
     if (!this.date) return '';
     return this.date.toLocaleDateString('fr-FR', { weekday: 'long' });
+  }
+
+  get dayNumber(): number {
+    if (!this.date) return 0;
+    return this.date.getDate();
   }
 
   previousDay(): void {

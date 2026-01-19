@@ -1,11 +1,13 @@
 <div class="dashboard-planning-day-page">
-  <app-nav-calendar-day
+  <app-nav-calendar
+    mode="day"
     [dayOfWeek]="dayOfWeek"
     [monthName]="monthName"
-    (previousDay)="previousDay()"
-    (nextDay)="nextDay()"
+    [dayNumber]="dayNumber"
+    (previous)="previousDay()"
+    (next)="nextDay()"
     (goBack)="goBack()">
-  </app-nav-calendar-day>
+  </app-nav-calendar>
 
   <div class="content">
     @if (daysDifference !== null) {
