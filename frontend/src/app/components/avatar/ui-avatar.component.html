@@ -1,2 +1,6 @@
+@if (avatarUrl) {
+<img [src]="avatarUrl" [alt]="'Avatar de ' + initial" class="avatar-image" />
+} @else {
 <h4>{{ initial }}</h4>
+}
 

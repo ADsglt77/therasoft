@@ -9,6 +9,7 @@ import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular
 })
 export class UiAvatarComponent {
   @Input() initial: string = '?';
+  @Input() avatarUrl?: string | null;
 
   @HostBinding('class')
   get hostClasses(): string {
