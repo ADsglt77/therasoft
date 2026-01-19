@@ -14,6 +14,8 @@ import { Subscription } from 'rxjs';
  */
 interface TimetableSlot {
   id: string;
+  rdvId: number;
+  patientId: number;
   startTime: string;
   endTime: string;
   title: string;
@@ -98,6 +100,8 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
         this.timetableSlots = (response.rdvs || []).map((rdv: Rdv) => {
           return {
             id: rdv.id.toString(),
+            rdvId: rdv.id,
+            patientId: rdv.patient.id,
             startTime: this.planningService.formatTime(rdv.heureDebut),
             endTime: this.planningService.formatTime(rdv.heureFin),
             title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
@@ -119,8 +123,8 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   onTimetableActionClick(slotId: string): void {
     const slot = this.timetableSlots.find((s) => s.id === slotId);
     if (slot) {
-      this.notificationService.show('information', `Voir le dossier pour: ${slot.title}`);
-      // TODO: Naviguer vers la page de détail du rendez-vous
+      // Naviguer vers le dossier du patient pour ce RDV spécifique
+      this.router.navigate(['/dashboard/patient', slot.patientId, 'rdv', slot.rdvId]);
     }
   }
 
