@@ -235,7 +235,13 @@ async function main() {
 
   console.log('📋 Création des rendez-vous...');
   const rdvs: Rdv[] = [];
-  const rdvHoraires = ['08:30', '10:00', '11:30', '14:30', '16:00'];
+  const rdvHoraires = [
+    { debut: '08:30', fin: '09:30' },
+    { debut: '10:00', fin: '11:00' },
+    { debut: '11:30', fin: '12:30' },
+    { debut: '14:30', fin: '15:30' },
+    { debut: '16:00', fin: '17:00' }
+  ];
 
   for (let day = 0; day < 30; day++) {
     const date = new Date(today);
@@ -250,14 +256,21 @@ async function main() {
 
     for (let i = 0; i < rdvsPerDay && i < shuffledPatients.length && i < shuffledHoraires.length; i++) {
       const patient = shuffledPatients[i];
-      const [hours, minutes] = shuffledHoraires[i].split(':');
-      const horaire = new Date(date);
-      horaire.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      const horaire = shuffledHoraires[i];
+      
+      const [debutHours, debutMinutes] = horaire.debut.split(':');
+      const heureDebut = new Date(date);
+      heureDebut.setHours(parseInt(debutHours), parseInt(debutMinutes), 0, 0);
+
+      const [finHours, finMinutes] = horaire.fin.split(':');
+      const heureFin = new Date(date);
+      heureFin.setHours(parseInt(finHours), parseInt(finMinutes), 0, 0);
 
       const rdv = await prisma.rdv.create({
         data: {
           date,
-          horaire,
+          heureDebut,
+          heureFin,
           modalite: modalites[Math.floor(Math.random() * modalites.length)],
           patientId: patient.id,
         },
@@ -276,7 +289,7 @@ async function main() {
       (v) =>
         v.modalite === rdv.modalite &&
         v.date.toDateString() === rdv.date.toDateString() &&
-        Math.abs(v.horaire.getTime() - rdv.horaire.getTime()) < 2 * 60 * 60 * 1000
+        Math.abs(v.horaire.getTime() - rdv.heureDebut.getTime()) < 2 * 60 * 60 * 1000
     );
 
     if (compatibleVacations.length > 0) {

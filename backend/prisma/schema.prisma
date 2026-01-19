@@ -40,12 +40,12 @@ model Medecin {
   email      String  @unique
 
   // --- Auth simple & sécurisé ---
-  passwordHash String    @map("password_hash")
-  role         Role      @default(MEDECIN)
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  avatarUrl    String?   @map("avatar_url")
-  avatarFileName String? @map("avatar_file_name")
+  passwordHash   String    @map("password_hash")
+  role           Role      @default(MEDECIN)
+  isActive       Boolean   @default(true) @map("is_active")
+  lastLoginAt    DateTime? @map("last_login_at")
+  avatarUrl      String?   @map("avatar_url")
+  avatarFileName String?   @map("avatar_file_name")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -101,8 +101,9 @@ model Patient {
 model Rdv {
   id Int @id @default(autoincrement())
 
-  date    DateTime @db.Date
-  horaire DateTime @db.Time(0)
+  date       DateTime @db.Date
+  heureDebut DateTime @map("heure_debut") @db.Time(0)
+  heureFin   DateTime @map("heure_fin") @db.Time(0)
 
   modalite ModaliteType
 
