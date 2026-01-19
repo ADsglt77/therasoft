@@ -58,6 +58,13 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'patient/:patientId/rdv/:rdvId',
+        loadComponent: () =>
+          import('./pages/dashboard/patient-detail/dashboard-patient-detail-page.component').then(
+            (m) => m.DashboardPatientDetailPageComponent
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./pages/dashboard/settings/dashboard-settings-page.component').then(
