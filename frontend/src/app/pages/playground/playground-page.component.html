@@ -79,7 +79,7 @@
       @for (slot of timetableSlots; track slot.id) {
         <div class="components timetable">
         <app-timetable [startTime]="slot.startTime" [endTime]="slot.endTime" [title]="slot.title"
-          [disabled]="slot.disabled" [compact]="slot.compact"
+          [disabled]="slot.disabled"
           (actionClick)="onTimetableActionClick(slot.id)">
         </app-timetable>
       </div>

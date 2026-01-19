@@ -5,6 +5,17 @@ import { NotificationService } from '../../core/services/notification.service';
 import { PlanningService, Rdv } from '../../core/services/planning.service';
 
 /**
+ * Interface pour les slots du timetable
+ */
+interface TimetableSlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  disabled: boolean;
+}
+
+/**
  * Page UI Playground - Pour tester et visualiser les composants UI
  */
 @Component({
@@ -24,14 +35,7 @@ export class PlaygroundPageComponent implements OnInit {
   yearOptions: SelectOption[] = [];
 
   // Timetable data from API
-  timetableSlots: Array<{
-    id: string;
-    startTime: string;
-    endTime: string;
-    title: string;
-    disabled: boolean;
-    compact: boolean;
-  }> = [];
+  timetableSlots: TimetableSlot[] = [];
   isLoadingRdvs = false;
 
   constructor(
@@ -55,7 +59,7 @@ export class PlaygroundPageComponent implements OnInit {
         // Limiter à 3 exemples pour le playground
         const rdvsToShow = response.rdvs.slice(0, 3);
         
-        this.timetableSlots = rdvsToShow.map((rdv) => {
+        this.timetableSlots = rdvsToShow.map((rdv: Rdv) => {
           // Les heures viennent comme strings ISO depuis l'API
           // Exemple: "2000-01-01T08:30:00.000Z" ou "08:30:00"
           const startTime = this.planningService.formatTime(rdv.heureDebut);
@@ -67,7 +71,6 @@ export class PlaygroundPageComponent implements OnInit {
             endTime,
             title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
             disabled: false,
-            compact: false,
           };
         });
         this.isLoadingRdvs = false;
