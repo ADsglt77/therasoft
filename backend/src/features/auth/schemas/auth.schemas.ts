@@ -79,3 +79,30 @@ export const updateProfileSchema = z.object({
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
+/**
+ * Schéma de validation pour mettre à jour l'avatar
+ * Accepte soit une URL HTTP(S) soit une data URL base64 (pour les images uploadées)
+ */
+export const updateAvatarSchema = z.object({
+  avatarUrl: z.string()
+    .max(10000000, 'L\'avatar ne doit pas dépasser 10 millions de caractères') // ~10MB en base64
+    .refine(
+      (val) => {
+        if (!val) return true; // null/undefined est valide
+        // Accepter les URLs HTTP/HTTPS ou les data URLs (base64)
+        return val.startsWith('http://') || 
+               val.startsWith('https://') || 
+               val.startsWith('data:');
+      },
+      { message: 'L\'avatar doit être une URL valide ou une data URL base64' }
+    )
+    .optional()
+    .nullable(),
+  avatarFileName: z.string()
+    .max(255, 'Le nom du fichier ne doit pas dépasser 255 caractères')
+    .optional()
+    .nullable(),
+});
+
+export type UpdateAvatarInput = z.infer<typeof updateAvatarSchema>;
+

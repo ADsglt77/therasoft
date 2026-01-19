@@ -2,7 +2,7 @@ import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../../lib/prisma';
 import { env } from '../../../config/env';
-import { RegisterInput, LoginInput, ChangePasswordInput, UpdateProfileInput } from '../schemas/auth.schemas';
+import { RegisterInput, LoginInput, ChangePasswordInput, UpdateProfileInput, UpdateAvatarInput } from '../schemas/auth.schemas';
 import { ApiError } from '../../../middlewares/errorHandler';
 
 /**
@@ -127,8 +127,15 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
+        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
+        avatarUrl: true,
+        avatarFileName: true,
       },
     });
+
+    if (!medecin) {
+      throw new ApiError('Médecin introuvable', 'AUTH_MEDECIN_NOT_FOUND', 404);
+    }
 
     return medecin;
   }
@@ -140,6 +147,19 @@ export class AuthService {
     // Trouver le médecin par email
     const medecin = await prisma.medecin.findUnique({
       where: { email: input.email },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        prenom: true,
+        passwordHash: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
+        avatarUrl: true,
+        avatarFileName: true,
+      },
     });
 
     if (!medecin) {
@@ -197,6 +217,8 @@ export class AuthService {
         nom: medecin.nom,
         prenom: medecin.prenom,
         role: medecin.role,
+        avatarUrl: (medecin as any).avatarUrl ?? null,
+        avatarFileName: (medecin as any).avatarFileName ?? null,
       },
     };
   }
@@ -325,6 +347,9 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
+        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
+        avatarUrl: true,
+        avatarFileName: true,
       },
     });
 
@@ -391,7 +416,7 @@ export class AuthService {
     }
 
     // Préparer les données à mettre à jour (seulement les champs fournis)
-    const updateData: { nom?: string; prenom?: string } = {};
+    const updateData: { nom?: string; prenom?: string; avatarUrl?: string | null } = {};
     if (input.nom !== undefined) {
       updateData.nom = input.nom;
     }
@@ -414,6 +439,45 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
+        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
+        avatarUrl: true,
+        avatarFileName: true,
+      },
+    });
+
+    return updatedMedecin;
+  }
+
+  /**
+   * Met à jour l'avatar du médecin connecté
+   */
+  async updateAvatar(medecinId: number, input: UpdateAvatarInput) {
+    // Vérifier que le médecin existe
+    const medecin = await prisma.medecin.findUnique({
+      where: { id: medecinId },
+    });
+
+    if (!medecin) {
+      throw new ApiError('Médecin introuvable', 'AUTH_MEDECIN_NOT_FOUND', 404);
+    }
+
+    // Mettre à jour l'avatar
+    const updatedMedecin = await prisma.medecin.update({
+      where: { id: medecinId },
+      data: {
+        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
+        avatarUrl: input.avatarUrl ?? null,
+        avatarFileName: input.avatarFileName ?? null,
+      },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        prenom: true,
+        role: true,
+        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
+        avatarUrl: true,
+        avatarFileName: true,
       },
     });
 

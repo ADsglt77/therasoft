@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authService } from '../services/auth.service';
-import { registerSchema, loginSchema, changePasswordSchema, updateProfileSchema } from '../schemas/auth.schemas';
+import { registerSchema, loginSchema, changePasswordSchema, updateProfileSchema, updateAvatarSchema } from '../schemas/auth.schemas';
 import { verifyAccessToken } from '../middlewares/jwt.middleware';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { env } from '../../../config/env';
@@ -202,6 +202,36 @@ router.patch('/me', verifyAccessToken, async (req: Request, res: Response, next:
 
     // Mettre à jour le profil
     const medecin = await authService.updateProfile(req.user.medecinId, input);
+
+    res.status(200).json(medecin);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return next(new ApiError(
+        'Données invalides',
+        'VALIDATION_ERROR',
+        422,
+        error.errors
+      ));
+    }
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/auth/avatar
+ * Met à jour l'avatar du médecin connecté (protégé)
+ */
+router.patch('/avatar', verifyAccessToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
+    }
+
+    // Validation avec Zod
+    const input = updateAvatarSchema.parse(req.body);
+
+    // Mettre à jour l'avatar
+    const medecin = await authService.updateAvatar(req.user.medecinId, input);
 
     res.status(200).json(medecin);
   } catch (error) {
