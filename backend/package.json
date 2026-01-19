@@ -20,7 +20,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.0.0",
+    "@prisma/client": "^7.2.0",
     "argon2": "^0.31.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
