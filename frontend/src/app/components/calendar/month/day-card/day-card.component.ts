@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiBadgeComponent } from '../../badge/ui-badge.component';
+import { UiBadgeComponent } from '../../../badge/ui-badge.component';
 
 export type DayType = 'repos' | 'travail';
 
