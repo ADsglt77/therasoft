@@ -96,6 +96,18 @@ export class PlanningService extends ApiClientService {
     return this.http.get<RdvsResponse>(`${this.baseUrl}/planning/rdvs`, { params });
   }
 
+  /**
+   * Récupère les rendez-vous du médecin connecté pour une date spécifique
+   */
+  getMyRdvsForDate(date: Date): Observable<RdvsResponse> {
+    const dateStr = this.formatDate(date);
+    
+    let params = new HttpParams();
+    params = params.set('date', dateStr);
+
+    return this.http.get<RdvsResponse>(`${this.baseUrl}/planning/rdvs/me`, { params });
+  }
+
   private formatDate(date: Date): string {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
