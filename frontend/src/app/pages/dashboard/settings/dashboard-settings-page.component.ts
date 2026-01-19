@@ -24,6 +24,8 @@ export class DashboardSettingsPageComponent implements OnInit {
   isLoading = false;
   isProfileLoading = false;
   isPasswordLoading = false;
+  isAvatarLoading = false;
+  selectedAvatarFile: File | null = null;
 
   profileForm: FormGroup;
   passwordForm: FormGroup;
@@ -61,6 +63,10 @@ export class DashboardSettingsPageComponent implements OnInit {
           nom: user.nom,
           prenom: user.prenom,
         });
+        // Créer un File factice à partir de l'avatar URL pour l'affichage
+        if (user.avatarUrl && !this.selectedAvatarFile) {
+          this.createFileFromAvatarUrl(user.avatarUrl);
+        }
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -308,6 +314,147 @@ export class DashboardSettingsPageComponent implements OnInit {
    */
   get newPasswordValue(): string {
     return this.passwordForm.get('newPassword')?.value || '';
+  }
+
+  /**
+   * Gère la sélection d'un fichier avatar
+   */
+  onAvatarSelected(files: File[]): void {
+    if (files.length === 0) return;
+
+    const file = files[0];
+    this.selectedAvatarFile = file;
+    this.isAvatarLoading = true;
+
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const avatarUrl = e.target?.result as string;
+      this.uploadAvatar(avatarUrl, file.name);
+    };
+
+    reader.onerror = () => {
+      this.isAvatarLoading = false;
+      this.notificationService.show('danger', 'Erreur lors de la lecture du fichier');
+      this.cdr.markForCheck();
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * Upload l'avatar vers le serveur
+   */
+  private uploadAvatar(avatarUrl: string, fileName: string): void {
+    this.authService.updateAvatar({ avatarUrl, avatarFileName: fileName }).subscribe({
+      next: (updatedUser) => {
+        this.currentUser = updatedUser;
+        this.isAvatarLoading = false;
+        this.notificationService.show('success', 'Photo de profil mise à jour avec succès');
+        this.cdr.markForCheck();
+      },
+      error: (error) => this.handleAvatarError(error, 'Erreur lors de la mise à jour de la photo de profil'),
+    });
+  }
+
+  /**
+   * Gère les erreurs de fichier
+   */
+  onAvatarError(error: { file: File; error: string }): void {
+    this.notificationService.show('danger', error.error);
+  }
+
+  /**
+   * Gère la suppression d'un fichier avatar
+   */
+  onAvatarRemoved(remainingFiles: File[]): void {
+    if (remainingFiles.length === 0) {
+      this.selectedAvatarFile = null;
+      this.cdr.detectChanges();
+      this.deleteAvatar();
+    } else {
+      this.selectedAvatarFile = remainingFiles[0];
+      this.cdr.markForCheck();
+    }
+  }
+
+  /**
+   * Supprime l'avatar du serveur
+   */
+  private deleteAvatar(): void {
+    this.isAvatarLoading = true;
+    this.authService.updateAvatar({ avatarUrl: null }).subscribe({
+      next: (updatedUser) => {
+        this.currentUser = updatedUser;
+        this.isAvatarLoading = false;
+        this.notificationService.show('success', 'Photo de profil supprimée avec succès');
+        this.cdr.markForCheck();
+      },
+      error: (error) => this.handleAvatarError(error, 'Erreur lors de la suppression de la photo de profil'),
+    });
+  }
+
+  /**
+   * Gère les erreurs liées à l'avatar
+   */
+  private handleAvatarError(error: any, defaultMessage: string): void {
+    this.isAvatarLoading = false;
+    const extracted = ApiErrorHandler.extractError(error);
+    this.notificationService.show('danger', extracted.message || defaultMessage);
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Retourne les fichiers initiaux pour l'input file
+   * Crée toujours un nouveau tableau pour forcer la détection de changement
+   */
+  getInitialFiles(): File[] {
+    return this.selectedAvatarFile ? [this.selectedAvatarFile] : [];
+  }
+
+  /**
+   * Crée un File factice à partir d'une URL d'avatar pour l'affichage
+   */
+  private createFileFromAvatarUrl(avatarUrl: string): void {
+    const fileName = this.getAvatarFileName(avatarUrl);
+    
+    if (avatarUrl.startsWith('data:')) {
+      const blob = this.createBlobFromDataUrl(avatarUrl);
+      this.selectedAvatarFile = new File([blob], fileName, { type: blob.type });
+    } else {
+      // Pour les URLs HTTP, créer un File placeholder
+      this.selectedAvatarFile = new File([new Blob([''], { type: 'image/png' })], fileName, { type: 'image/png' });
+    }
+  }
+
+  /**
+   * Récupère le nom de fichier de l'avatar (depuis la base ou l'URL)
+   */
+  private getAvatarFileName(avatarUrl: string): string {
+    if (this.currentUser?.avatarFileName) {
+      return this.currentUser.avatarFileName;
+    }
+    return avatarUrl.includes('/') 
+      ? avatarUrl.split('/').pop()?.split('?')[0] || 'avatar.png'
+      : 'avatar.png';
+  }
+
+  /**
+   * Crée un Blob à partir d'une data URL
+   */
+  private createBlobFromDataUrl(dataUrl: string): Blob {
+    try {
+      const [header, data] = dataUrl.split(',');
+      const mimeString = header.split(':')[1].split(';')[0];
+      const byteString = atob(data);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return new Blob([ab], { type: mimeString });
+    } catch {
+      return new Blob([''], { type: 'image/png' });
+    }
   }
 }
 
