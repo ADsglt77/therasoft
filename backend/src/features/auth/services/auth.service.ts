@@ -127,7 +127,6 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
-        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
         avatarUrl: true,
         avatarFileName: true,
       },
@@ -156,7 +155,6 @@ export class AuthService {
         role: true,
         isActive: true,
         lastLoginAt: true,
-        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
         avatarUrl: true,
         avatarFileName: true,
       },
@@ -347,7 +345,6 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
-        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
         avatarUrl: true,
         avatarFileName: true,
       },
@@ -439,7 +436,6 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
-        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
         avatarUrl: true,
         avatarFileName: true,
       },
@@ -465,7 +461,6 @@ export class AuthService {
     const updatedMedecin = await prisma.medecin.update({
       where: { id: medecinId },
       data: {
-        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
         avatarUrl: input.avatarUrl ?? null,
         avatarFileName: input.avatarFileName ?? null,
       },
@@ -475,7 +470,6 @@ export class AuthService {
         nom: true,
         prenom: true,
         role: true,
-        // @ts-expect-error - avatarUrl et avatarFileName existent dans le schéma Prisma mais les types ne sont pas synchronisés localement
         avatarUrl: true,
         avatarFileName: true,
       },
