@@ -10,14 +10,15 @@
     }
   </div>
 
-  <app-nav-calendar-month
+  <app-nav-calendar
+    mode="month"
     [monthName]="monthName"
     [currentYear]="currentYear"
     [yearOptions]="yearOptions"
-    (previousMonth)="previousMonth()"
-    (nextMonth)="nextMonth()"
+    (previous)="previousMonth()"
+    (next)="nextMonth()"
     (yearChange)="onYearChange($event)">
-  </app-nav-calendar-month>
+  </app-nav-calendar>
   <div class="calendar-grid">
     @for (dayName of weekDays; track dayName) {
       <div class="week-day">{{ dayName }}</div>
