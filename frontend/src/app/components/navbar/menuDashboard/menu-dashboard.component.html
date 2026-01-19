@@ -10,7 +10,7 @@
 </div>
 <div class="footer">
     <div class="profil">
-        <ui-avatar [initial]="userInitials"></ui-avatar>
+        <ui-avatar [initial]="userInitials" [avatarUrl]="currentUser?.avatarUrl"></ui-avatar>
         <div class="profil-info">
             <h6>{{ currentUser?.nom?.toUpperCase() || 'Chargement...' }}</h6>
             <p>{{ currentUser?.prenom || '' }}</p>
