@@ -7,7 +7,8 @@
   gap: $spacing-16;
 
   .content {
-    @include surface(5%, 10%);
+    @include surface(5%);
+    border: 1px solid border-surface-color(10%);
     border-radius: $radius-16;
     padding: $spacing-24;
   }

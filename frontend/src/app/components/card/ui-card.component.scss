@@ -4,14 +4,15 @@
 :host {
   display: block;
   padding: $spacing-16;
-  @include surface(5%, 10%);
+  @include surface(5%);
+  border: 1px solid border-surface-color(10%);
   border-radius: $radius-16;
   @include transition();
 
   &:hover {
     transform: translateY(-2px);
-    background: color-mix(in srgb, var(--bg) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--bg) 25%, transparent);
+    @include surface(15%);
+    border: 1px solid border-surface-color(25%);
   }
   
   .card {

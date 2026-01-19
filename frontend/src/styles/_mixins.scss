@@ -22,8 +22,8 @@
 @mixin input-base {
   padding: $spacing-12 $spacing-16;
   border-radius: $radius-8;
-  background: color-mix(in srgb, var(--bg) 5%, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg) 10%, transparent);
+  @include surface(5%);
+  border: 1px solid border-surface-color(10%);
   color: var(--color-gray-100);
   font-size: $font-size-h5; // Utilise la taille définie pour p
   transition: border-color 0.3s ease;
@@ -64,9 +64,11 @@
   }
 }
 
-// Surface avec background semi-transparent (répété)
-@mixin surface($bg-opacity: 5%, $border-opacity: 10%) {
-  background: color-mix(in srgb, var(--bg) $bg-opacity, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg) $border-opacity, transparent);
+@mixin surface($bg-opacity: 5%, $color: var(--bg)) {
+  background: color-mix(in srgb, $color $bg-opacity, transparent);
+}
+
+@function border-surface-color($opacity: 10%, $color: var(--bg)) {
+  @return color-mix(in srgb, $color $opacity, transparent);
 }
 

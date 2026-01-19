@@ -12,7 +12,8 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: $spacing-12;
-    @include surface(5%, 10%);
+    @include surface(5%);
+    border: 1px solid border-surface-color(10%);
     border-radius: $radius-16;
     padding: $spacing-16;
 }

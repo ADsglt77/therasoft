@@ -13,7 +13,8 @@
     justify-content: space-between;
     gap: $spacing-16;
     padding: $spacing-16;
-    @include surface(5%, 10%);
+    @include surface(5%);
+    border: 1px solid border-surface-color(10%);
     border-radius: $radius-16;
 }
 
