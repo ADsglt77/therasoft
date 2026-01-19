@@ -52,6 +52,7 @@ async function main() {
   console.log('🌱 Début du seed...\n');
 
   console.log('🧹 Nettoyage de la base de données...');
+  await prisma.dossier.deleteMany();
   await prisma.modalite.deleteMany();
   await prisma.rdv.deleteMany();
   await prisma.vacation.deleteMany();
@@ -348,13 +349,135 @@ async function main() {
   }
   console.log(`✅ ${modaliteCount} liens Modalite créés\n`);
 
+  console.log('📁 Création des dossiers médicaux pour chaque RDV...');
+  let dossierCount = 0;
+  
+  // Templates d'observations et résultats selon la modalité
+  const observationsTemplates: Record<ModaliteType, string[]> = {
+    [ModaliteType.XRAY]: [
+      'Examen radiographique standard réalisé sans injection de produit de contraste.',
+      'Clichés réalisés en incidence antéro-postérieure et latérale.',
+      'Examen réalisé selon les protocoles standards de radiologie conventionnelle.',
+    ],
+    [ModaliteType.CT]: [
+      'Scanner réalisé avec injection de produit de contraste iodé.',
+      'Acquisition volumique en coupes fines avec reconstruction multiplanaire.',
+      'Examen réalisé selon le protocole standard avec injection de contraste.',
+    ],
+    [ModaliteType.MRI]: [
+      'IRM réalisée avec séquences T1, T2 et FLAIR.',
+      'Examen réalisé sans injection de gadolinium.',
+      'IRM avec injection de produit de contraste pour étude de la rehaussement.',
+    ],
+    [ModaliteType.US]: [
+      'Échographie réalisée avec sonde haute fréquence.',
+      'Examen échographique doppler couleur réalisé.',
+      'Échographie avec mesure des flux vasculaires.',
+    ],
+    [ModaliteType.MAMMO]: [
+      'Mammographie réalisée en incidence cranio-caudale et oblique médio-latérale.',
+      'Examen de dépistage réalisé selon les recommandations en vigueur.',
+      'Mammographie avec compression optimale des tissus.',
+    ],
+    [ModaliteType.PET]: [
+      'TEP réalisée avec injection de FDG.',
+      'Examen TEP-TDM avec fusion d\'images.',
+      'TEP réalisée selon le protocole standard oncologique.',
+    ],
+    [ModaliteType.OTHER]: [
+      'Examen réalisé selon le protocole standard.',
+      'Examen complémentaire réalisé.',
+    ],
+  };
+
+  const resultatsTemplates: Record<ModaliteType, string[]> = {
+    [ModaliteType.XRAY]: [
+      'Pas d\'anomalie osseuse ou articulaire décelée. Structures anatomiques normales.',
+      'Opacités pulmonaires discrètes sans signe de complication.',
+      'Alignement osseux correct. Pas de signe de fracture ou de lésion.',
+    ],
+    [ModaliteType.CT]: [
+      'Pas de lésion focale décelée. Structures anatomiques normales.',
+      'Contraste normal des structures vasculaires. Pas d\'anomalie de rehaussement.',
+      'Pas de collection ou d\'épanchement anormal.',
+    ],
+    [ModaliteType.MRI]: [
+      'Signal normal des structures anatomiques. Pas de lésion focale décelée.',
+      'Pas d\'anomalie de signal ou de rehaussement pathologique.',
+      'Structures anatomiques normales sans signe de pathologie.',
+    ],
+    [ModaliteType.US]: [
+      'Échogénicité normale des structures examinées.',
+      'Flux vasculaires normaux sans signe de sténose ou de thrombose.',
+      'Pas d\'anomalie morphologique ou structurelle décelée.',
+    ],
+    [ModaliteType.MAMMO]: [
+      'Pas d\'opacité suspecte décelée. Densité mammaire normale.',
+      'Pas de microcalcifications suspectes. Examen normal.',
+      'Structures mammaires normales sans signe de pathologie.',
+    ],
+    [ModaliteType.PET]: [
+      'Métabolisme normal sans hyperfixation pathologique.',
+      'Pas de lésion hypermétabolique décelée.',
+      'Distribution normale du traceur sans anomalie focale.',
+    ],
+    [ModaliteType.OTHER]: [
+      'Examen normal sans anomalie décelée.',
+      'Résultats dans les limites de la normale.',
+    ],
+  };
+
+  const documentsTemplates = [
+    'images/rdv_{rdvId}/image_001.dcm',
+    'images/rdv_{rdvId}/image_002.dcm',
+    'images/rdv_{rdvId}/series_001/',
+    'reports/rdv_{rdvId}/rapport_medical.pdf',
+  ];
+
+  for (const rdv of rdvs) {
+    // Sélectionner aléatoirement une observation et un résultat selon la modalité
+    const observationsList = observationsTemplates[rdv.modalite] || observationsTemplates[ModaliteType.OTHER];
+    const resultatsList = resultatsTemplates[rdv.modalite] || resultatsTemplates[ModaliteType.OTHER];
+    
+    const observation = observationsList[Math.floor(Math.random() * observationsList.length)];
+    const resultat = resultatsList[Math.floor(Math.random() * resultatsList.length)];
+    
+    // Générer 1-3 documents aléatoirement
+    const numDocuments = Math.floor(Math.random() * 3) + 1;
+    const documents = Array.from({ length: numDocuments }, () => {
+      const template = documentsTemplates[Math.floor(Math.random() * documentsTemplates.length)];
+      return template.replace('{rdvId}', rdv.id.toString());
+    }).join(', ');
+
+    try {
+      await prisma.dossier.create({
+        data: {
+          patientId: rdv.patientId,
+          rdvId: rdv.id,
+          observations: observation,
+          resultats: resultat,
+          documents: documents,
+        },
+      });
+      dossierCount++;
+    } catch (error) {
+      // Ignorer les erreurs (doublons possibles si contrainte unique)
+    }
+
+    if (dossierCount % 500 === 0 && dossierCount > 0) {
+      console.log(`   Progression: ${dossierCount} dossiers créés...`);
+    }
+  }
+  console.log(`✅ ${dossierCount} dossiers médicaux créés\n`);
+
   console.log('✨ Seed terminé avec succès !\n');
   console.log('📊 Résumé:');
   console.log(`   - ${3} médecins (1 admin, 2 médecins actifs)`);
   console.log(`   - ${createdPatients.length} patients`);
   console.log(`   - ${vacations.length} vacations (année 2026 complète)`);
   console.log(`   - ${rdvs.length} rendez-vous`);
-  console.log(`   - ${modaliteCount} liens Modalite (${Math.round(modaliteCount / rdvs.length * 100)}% des rdv liés)\n`);
+  console.log(`   - ${modaliteCount} liens Modalite (${Math.round(modaliteCount / rdvs.length * 100)}% des rdv liés)`);
+  console.log(`   - ${dossierCount} dossiers médicaux (${Math.round(dossierCount / rdvs.length * 100)}% des rdv avec dossier)\n`);
   console.log('🔑 Identifiants:');
   console.log('   Médecin 1:');
   console.log('     Email: user@user.user');

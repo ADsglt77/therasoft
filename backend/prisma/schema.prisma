@@ -92,6 +92,7 @@ model Patient {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   rdvs Rdv[]
+  dossiers Dossier[]
 
   @@index([nom, prenom])
   @@index([dateNaissance])
@@ -114,6 +115,7 @@ model Rdv {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   links Modalite[]
+  dossiers Dossier[]
 
   @@index([patientId])
   @@index([date])
@@ -139,6 +141,33 @@ model Modalite {
   @@index([rdvId])
   @@index([vacationId])
   @@map("modalite")
+}
+
+// Dossier médical lié à un patient ET à un RDV spécifique
+// Chaque RDV peut avoir son propre dossier (ex: radiographie un jour, mammographie 2 jours plus tard)
+model Dossier {
+  id Int @id @default(autoincrement())
+
+  // Le dossier est lié à un patient ET à un RDV spécifique
+  patientId Int     @map("id_patient")
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  rdvId Int @map("id_rdv")
+  rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
+
+  // Informations du dossier
+  observations String? // Observations médicales
+  resultats    String? // Résultats d'examen
+  documents    String? // Références aux documents (images, PDFs, etc.)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([patientId, rdvId]) // Un seul dossier par patient par RDV
+  @@index([patientId])
+  @@index([rdvId])
+  @@index([patientId, rdvId])
+  @@map("dossier")
 }
 
 // Sessions pour refresh token (recommandé)
