@@ -44,6 +44,8 @@ model Medecin {
   role         Role      @default(MEDECIN)
   isActive     Boolean   @default(true) @map("is_active")
   lastLoginAt  DateTime? @map("last_login_at")
+  avatarUrl    String?   @map("avatar_url")
+  avatarFileName String? @map("avatar_file_name")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
