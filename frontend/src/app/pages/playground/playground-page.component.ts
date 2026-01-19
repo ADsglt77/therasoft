@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarMonthComponent, NavCalendarDayComponent } from '../../components';
+import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarComponent } from '../../components';
 import { NotificationService } from '../../core/services/notification.service';
 
 /**
@@ -9,7 +9,7 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-playground-page',
   standalone: true,
-  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarMonthComponent, NavCalendarDayComponent],
+  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarComponent],
   templateUrl: './playground-page.component.html',
   styleUrl: './playground-page.component.scss',
 })
@@ -19,6 +19,7 @@ export class PlaygroundPageComponent {
   currentYear = new Date().getFullYear();
   currentMonth = new Date().getMonth();
   monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+  dayNumber = new Date().getDate();
   yearOptions: SelectOption[] = [];
 
   constructor(private notificationService: NotificationService) {

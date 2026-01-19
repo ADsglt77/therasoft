@@ -77,11 +77,11 @@
       <app-day-card [dayNumber]="16" type="repos" [isToday]="true"></app-day-card>
       <app-day-card [dayNumber]="17" type="travail" location="Site B" [disabled]="true"></app-day-card>
     </div>
-    <app-nav-calendar-month [monthName]="monthName" [currentYear]="currentYear" [yearOptions]="yearOptions"
-      (previousMonth)="onPreviousMonth()" (nextMonth)="onNextMonth()" (yearChange)="onYearChange($event)">
-    </app-nav-calendar-month>
-    <app-nav-calendar-day [dayOfWeek]="'Mercredi'" [monthName]="monthName" (previousDay)="onPreviousDay()"
-      (nextDay)="onNextDay()" (goBack)="onGoBack()">
-    </app-nav-calendar-day>
+    <app-nav-calendar mode="month" [monthName]="monthName" [currentYear]="currentYear" [yearOptions]="yearOptions"
+      (previous)="onPreviousMonth()" (next)="onNextMonth()" (yearChange)="onYearChange($event)">
+    </app-nav-calendar>
+    <app-nav-calendar mode="day" [dayOfWeek]="'Mercredi'" [monthName]="monthName" [dayNumber]="dayNumber" (previous)="onPreviousDay()"
+      (next)="onNextDay()" (goBack)="onGoBack()">
+    </app-nav-calendar>
   </div>
 </div>
