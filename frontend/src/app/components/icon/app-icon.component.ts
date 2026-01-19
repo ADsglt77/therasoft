@@ -1,6 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy, ViewEncapsulation, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, ArrowRight, Upload, FileText, Image } from 'lucide-angular';
+import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, ArrowRight, Upload, FileText, Image, User, Edit2, Save, XCircle } from 'lucide-angular';
 
 /**
  * Composant wrapper pour utiliser les icônes Lucide
@@ -68,6 +68,12 @@ export class AppIconComponent {
     file: FileText,
     filetext: FileText,
     image: Image,
+    user: User,
+    edit: Edit2,
+    edit2: Edit2,
+    save: Save,
+    'x-circle': XCircle,
+    xcircle: XCircle,
   };
 
   get iconComponent(): any {
