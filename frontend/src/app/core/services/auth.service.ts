@@ -34,7 +34,8 @@ export interface MeResponse {
   nom: string;
   prenom: string;
   role: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
+  avatarFileName?: string | null;
 }
 
 @Injectable({
@@ -104,6 +105,7 @@ export class AuthService extends ApiClientService {
               nom: response.medecin.nom,
               prenom: response.medecin.prenom,
               role: response.medecin.role,
+              avatarUrl: (response.medecin as any).avatarUrl,
             });
           }
         })
@@ -182,6 +184,18 @@ export class AuthService extends ApiClientService {
    */
   changePassword(data: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
     return this.http.patch<{ message: string }>(`${this.baseUrl}/auth/password`, data);
+  }
+
+  /**
+   * Met à jour l'avatar du médecin connecté
+   */
+  updateAvatar(data: { avatarUrl: string | null; avatarFileName?: string | null }): Observable<MeResponse> {
+    return this.http.patch<MeResponse>(`${this.baseUrl}/auth/avatar`, data).pipe(
+      tap((updatedUser) => {
+        // Mettre à jour l'utilisateur actuel après modification
+        this.setCurrentUser(updatedUser);
+      })
+    );
   }
 
   /**
