@@ -29,8 +29,13 @@
 
 .header .day h4,
 .header .month h4 {
-    min-width: 125px;
+    min-width: 280px;
     text-align: center;
+}
+
+.header .month-info,
+.header .year {
+    min-width: 125px;
 }
 
 .day app-icon,
