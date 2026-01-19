@@ -1,0 +1,138 @@
+<div class="patient-detail-header">
+  <div class="header-actions">
+    <app-icon name="arrow-left" [size]="24" (click)="goBack()" class="back-icon"></app-icon>
+    <h1>Fiche patient</h1>
+  </div>
+</div>
+
+<div class="content">
+  @if (isLoading) {
+    <div class="loading">
+      <p>Chargement du dossier...</p>
+    </div>
+  } @else if (dossier) {
+    <div class="dossier-container">
+      <!-- Informations du patient -->
+      <section class="info-section">
+        <h2>
+          <app-icon name="user" [size]="20"></app-icon>
+          Informations patient
+        </h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Nom complet</span>
+            <span class="value">{{ dossier.patient.prenom }} {{ dossier.patient.nom }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Date de naissance</span>
+            <span class="value">{{ formatDate(dossier.patient.dateNaissance) }} ({{ getAge(dossier.patient.dateNaissance) }} ans)</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Sexe</span>
+            <span class="value sexe-value">
+              <app-icon [name]="getSexeIcon(dossier.patient.sexe)" [size]="18"></app-icon>
+              <span>{{ formatSexe(dossier.patient.sexe) }}</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Informations du rendez-vous -->
+      <section class="info-section">
+        <h2>
+          <app-icon name="calendar" [size]="20"></app-icon>
+          Rendez-vous
+        </h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Date</span>
+            <span class="value">{{ formatDate(dossier.rdv.date) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Heure</span>
+            <span class="value">{{ formatTime(dossier.rdv.heureDebut) }} - {{ formatTime(dossier.rdv.heureFin) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Modalité</span>
+            <span class="value">{{ formatModalite(dossier.rdv.modalite) }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Observations médicales -->
+      <section class="info-section">
+        <h2>
+          <app-icon name="file-text" [size]="20"></app-icon>
+          Observations médicales
+        </h2>
+        <ui-input
+          type="text"
+          [value]="observationsValue"
+          (input)="updateObservations($any($event.target).value)"
+          (blur)="onObservationsBlur()"
+          placeholder="Saisissez vos observations médicales..."
+          id="observations"
+          [disabled]="isSavingObservations"
+        >
+        </ui-input>
+        @if (isSavingObservations) {
+          <span class="saving-indicator">Enregistrement en cours...</span>
+        }
+      </section>
+
+      <!-- Résultats d'examen -->
+      <section class="info-section">
+        <h2>
+          <app-icon name="clipboard-check" [size]="20"></app-icon>
+          Résultats d'examen
+        </h2>
+        @if (dossier.resultats) {
+          <div class="text-content">
+            <p>{{ dossier.resultats }}</p>
+          </div>
+        } @else {
+          <p class="empty-state">Aucun résultat enregistré</p>
+        }
+      </section>
+
+      <!-- Documents associés -->
+      <section class="info-section">
+        <h2>
+          <app-icon name="folder" [size]="20"></app-icon>
+          Documents associés
+        </h2>
+        @if (getDocumentsList(dossier.documents).length > 0) {
+          <ul class="documents-list">
+            @for (document of getDocumentsList(dossier.documents); track document) {
+              <li class="document-item">
+                <app-icon name="file" [size]="16"></app-icon>
+                <span>{{ document }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty-state">Aucun document associé</p>
+        }
+      </section>
+
+      <!-- Métadonnées -->
+      <section class="info-section metadata">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Créé le</span>
+            <span class="value">{{ formatDate(dossier.createdAt) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Modifié le</span>
+            <span class="value">{{ formatDate(dossier.updatedAt) }}</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  } @else {
+    <div class="error-state">
+      <p>Impossible de charger le dossier médical</p>
+    </div>
+  }
+</div>
+
