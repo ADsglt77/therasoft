@@ -31,7 +31,7 @@ export { PasswordStrengthIndicatorComponent } from './password-strength-indicato
 export { NavbarLinksComponent } from './navbar/navbar-links/navbar-links.component';
 
 // Menu Hamburger
-export { MenuHamburgerComponent } from './navbar/menuMain/menuHamburger/menu-hamburger.component';
+export { MenuHamburgerComponent } from './navbar/menuHamburger/menu-hamburger.component';
 
 // Menu Main
 export { MenuMainComponent } from './navbar/menuMain/menu-main.component';
@@ -47,8 +47,8 @@ export { UiInputComponent } from './input/ui-input.component';
 export type { InputType, SelectOption } from './input/ui-input.component';
 
 // Calendar
-export { DayCardComponent } from './calendar/day-card/day-card.component';
-export type { DayType } from './calendar/day-card/day-card.component';
-export { NavCalendarMonthComponent } from './calendar/nav-calendar-month/nav-calendar-month.component';
-export { NavCalendarDayComponent } from './calendar/nav-calendar-day/nav-calendar-day.component';
+export { DayCardComponent } from './calendar/month/day-card/day-card.component';
+export type { DayType } from './calendar/month/day-card/day-card.component';
+export { NavCalendarComponent } from './calendar/nav-calendar/nav-calendar.component';
+export type { CalendarMode } from './calendar/nav-calendar/nav-calendar.component';
 
