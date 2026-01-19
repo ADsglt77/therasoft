@@ -17,7 +17,7 @@
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in srgb, var(--bg) 15%, transparent);
+    @include surface(15%);
   }
 
   .icon {
