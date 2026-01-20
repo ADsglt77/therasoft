@@ -91,11 +91,17 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
         this.dossier = dossier;
         this.observationsValue = dossier.observations || '';
         this.isLoading = false;
+        
+        // Afficher une notification si aucun résultat n'est enregistré
+        if (!dossier.resultats) {
+          this.notificationService.show('information', 'Aucun résultat enregistré pour ce dossier');
+        }
       },
       error: (error) => {
         this.isLoading = false;
+        this.dossier = null;
         const extracted = ApiErrorHandler.extractError(error);
-        this.notificationService.show('danger', extracted.message || NotificationMessages.GENERIC_ERROR);
+        this.notificationService.show('danger', 'Impossible de charger le dossier médical');
       },
     });
 

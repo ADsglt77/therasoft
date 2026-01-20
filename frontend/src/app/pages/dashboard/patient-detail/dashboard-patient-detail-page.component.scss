@@ -2,43 +2,12 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: $spacing-16;
   height: calc(100vh - $spacing-16);
-  padding: 0 $spacing-16 $spacing-16 0;
+  padding: $spacing-16;
   overflow: auto;
-}
-
-.patient-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $spacing-16;
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: $spacing-16;
-
-    .back-icon {
-      cursor: pointer;
-      @include transition(opacity, 200ms);
-
-      &:hover {
-        opacity: 0.7;
-      }
-    }
-  }
-}
-
-.content {
-  width: 100%;
-  @include surface(5%);
-  border: 1px solid border-surface-color(10%);
-  border-radius: $radius-16;
-  padding: $spacing-24;
+  gap: $spacing-40;
 
   .loading {
     display: flex;
@@ -46,128 +15,88 @@
     align-items: center;
     padding: $spacing-48;
     color: var(--color-gray-500);
+    font-style: italic;
   }
 
-  .dossier-container {
+  .header {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-32;
+    align-items: center;
+    gap: $spacing-12;
   }
 
-  .info-section {
+  .info-patient,
+  .info-rdv,
+  .info-data {
+    width: 100%;
     display: flex;
-    flex-direction: column;
-    gap: $spacing-16;
+    gap: $spacing-24;
+  }
 
-      h2 {
+  .info-rdv {
+    flex: 1;
+    min-height: 0;
+
+    section {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      
+      .content {
         display: flex;
-        align-items: center;
-        gap: $spacing-8;
-        margin: 0;
-      }
-
-
-    &.metadata {
-      padding-top: $spacing-16;
-      border-top: 1px solid border-surface-color(10%);
-      margin-top: $spacing-8;
-
-      h2 {
-        margin-bottom: $spacing-8;
+        flex-direction: column;
+        gap: $spacing-24;
+        flex: 1;
+        min-height: 0;
       }
     }
   }
 
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: $spacing-16;
-  }
+  section {
+    width: 100%;
 
-  .info-item {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-4;
-
-    .label {
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .sexe-value {
+    .title {
       display: flex;
       align-items: center;
-      gap: $spacing-8;
+      gap: $spacing-12;
+      margin-bottom: $spacing-12;
+    }
+
+    .content {
+      display: flex;
+      gap: $spacing-24;
+
+      >div {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-4;
+
+        >p:first-child {
+          color: var(--color-gray-500);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      }
+
+      >span {
+        color: var(--color-gray-500);
+        font-size: $font-size-span;
+        font-style: italic;
+        margin-top: -$spacing-8;
+      }
     }
   }
 
-  .text-content {
-    background-color: var(--color-gray-900);
-    border: 1px solid border-surface-color(10%);
-    border-radius: $radius-8;
-    padding: $spacing-16;
-    color: var(--color-gray-200);
-    line-height: 1.6;
+  .info-data {
+    section {
+      display: flex;
+      justify-content: space-between;
 
-    p {
-      margin: 0;
+      p {
+        color: var(--color-gray-500);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
     }
-  }
-
-  .empty-state {
-    color: var(--color-gray-500);
-    font-style: italic;
-    padding: $spacing-16;
-    text-align: center;
-    background-color: var(--color-gray-900);
-    border: 1px dashed border-surface-color(10%);
-    border-radius: $radius-8;
-  }
-
-  .documents-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-8;
-  }
-
-  .document-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-8;
-    padding: $spacing-12;
-    background-color: var(--color-gray-900);
-    border: 1px solid border-surface-color(10%);
-    border-radius: $radius-8;
-    color: var(--color-gray-200);
-    @include transition(background-color, 200ms);
-
-    &:hover {
-      background-color: var(--color-gray-800);
-    }
-
-    span {
-      flex: 1;
-      word-break: break-all;
-    }
-  }
-
-  .error-state {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: $spacing-48;
-    color: var(--color-red-400);
-    text-align: center;
-  }
-
-  .saving-indicator {
-    display: block;
-    margin-top: $spacing-8;
-    color: var(--color-gray-400);
-    font-style: italic;
   }
 }
-
