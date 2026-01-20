@@ -12,10 +12,10 @@ export const SEXE_LABELS: Record<string, string> = {
  * Mapping des icônes de sexe
  */
 export const SEXE_ICONS: Record<string, string> = {
-  M: 'user', // Masculin - icône user standard
-  F: 'user', // Féminin - icône user standard (peut être stylisée différemment)
-  X: 'user', // Autre - icône user standard
-  UNKNOWN: 'user', // Non renseigné - icône user standard
+  M: 'mars', // Masculin - symbole Mars ♂
+  F: 'venus', // Féminin - symbole Venus ♀
+  X: 'gender-neutral', // Autre - icône genre neutre
+  UNKNOWN: 'gender-neutral', // Non renseigné - icône genre neutre
 } as const;
 
 /**
