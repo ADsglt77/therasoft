@@ -64,6 +64,21 @@
         }
       </div>
     }
+  } @else if (type === 'textarea') {
+    <textarea
+      [placeholder]="displayPlaceholder"
+      [value]="value"
+      [name]="displayName"
+      [id]="displayId"
+      [required]="required"
+      [disabled]="disabled"
+      [rows]="fullHeight ? 1 : rows"
+      class="input input--textarea"
+      [class.input--textarea-full-height]="fullHeight"
+      [ngClass]="getInputStateClasses()"
+      (input)="onInput($event)"
+      (blur)="blur.emit($event)"
+    ></textarea>
   } @else {
     <input 
       [type]="displayType"

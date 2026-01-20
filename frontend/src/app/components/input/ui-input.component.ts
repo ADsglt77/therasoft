@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppIconComponent } from '../icon/app-icon.component';
 
-export type InputType = 'text' | 'email' | 'password' | 'select' | 'file';
+export type InputType = 'text' | 'email' | 'password' | 'select' | 'file' | 'textarea';
 export type InputMessageType = 'error' | 'info' | 'success' | 'warning';
 
 export interface SelectOption {
@@ -38,6 +38,8 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() multiple: boolean = false; // Permettre plusieurs fichiers (pour file)
   @Input() maxSize: number = 0; // Taille maximale en bytes (0 = illimité, pour file)
   @Input() initialFiles: File[] = []; // Fichiers initiaux à afficher (pour file)
+  @Input() rows: number = 4; // Nombre de lignes pour le textarea
+  @Input() fullHeight: boolean = false; // Pour le textarea, prend toute la hauteur disponible
   @Output() input = new EventEmitter<Event>(); // Émet l'événement input vers le parent
   @Output() blur = new EventEmitter<Event>(); // Émet l'événement blur vers le parent
   @Output() change = new EventEmitter<Event>(); // Émet l'événement change vers le parent (pour select)
@@ -275,6 +277,9 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     if (this.type === 'file') {
       if (this.isDragging) classes.push('ui-input--dragging');
       if (this.selectedFiles.length > 0) classes.push('ui-input--has-files');
+    }
+    if (this.type === 'textarea' && this.fullHeight) {
+      classes.push('ui-input--full-height');
     }
     return classes.join(' ');
   }
