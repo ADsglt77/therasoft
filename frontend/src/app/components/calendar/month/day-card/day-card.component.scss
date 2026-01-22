@@ -13,9 +13,11 @@
     border-radius: $radius-16;
     @include transition();
     min-height: 80px;
+    @include glass-panel;
+    color: var(--text);
 
     &:hover {
-        @include surface(15%);
+        background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
         cursor: pointer;
     }
 }
@@ -33,7 +35,7 @@
 
 :host.day-card-component--today {
     .day {
-        box-shadow: inset 0 0 0 2px var(--color-primary-300);
+        border: 2px solid var(--color-primary-300);
     }
 }
 

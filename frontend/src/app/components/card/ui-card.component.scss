@@ -4,15 +4,13 @@
 :host {
   display: block;
   padding: $spacing-16;
-  @include surface(5%);
-  border: 1px solid border-surface-color(10%);
+  @include glass-panel;
   border-radius: $radius-16;
   @include transition();
 
   &:hover {
-    transform: translateY(-2px);
-    @include surface(15%);
-    border: 1px solid border-surface-color(25%);
+    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
   }
   
   .card {
@@ -34,6 +32,7 @@
     align-items: center;
     gap: $spacing-8;
     min-width: 0;
+    color: var(--text);
   }
   
   .icon {
@@ -41,7 +40,7 @@
   }
   
   .description {
-    opacity: 0.7;
+    color: var(--text-muted);
     margin: $spacing-12;
   }
   
@@ -49,5 +48,6 @@
     display: flex;
     align-items: center;
     gap: $spacing-4;
+    color: var(--text);
   }
 }

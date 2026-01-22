@@ -10,35 +10,70 @@
   border-radius: $radius-12;
   @include transition();
   cursor: pointer;
+  @include focus-visible;
 
   &:hover:not(.ui-button--disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
   }
 
   &.ui-button--disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
   }
 }
 
-// Colors
-:host.ui-button--primary900 { background-color: var(--color-primary-900); }
-:host.ui-button--primary700 { background-color: var(--color-primary-700); }
-:host.ui-button--primary500 { background-color: var(--color-primary-500); }
-:host.ui-button--primary300 { background-color: var(--color-primary-300); }
-:host.ui-button--primary100 { background-color: var(--color-primary-100); }
-:host.ui-button--gray100 { background-color: var(--color-gray-100); color: var(--color-gray-900); }
+// Colors - Glass effect avec couleurs primaires
+:host.ui-button--primary900 { 
+  background: color-mix(in srgb, var(--color-primary-900) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-900) 60%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text);
+}
+:host.ui-button--primary700 { 
+  background: color-mix(in srgb, var(--color-primary-700) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-700) 60%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text);
+}
+:host.ui-button--primary500 { 
+  background: color-mix(in srgb, var(--color-primary-500) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 60%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text);
+}
+:host.ui-button--primary300 { 
+  background: color-mix(in srgb, var(--color-primary-300) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-300) 60%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--color-primary-900);
+}
+:host.ui-button--primary100 { 
+  background: color-mix(in srgb, var(--color-primary-100) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-100) 60%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--color-primary-900);
+}
+:host.ui-button--gray100 { 
+  background: color-mix(in srgb, var(--color-gray-100) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-gray-100) 60%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--color-gray-900);
+}
 :host.ui-button--connect {
-  background-color: var(--color-gray-800);
-  border: 2px solid var(--color-gray-500);
-  color: var(--color-gray-500);
+  @include glass-panel;
+  color: var(--text-muted);
   padding: $spacing-4 $spacing-8;
 
-  &:hover {
-    transform: none;
-    border: 2px solid var(--color-gray-200);
-    color: var(--color-gray-200);
+  &:hover:not(.ui-button--disabled) {
+    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    border-color: color-mix(in srgb, var(--border) 80%, transparent);
+    color: var(--text);
   }
 }

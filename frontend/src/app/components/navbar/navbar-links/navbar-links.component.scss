@@ -12,12 +12,14 @@
   padding: $spacing-8;
   border-radius: $radius-8;
   text-decoration: none;
-  color: inherit;
+  color: var(--text);
   @include transition();
   cursor: pointer;
+  @include focus-visible;
 
   &:hover {
-    @include surface(15%);
+    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    color: var(--text);
   }
 
   .icon {
