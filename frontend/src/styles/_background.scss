@@ -2,34 +2,37 @@
 // BACKGROUND - Portail Médecin Style
 // ============================================
 
-/* Background principal - Plus sombre */
+/* Background principal - THEME CONTROLLED */
 .portail-medecin-background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  /* THEME CONTROLLED: --bg-accent-1-rgb, --bg-accent-1-alpha, --bg-accent-2-rgb, --bg-accent-2-alpha, --bg-accent-3-rgb, --bg-accent-3-alpha, --bg-accent-4-rgb, --bg-accent-4-alpha, --bg-accent-5-rgb, --bg-accent-5-alpha */
   background: 
-    radial-gradient(circle at 20% 80%, rgba(3, 4, 94, 0.55) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(0, 119, 182, 0.35) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(0, 180, 216, 0.28) 0%, transparent 50%),
-    radial-gradient(circle at 60% 80%, rgba(144, 224, 239, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 90% 60%, rgba(202, 240, 248, 0.12) 0%, transparent 50%);
-  background-color: #080808;
+    radial-gradient(circle at 20% 80%, rgb(var(--bg-accent-1-rgb) / var(--bg-accent-1-alpha)) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgb(var(--bg-accent-2-rgb) / var(--bg-accent-2-alpha)) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgb(var(--bg-accent-3-rgb) / var(--bg-accent-3-alpha)) 0%, transparent 50%),
+    radial-gradient(circle at 60% 80%, rgb(var(--bg-accent-4-rgb) / var(--bg-accent-4-alpha)) 0%, transparent 50%),
+    radial-gradient(circle at 90% 60%, rgb(var(--bg-accent-5-rgb) / var(--bg-accent-5-alpha)) 0%, transparent 50%);
+  /* THEME CONTROLLED: --bg-base-rgb */
+  background-color: rgb(var(--bg-base-rgb) / 100%);
   z-index: -3;
 }
 
-/* Nuages animés - Réduits */
+/* Nuages animés - THEME CONTROLLED */
 .cloud-layer {
   position: fixed;
   top: 0;
   left: 0;
   width: 200%;
   height: 100%;
+  /* THEME CONTROLLED: --bg-accent-1-rgb (18%), --bg-accent-2-rgb (12%), --bg-accent-3-rgb (10%) */
   background: 
-    radial-gradient(ellipse 800px 400px at 10% 90%, rgba(3, 4, 94, 0.18) 0%, transparent 40%),
-    radial-gradient(ellipse 600px 300px at 90% 10%, rgba(0, 119, 182, 0.12) 0%, transparent 40%),
-    radial-gradient(ellipse 1000px 500px at 50% 50%, rgba(0, 180, 216, 0.1) 0%, transparent 50%);
+    radial-gradient(ellipse 800px 400px at 10% 90%, rgb(var(--bg-accent-1-rgb) / 18%) 0%, transparent 40%),
+    radial-gradient(ellipse 600px 300px at 90% 10%, rgb(var(--bg-accent-2-rgb) / 12%) 0%, transparent 40%),
+    radial-gradient(ellipse 1000px 500px at 50% 50%, rgb(var(--bg-accent-3-rgb) / 10%) 0%, transparent 50%);
   animation: cloudDrift 60s linear infinite;
   z-index: -2;
 }
@@ -43,30 +46,32 @@
   }
 }
 
-/* Grille plus subtile */
+/* Grille plus subtile - THEME CONTROLLED */
 .grid-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  /* THEME CONTROLLED: --grid-color-rgb, --bg-grid-alpha */
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    linear-gradient(to right, rgb(var(--grid-color-rgb) / var(--bg-grid-alpha)) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--grid-color-rgb) / var(--bg-grid-alpha)) 1px, transparent 1px);
   background-size: 40px 40px;
   mask-image: radial-gradient(ellipse at center, black 25%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse at center, black 25%, transparent 70%);
   z-index: -1;
 }
 
-/* Ajout d'un overlay sombre supplémentaire */
+/* Ajout d'un overlay sombre supplémentaire - THEME CONTROLLED */
 .dark-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.2);
+  /* THEME CONTROLLED: --bg-overlay-alpha (utilise --bg-base-rgb pour la couleur) */
+  background: rgb(var(--bg-base-rgb) / var(--bg-overlay-alpha));
   z-index: -1;
 }
 
