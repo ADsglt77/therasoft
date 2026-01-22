@@ -15,7 +15,17 @@
       }
     </div>
   }
-  <div class="icon-moon-wrapper">
-    <app-icon name="moon" [size]="24" [color]="'var(--moon-icon-color)'" class="icon"></app-icon>
-  </div>
+  <button 
+    type="button"
+    class="icon-moon-wrapper"
+    (click)="onToggleTheme()"
+    [attr.aria-label]="currentTheme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'"
+    [attr.aria-pressed]="currentTheme === 'dark'">
+    <app-icon 
+      [name]="currentTheme === 'dark' ? 'moon' : 'sun'" 
+      [size]="24" 
+      [color]="'var(--moon-icon-color)'" 
+      class="icon">
+    </app-icon>
+  </button>
 </div>

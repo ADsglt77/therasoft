@@ -7,6 +7,7 @@ import { UiAvatarComponent } from '../../avatar/ui-avatar.component';
 import { AppIconComponent } from '../../icon/app-icon.component';
 import { MenuHamburgerComponent } from './menuHamburger/menu-hamburger.component';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
+import { ThemeService } from '../../../shared/theme/theme.service';
 
 @Component({
   selector: 'app-menu-main',
@@ -26,14 +27,20 @@ export class MenuMainComponent implements OnInit {
     return 'menu-main';
   }
 
+  currentTheme: 'dark' | 'light' = 'dark';
+
   constructor(
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private router: Router
+    private router: Router,
+    private themeService: ThemeService
   ) {}
 
   ngOnInit(): void {
     this.checkAuthentication();
+    
+    // Initialiser le thème actuel
+    this.currentTheme = this.themeService.getTheme();
     
     // Écouter les changements de route pour mettre à jour l'état d'authentification
     this.router.events
@@ -99,6 +106,12 @@ export class MenuMainComponent implements OnInit {
     this.checkAuthentication();
     // Fermer le menu hamburger
     this.showHamburgerMenu = false;
+  }
+
+  onToggleTheme(): void {
+    this.themeService.toggle();
+    this.currentTheme = this.themeService.getTheme();
+    this.cdr.markForCheck();
   }
 }
 

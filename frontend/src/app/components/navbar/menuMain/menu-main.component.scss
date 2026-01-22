@@ -15,6 +15,7 @@
     display: flex;
     align-items: center;
     gap: $spacing-12;
+    color: var(--text);
   }
 
   .links {
@@ -39,11 +40,15 @@
     .icon-moon-wrapper {
       cursor: pointer;
       @include icon-center;
-      --moon-icon-color: var(--color-gray-500);
+      --moon-icon-color: var(--text-muted);
       @include transition(opacity, 300ms);
+      background: none;
+      border: none;
+      padding: 0;
+      @include focus-visible;
 
       &:hover {
-        --moon-icon-color: var(--color-gray-200);
+        --moon-icon-color: var(--text);
       }
     }
   }
