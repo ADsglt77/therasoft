@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { UiCardComponent, CardPoint } from '../../../components/card/ui-card.component';
+import { CardPoint } from '../../../components/card/ui-card.component';
 import { DayCardComponent, DayType } from '../../../components/calendar/month/day-card/day-card.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { SelectOption } from '../../../components/input/ui-input.component';
@@ -29,7 +29,7 @@ const YEAR_RANGE = 5; // Années avant/après l'année actuelle
 @Component({
   selector: 'app-dashboard-planning-page',
   standalone: true,
-  imports: [CommonModule, UiCardComponent, DayCardComponent, NavCalendarComponent],
+  imports: [CommonModule, DayCardComponent, NavCalendarComponent],
   templateUrl: './dashboard-planning-page.component.html',
   styleUrl: './dashboard-planning-page.component.scss',
 })
