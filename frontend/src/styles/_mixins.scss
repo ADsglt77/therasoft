@@ -5,8 +5,7 @@
 @use 'tokens' as *;
 
 @mixin focus-ring($color: var(--color-primary-500)) {
-  outline: 2px solid $color;
-  outline-offset: 2px;
+  border: 1px solid $color;
 }
 
 @mixin focus-visible {
@@ -22,20 +21,15 @@
 @mixin input-base {
   padding: $spacing-12 $spacing-16;
   border-radius: $radius-8;
-  @include surface(5%);
-  border: 1px solid border-surface-color(10%);
-  color: var(--color-gray-100);
-  font-size: $font-size-h5; // Utilise la taille définie pour p
-  transition: border-color 0.3s ease;
+  @include glass-panel;
+  color: var(--text);
+  font-size: $font-size-h5;
+  @include transition(border-color, 150ms);
   width: 100%;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-primary-300);
-  }
+  @include focus-visible;
 
   &::placeholder {
-    color: var(--color-gray-500);
+    color: var(--text-muted);
   }
 
   &:disabled {
@@ -70,5 +64,51 @@
 
 @function border-surface-color($opacity: 10%, $color: var(--bg)) {
   @return color-mix(in srgb, $color $opacity, transparent);
+}
+
+// ============================================
+// GLASS PANEL - Theme-controlled glass effect
+// ============================================
+
+/**
+ * Mixin glass-panel : Crée un effet glass paramétrable via variables CSS de thème
+ * 
+ * @param $surfaceAlpha - Opacité du background (défaut: var(--glass-surface-alpha))
+ * @param $borderAlpha - Opacité de la bordure (défaut: var(--glass-border-alpha))
+ * @param $blur - Intensité du blur (défaut: var(--glass-blur))
+ * 
+ * Usage:
+ *   @include glass-panel; // Utilise les valeurs par défaut du thème
+ *   @include glass-panel(10%, 15%, 20px); // Override manuel
+ * 
+ * Variante hover:
+ *   .my-component {
+ *     @include glass-panel;
+ *     &:hover {
+ *       background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+ *     }
+ *   }
+ */
+@mixin glass-panel(
+  $surfaceAlpha: var(--glass-surface-alpha),
+  $borderAlpha: var(--glass-border-alpha),
+  $blur: var(--glass-blur)
+) {
+  background: color-mix(in srgb, var(--bg) $surfaceAlpha, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg) $borderAlpha, transparent);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  
+  // Shadow ultra légère uniquement en LIGHT (via variable CSS)
+  // En dark, --glass-shadow = none, donc pas d'ombre
+  box-shadow: var(--glass-shadow, none);
+  @include transition(box-shadow, 150ms);
+  
+  // Variante hover optionnelle (peut être activée avec &:hover ou .is-hover)
+  &:hover,
+  &.is-hover {
+    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    box-shadow: var(--glass-shadow-hover, var(--glass-shadow, none));
+  }
 }
 

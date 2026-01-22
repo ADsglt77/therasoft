@@ -20,6 +20,10 @@
     }
   }
   
+  .label {
+    color: var(--text);
+  }
+  
   .input-wrapper {
     position: relative;
     display: flex;
@@ -30,24 +34,25 @@
       position: absolute;
       right: $spacing-16;
       pointer-events: none;
-      color: var(--color-gray-300);
+      color: var(--text-muted);
       z-index: 1;
       @include transition(color transform, 150ms);
       transform: rotate(0deg);
     }
 
     .input--select:focus ~ .select-icon {
-      color: var(--color-gray-100);
+      color: var(--text);
       transform: rotate(180deg);
     }
 
     .input--select:disabled ~ .select-icon {
-      color: var(--color-gray-500);
+      color: var(--text-muted);
+      opacity: 0.5;
       transform: rotate(0deg);
     }
 
     .select-icon--open {
-      color: var(--color-gray-100);
+      color: var(--text);
       transform: rotate(180deg);
     }
 
@@ -57,8 +62,7 @@
       left: 0;
       right: 0;
       z-index: 1000;
-      backdrop-filter: blur(10px);
-      border: 1px solid border-surface-color(20%);
+      @include glass-panel;
       border-radius: $radius-8;
       padding: $spacing-4;
       max-height: 200px;
@@ -70,8 +74,8 @@
 
     .dropdown-option {
       padding: $spacing-12 $spacing-16;
-      @include surface(5%);
-      color: var(--color-gray-100);
+      background: transparent;
+      color: var(--text);
       text-align: left;
       cursor: pointer;
       border-radius: $radius-4;
@@ -80,13 +84,13 @@
       display: block;
 
       &:hover {
-        @include surface(20%, var(--color-primary-500));
-        color: var(--color-gray-100);
+        background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+        color: var(--text);
       }
 
       &--selected {
-        @include surface(30%, var(--color-primary-500));
-        color: var(--color-gray-100);
+        background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+        color: var(--text);
       }
     }
   }
@@ -98,12 +102,19 @@
     cursor: pointer;
     background: none;
     border: none;
-    color: var(--color-gray-500);
+    color: var(--text-muted);
+    @include transition(color, 150ms);
+    
+    &:hover {
+      color: var(--text);
+    }
   }
 
   // Styles pour le type file (drag & drop)
   .file-drop-zone {
-    @include input-base;
+    @include glass-panel;
+    padding: $spacing-12 $spacing-16;
+    border-radius: $radius-8;
     display: flex;
     flex-grow: 1;
     min-height: 100%;
@@ -112,15 +123,17 @@
     cursor: pointer;
     position: relative;
     @include transition(all, 200ms);
+    color: var(--text);
+    @include focus-visible;
 
     &:hover:not(&--disabled) {
-      border-color: var(--color-primary-300);
-      @include surface(5%, var(--color-primary-500));
+      background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+      border-color: color-mix(in srgb, var(--color-primary-300) 60%, transparent);
     }
 
     &--dragging {
       border-color: var(--color-primary-500);
-      @include surface(10%, var(--color-primary-500));
+      background: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
       transform: scale(1.02);
     }
 
@@ -136,6 +149,7 @@
       justify-content: center;
       gap: $spacing-8;
       flex: 1;
+      color: var(--text-muted);
     }
   }
 
@@ -146,19 +160,19 @@
     width: 100%;
     margin-top: $spacing-8;
     padding-top: $spacing-12;
-    border-top: 1px solid border-surface-color(10%);
+    border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 
     .file-item {
       display: flex;
       align-items: center;
       gap: $spacing-8;
       padding: $spacing-8 $spacing-12;
-      @include surface(5%);
+      @include glass-panel;
       border-radius: $radius-4;
       @include transition(background-color, 150ms);
   
       &:hover {
-        @include surface(10%);
+        background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
       }
   
       &-name {
@@ -166,10 +180,11 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        color: var(--text);
       }
   
       &-size {
-        color: var(--color-gray-500);
+        color: var(--text-muted);
       }
   
       &-remove {
@@ -180,9 +195,10 @@
         border-radius: $radius-4;
         @include transition(background-color, 150ms);
         @include icon-center;
+        color: var(--text-muted);
   
         &:hover:not(:disabled) {
-          @include surface(20%, var(--color-danger));
+          background: color-mix(in srgb, var(--color-danger) 20%, transparent);
           color: var(--color-danger);
         }
   
@@ -195,7 +211,24 @@
   }
   
   .input {
-    @include input-base;
+    @include glass-panel;
+    padding: $spacing-12 $spacing-16;
+    border-radius: $radius-8;
+    color: var(--text);
+    font-size: $font-size-h5;
+    @include transition(border-color, 150ms);
+    width: 100%;
+    @include focus-visible;
+    outline: none;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     &.error {
       border-color: var(--color-danger);
@@ -267,7 +300,7 @@
     }
 
     &--info {
-      color: var(--color-gray-500);
+      color: var(--text-muted);
     }
 
     &--success {

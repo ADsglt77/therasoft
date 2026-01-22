@@ -10,16 +10,29 @@
   border-radius: $radius-16;
   letter-spacing: 0.4px;
   white-space: nowrap;
+  @include glass-panel;
+  @include transition();
 }
 
 // Variants
 :host[class*="badge--"] {
   --badge-color: var(--color-warning);
-  @include surface(40%, var(--badge-color));
-  border: 2px solid var(--badge-color);
+  background: color-mix(in srgb, var(--badge-color) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 40%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--badge-color);
 }
 
-:host.ui-badge--warning { --badge-color: var(--color-warning); }
-:host.ui-badge--success { --badge-color: var(--color-success); }
-:host.ui-badge--danger { --badge-color: var(--color-danger); }
-:host.ui-badge--repos { --badge-color: var(--color-primary-300); }
+:host.ui-badge--warning { 
+  --badge-color: var(--color-warning); 
+}
+:host.ui-badge--success { 
+  --badge-color: var(--color-success); 
+}
+:host.ui-badge--danger { 
+  --badge-color: var(--color-danger); 
+}
+:host.ui-badge--repos { 
+  --badge-color: var(--color-primary-300); 
+}

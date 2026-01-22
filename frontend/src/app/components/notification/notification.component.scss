@@ -25,6 +25,8 @@
     white-space: nowrap;
     animation: slideIn 0.3s ease-out;
     @include transition(opacity, 200ms);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
 
     &:hover {
       opacity: 0.9;
@@ -34,24 +36,28 @@
       @include icon-center;
     }
 
-    // Variants
+    // Variants - Glass effect avec couleurs sémantiques
     &--warning {
-      background-color: var(--color-warning);
+      background: color-mix(in srgb, var(--color-warning) 80%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-warning) 60%, transparent);
       color: var(--color-warning-up);
     }
 
     &--success {
-      background-color: var(--color-success);
+      background: color-mix(in srgb, var(--color-success) 80%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-success) 60%, transparent);
       color: var(--color-success-up);
     }
 
     &--danger {
-      background-color: var(--color-danger);
+      background: color-mix(in srgb, var(--color-danger) 80%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-danger) 60%, transparent);
       color: var(--color-danger-up);
     }
 
     &--information {
-      background-color: var(--color-primary-300);
+      background: color-mix(in srgb, var(--color-primary-300) 80%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-primary-300) 60%, transparent);
       color: var(--color-primary-900);
     }
 

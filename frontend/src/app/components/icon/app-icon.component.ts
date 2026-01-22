@@ -1,6 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy, ViewEncapsulation, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, ArrowRight, Upload, FileText, Image, User, Edit2, Save, XCircle, Mars, Venus, VenusAndMars, ClipboardCheck, Clock } from 'lucide-angular';
+import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, ArrowRight, Upload, FileText, Image, User, Edit2, Save, XCircle, Mars, Venus, VenusAndMars, ClipboardCheck, Clock, Sun } from 'lucide-angular';
 
 /**
  * Composant wrapper pour utiliser les icônes Lucide
@@ -42,6 +42,7 @@ export class AppIconComponent {
     logout: LogOut,
     'log-out': LogOut,
     moon: Moon,
+    sun: Sun,
     'calendar-heart': CalendarHeart,
     calendarheart: CalendarHeart,
     calendar: Calendar,
