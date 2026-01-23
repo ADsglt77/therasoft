@@ -5,6 +5,7 @@ import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { TimetableComponent } from '../../../components/timetable/timetable.component';
+import { UiLoaderComponent } from '../../../components/loader/ui-loader.component';
 import { PlanningService, Rdv } from '../../../core/services/planning.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Subscription } from 'rxjs';
@@ -29,7 +30,7 @@ interface TimetableSlot {
 @Component({
   selector: 'app-dashboard-planning-day-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarComponent, TimetableComponent],
+  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarComponent, TimetableComponent, UiLoaderComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
 })

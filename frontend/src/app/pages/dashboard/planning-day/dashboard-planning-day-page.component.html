@@ -16,7 +16,7 @@
     @if (isWeekend) {
     <p class="placeholder">Jour de repos</p>
     } @else if (isLoadingRdvs) {
-    <p class="placeholder">Chargement des rendez-vous...</p>
+    <ui-loader size="md" label="Chargement des rendez-vous..."></ui-loader>
     } @else {
     @if (timetableSlots.length === 0) {
     <p class="placeholder">Aucun rendez-vous programmé pour ce jour</p>
