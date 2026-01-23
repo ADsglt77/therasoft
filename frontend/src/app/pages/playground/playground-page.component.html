@@ -78,7 +78,7 @@
     </app-nav-calendar>
   </div>
     @if (isLoadingRdvs) {
-      <p>Chargement des rendez-vous...</p>
+      <ui-loader size="lg" label="Chargement des rendez-vous..."></ui-loader>
     } @else if (timetableSlots.length === 0) {
       <p>Aucun rendez-vous trouvé pour ce mois.</p>
     } @else {
