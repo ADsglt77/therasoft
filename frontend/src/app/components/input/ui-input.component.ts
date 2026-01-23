@@ -49,6 +49,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
+  @ViewChild('dropdownList', { static: false }) dropdownList?: ElementRef<HTMLDivElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
   selectedFiles: File[] = []; // Fichiers sélectionnés (pour file)
@@ -140,6 +141,32 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     if (!this.disabled) {
       this.isDropdownOpen = !this.isDropdownOpen;
       this.cdr.markForCheck();
+      
+      // Scroller vers l'option sélectionnée après l'ouverture du dropdown
+      if (this.isDropdownOpen) {
+        // Utiliser requestAnimationFrame pour s'assurer que le DOM est rendu
+        requestAnimationFrame(() => {
+          setTimeout(() => this.scrollToSelectedOption(), 0);
+        });
+      }
+    }
+  }
+
+  /**
+   * Fait défiler automatiquement vers l'option sélectionnée dans le dropdown
+   */
+  private scrollToSelectedOption(): void {
+    if (!this.dropdownList || !this.value) {
+      return;
+    }
+
+    const dropdownElement = this.dropdownList.nativeElement;
+    const selectedOption = dropdownElement.querySelector('.dropdown-option--selected') as HTMLElement;
+    
+    if (selectedOption && dropdownElement) {
+      // Scroller le conteneur pour que l'option sélectionnée soit en haut
+      const optionTop = selectedOption.offsetTop;
+      dropdownElement.scrollTop = optionTop;
     }
   }
 

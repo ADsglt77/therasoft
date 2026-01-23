@@ -62,7 +62,7 @@
       left: 0;
       right: 0;
       z-index: 1000;
-      @include glass-panel;
+      @include glass-panel(40%, var(--glass-border-alpha), var(--glass-blur));
       border-radius: $radius-8;
       padding: $spacing-4;
       max-height: 200px;
@@ -84,7 +84,7 @@
       display: block;
 
       &:hover {
-        background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+        @include glass-panel(60%, var(--glass-border-alpha), var(--glass-blur));
         color: var(--text);
       }
 
