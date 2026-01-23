@@ -4,6 +4,7 @@ import { Location } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent } from '../../../components/input/ui-input.component';
+import { UiLoaderComponent } from '../../../components/loader/ui-loader.component';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PatientService, Dossier } from '../../../core/services/patient.service';
 import { Subscription } from 'rxjs';
@@ -21,7 +22,7 @@ import { parseDocumentsList } from '../../../core/utils/string.utils';
 @Component({
   selector: 'app-dashboard-patient-detail-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiInputComponent],
+  imports: [CommonModule, AppIconComponent, UiInputComponent, UiLoaderComponent],
   templateUrl: './dashboard-patient-detail-page.component.html',
   styleUrl: './dashboard-patient-detail-page.component.scss',
 })

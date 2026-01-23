@@ -1,7 +1,5 @@
 @if (isLoading) {
-<div class="loading">
-  <p>Chargement du dossier...</p>
-</div>
+<ui-loader size="lg" label="Chargement du dossier..."></ui-loader>
 } @else if (dossier) {
 
 <div class="header">
@@ -71,7 +69,7 @@
         messageType="info" [fullHeight]="true">
       </ui-input>
       @if (isSavingObservations) {
-      <span>Enregistrement en cours...</span>
+      <ui-loader size="sm" [inline]="true" label="Enregistrement en cours..."></ui-loader>
       }
     </div>
   </section>
