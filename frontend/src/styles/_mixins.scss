@@ -94,21 +94,15 @@
   $borderAlpha: var(--glass-border-alpha),
   $blur: var(--glass-blur)
 ) {
-  background: color-mix(in srgb, var(--bg) $surfaceAlpha, transparent);
-  border: 1px solid color-mix(in srgb, var(--bg) $borderAlpha, transparent);
+  background: color-mix(in srgb, var(--glass-color) $surfaceAlpha, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-color) $borderAlpha, transparent);
   backdrop-filter: blur($blur);
   -webkit-backdrop-filter: blur($blur);
-  
-  // Shadow ultra légère uniquement en LIGHT (via variable CSS)
-  // En dark, --glass-shadow = none, donc pas d'ombre
-  box-shadow: var(--glass-shadow, none);
-  @include transition(box-shadow, 150ms);
   
   // Variante hover optionnelle (peut être activée avec &:hover ou .is-hover)
   &:hover,
   &.is-hover {
-    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
-    box-shadow: var(--glass-shadow-hover, var(--glass-shadow, none));
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
   }
 }
 

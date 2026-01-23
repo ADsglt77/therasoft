@@ -18,6 +18,8 @@
     radial-gradient(circle at 90% 60%, rgb(var(--bg-accent-5-rgb) / var(--bg-accent-5-alpha)) 0%, transparent 50%);
   /* THEME CONTROLLED: --bg-base-rgb */
   background-color: rgb(var(--bg-base-rgb) / 100%);
+  /* THEME CONTROLLED: --bg-filter (uniquement en light theme) */
+  filter: var(--bg-filter, none);
   z-index: -3;
 }
 
