@@ -5,6 +5,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { UiButtonComponent } from '../button/ui-button.component';
 import { UiInputComponent, InputMessageType } from '../input/ui-input.component';
 import { PasswordStrengthIndicatorComponent } from '../password-strength-indicator/password-strength-indicator.component';
+import { UiLoaderComponent } from '../loader/ui-loader.component';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { InputErrorMessages } from '../../core/utils/input-error-messages';
@@ -16,7 +17,7 @@ import { PasswordValidator } from '../../core/validators/password.validator';
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent, UiLoaderComponent],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,

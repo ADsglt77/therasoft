@@ -140,6 +140,7 @@
     [disabled]="isLoading"
     (click)="onSubmit()">
     @if (isLoading) {
+      <ui-loader size="sm" [inline]="true"></ui-loader>
       Chargement...
     } @else {
       {{ isLoginMode ? 'Se connecter' : 'S\'inscrire' }}
