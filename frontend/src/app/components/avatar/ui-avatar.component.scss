@@ -12,7 +12,8 @@
   @include glass-panel;
   text-transform: uppercase;
   overflow: hidden;
-  color: var(--text);
+  color: var(--text-muted);
+  border: 1px solid var(--text-muted);
 
   h4 {
     font-weight: 300 !important;

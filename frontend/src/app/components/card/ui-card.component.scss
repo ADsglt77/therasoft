@@ -9,7 +9,7 @@
   @include transition();
 
   &:hover {
-    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
     border-color: color-mix(in srgb, var(--border) 80%, transparent);
   }
   

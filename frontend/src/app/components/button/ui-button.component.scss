@@ -13,7 +13,7 @@
   @include focus-visible;
 
   &:hover:not(.ui-button--disabled) {
-    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
   }
 
   &.ui-button--disabled {
@@ -72,7 +72,7 @@
   padding: $spacing-4 $spacing-8;
 
   &:hover:not(.ui-button--disabled) {
-    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
     border-color: color-mix(in srgb, var(--border) 80%, transparent);
     color: var(--text);
   }

@@ -79,12 +79,12 @@
       text-align: left;
       cursor: pointer;
       border-radius: $radius-4;
-      @include transition(background-color, 150ms);
+      @include transition(background-color color, 150ms);
       width: 100%;
       display: block;
 
       &:hover {
-        background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+        background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
         color: var(--text);
       }
 
@@ -127,7 +127,7 @@
     @include focus-visible;
 
     &:hover:not(&--disabled) {
-      background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+      background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
       border-color: color-mix(in srgb, var(--color-primary-300) 60%, transparent);
     }
 
@@ -172,7 +172,7 @@
       @include transition(background-color, 150ms);
   
       &:hover {
-        background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+        background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
       }
   
       &-name {
@@ -193,7 +193,7 @@
         cursor: pointer;
         padding: $spacing-12;
         border-radius: $radius-4;
-        @include transition(background-color, 150ms);
+        @include transition(background-color color, 150ms);
         @include icon-center;
         color: var(--text-muted);
   

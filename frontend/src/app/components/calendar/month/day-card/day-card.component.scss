@@ -17,7 +17,7 @@
     color: var(--text);
 
     &:hover {
-        background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+        background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
         cursor: pointer;
     }
 }

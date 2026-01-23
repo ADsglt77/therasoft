@@ -18,7 +18,7 @@
   @include focus-visible;
 
   &:hover {
-    background: color-mix(in srgb, var(--bg) var(--glass-hover-alpha), transparent);
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
     color: var(--text);
   }
 

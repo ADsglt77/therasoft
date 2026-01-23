@@ -45,7 +45,7 @@
     cursor: pointer;
     border: 2px solid color-mix(in srgb, var(--border) 60%, transparent);
     border-radius: $radius-full;
-    @include transition();
+    @include transition(border-color opacity, 150ms);
     padding: $spacing-2;
     box-sizing: content-box;
     @include focus-visible;
