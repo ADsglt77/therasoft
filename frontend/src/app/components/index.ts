@@ -54,3 +54,7 @@ export type { CalendarMode } from './calendar/nav-calendar/nav-calendar.componen
 
 // Timetable
 export { TimetableComponent } from './timetable/timetable.component';
+
+// Loader
+export { UiLoaderComponent } from './loader/ui-loader.component';
+export type { LoaderSize } from './loader/ui-loader.component';
