@@ -69,7 +69,7 @@
 :host.ui-button--connect {
   @include glass-panel;
   color: var(--text-muted);
-  padding: $spacing-4 $spacing-8;
+  padding: $spacing-8 $spacing-12;
 
   &:hover:not(.ui-button--disabled) {
     background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
