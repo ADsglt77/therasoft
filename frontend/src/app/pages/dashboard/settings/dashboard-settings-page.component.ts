@@ -6,6 +6,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { InputMessageType, UiInputComponent } from '../../../components/input/ui-input.component';
 import { PasswordStrengthIndicatorComponent } from '../../../components/password-strength-indicator/password-strength-indicator.component';
+import { UiLoaderComponent } from '../../../components/loader/ui-loader.component';
 import { InputErrorMessages } from '../../../core/utils/input-error-messages';
 import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
 import { NotificationMessages } from '../../../core/constants/notification-messages';
@@ -15,7 +16,7 @@ import { PasswordValidator } from '../../../core/validators/password.validator';
 @Component({
   selector: 'app-dashboard-settings-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
+  imports: [CommonModule, ReactiveFormsModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent, UiLoaderComponent],
   templateUrl: './dashboard-settings-page.component.html',
   styleUrl: './dashboard-settings-page.component.scss',
 })
