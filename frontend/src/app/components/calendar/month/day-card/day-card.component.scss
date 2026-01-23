@@ -6,6 +6,7 @@
 }
 
 .day {
+    height: 100%;
     display: flex;
     flex-direction: column;
     gap: $spacing-16;
@@ -15,7 +16,7 @@
     min-height: 80px;
     @include glass-panel;
     color: var(--text);
-
+    
     &:hover {
         background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
         cursor: pointer;
