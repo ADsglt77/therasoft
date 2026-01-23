@@ -16,6 +16,8 @@
     padding: $spacing-16;
     @include glass-panel;
     border-radius: $radius-16;
+    position: relative;
+    z-index: 10;
 }
 
 .header div {
