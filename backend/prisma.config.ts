@@ -10,5 +10,8 @@ export default defineConfig({
     // À l'exécution : DATABASE_URL est fournie par docker-compose. Au build : fallback pour prisma generate.
     url: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/portail_medecin?schema=public",
   },
+  migrations: {
+    seed: 'npx tsx prisma/seed.ts',
+  },
 });
 
