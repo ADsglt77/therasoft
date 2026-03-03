@@ -9,6 +9,8 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
 
   backend:
     build: ./backend
@@ -32,6 +34,9 @@ services:
       DOCKER_CONTAINER: "true"
     stdin_open: true
     tty: true
+    networks:
+      - dokploy-network
+      - default
 
   frontend:
     build: ./frontend
@@ -46,15 +51,25 @@ services:
       - CHOKIDAR_USEPOLLING=true
     stdin_open: true
     tty: true
+    networks:
+      - dokploy-network
+      - default
 
   nginx:
     build: ./nginx
-    # ports:
-    #   - "80:80"
     depends_on:
       - backend
       - frontend
     restart: unless-stopped
+    networks:
+      - dokploy-network
+      - default
 
 volumes:
   postgres_data:
+
+networks:
+  dokploy-network:
+    external: true
+  default:
+    driver: bridge
