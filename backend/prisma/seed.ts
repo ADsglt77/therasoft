@@ -49,7 +49,15 @@ async function waitForDatabase(maxRetries = 10, delay = 2000) {
 
 async function main() {
   await waitForDatabase();
-  console.log('🌱 Début du seed...\n');
+
+  const medecinCount = await prisma.medecin.count();
+  if (medecinCount > 0) {
+    console.log('✅ Données déjà présentes, seed ignoré (premier deploy déjà effectué).');
+    await prisma.$disconnect();
+    process.exit(0);
+  }
+
+  console.log('🌱 Premier déploiement : début du seed...\n');
 
   console.log('🧹 Nettoyage de la base de données...');
   await prisma.dossier.deleteMany();

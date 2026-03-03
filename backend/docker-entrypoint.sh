@@ -10,5 +10,8 @@ done
 echo "Running Prisma db push..."
 npx prisma db push
 
+echo "Running Prisma seed (ignoré si données déjà présentes)..."
+npx prisma db seed || true
+
 echo "Starting application..."
 npm run start
