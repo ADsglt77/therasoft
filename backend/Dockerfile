@@ -17,6 +17,5 @@ RUN npx prisma generate
 
 EXPOSE 3000
 
-# Rendre le script d'entrée exécutable et l'utiliser comme entrypoint
-RUN chmod +x /app/docker-entrypoint.sh
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# Utiliser le script d'entrée via sh
+ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]
