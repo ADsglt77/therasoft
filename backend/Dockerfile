@@ -2,17 +2,24 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma
+# Librairies nécessaires à Prisma
 RUN apk add --no-cache openssl libc6-compat
 
+# Installer uniquement les dépendances nécessaires en prod (optionnel mais mieux)
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
+# Copier le code source
 COPY . .
 
 # Générer le client Prisma
 RUN npx prisma generate
 
+# Copier le script d'entrée
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+# Lancer les migrations + l'app
+CMD ["./docker-entrypoint.sh"]
