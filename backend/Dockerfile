@@ -12,11 +12,11 @@ RUN npm install
 # Copier le code source
 COPY . .
 
+# Générer le client Prisma (avant le build TypeScript)
+RUN npx prisma generate
+
 # Construire le code TypeScript
 RUN npm run build
-
-# Générer le client Prisma
-RUN npx prisma generate
 
 EXPOSE 3000
 
