@@ -7,8 +7,8 @@ until pg_isready -h db -p 5432 -U "$DB_USER"; do
   sleep 2
 done
 
-echo "Running Prisma migrations..."
-npx prisma migrate deploy
+echo "Running Prisma db push..."
+npx prisma db push
 
 echo "Starting application..."
 npm run start
