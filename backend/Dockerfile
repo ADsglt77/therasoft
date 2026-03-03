@@ -15,11 +15,7 @@ COPY . .
 # Générer le client Prisma
 RUN npx prisma generate
 
-# Copier le script d'entrée
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
-
 EXPOSE 3000
 
-# Lancer les migrations + l'app
-CMD ["./docker-entrypoint.sh"]
+# Script d'entrée (remplace l'entrypoint par défaut de l'image node)
+ENTRYPOINT ["./docker-entrypoint.sh"]
