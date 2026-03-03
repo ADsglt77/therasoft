@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Librairies nécessaires à Prisma
-RUN apk add --no-cache openssl libc6-compat
+# Librairies nécessaires à Prisma et à l'attente de Postgres
+RUN apk add --no-cache openssl libc6-compat postgresql-client
 
 # Installer uniquement les dépendances nécessaires en prod (optionnel mais mieux)
 COPY package*.json ./

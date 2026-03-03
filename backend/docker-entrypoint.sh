@@ -2,7 +2,10 @@
 set -e
 
 echo "Waiting for database..."
-sleep 5
+until pg_isready -h db -p 5432 -U "$DB_USER"; do
+  echo "Database is unavailable - sleeping"
+  sleep 2
+done
 
 echo "Running Prisma migrations..."
 npx prisma migrate deploy
