@@ -5,12 +5,15 @@ WORKDIR /app
 # Librairies nécessaires à Prisma et à l'attente de Postgres
 RUN apk add --no-cache openssl libc6-compat postgresql-client
 
-# Installer uniquement les dépendances nécessaires en prod (optionnel mais mieux)
+# Installer les dépendances (build + runtime)
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install
 
 # Copier le code source
 COPY . .
+
+# Construire le code TypeScript
+RUN npm run build
 
 # Générer le client Prisma
 RUN npx prisma generate
