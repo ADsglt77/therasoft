@@ -15,13 +15,9 @@ services:
 
   backend:
     build: ./backend
-    # Port non exposé publiquement, accessible uniquement via NGINX
-    # Port 5555 pour Prisma Studio (quand utilisé)
+    # Pas de volume : on utilise l'image buildée (dist/ présent). En dev local, remettre ./backend:/app si besoin.
     ports:
       - "5555:5555"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     depends_on:
       - db
     environment:
