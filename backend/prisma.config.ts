@@ -7,7 +7,7 @@ import 'dotenv/config';
  */
 export default defineConfig({
   datasource: {
-    url: "postgresql://postgres:postgres@db:5432/portail_medecin?schema=public",
+    url: env("DATABASE_URL"),
   },
 });
 
