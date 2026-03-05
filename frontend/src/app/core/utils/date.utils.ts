@@ -27,19 +27,38 @@ export function formatDateShort(dateString: string): string {
 }
 
 /**
- * Formate une heure au format "HHhmm"
+ * Formate une heure au format "HHhmm" depuis une string ISO time, un format "HH:mm:ss", ou un objet Date
  */
 export function formatTime(timeString: string | Date): string {
-  const date = typeof timeString === 'string' ? new Date(timeString) : timeString;
-  
-  if (isNaN(date.getTime())) {
-    console.error('Invalid time format:', timeString);
-    return '00h00';
+  let hours: number;
+  let minutes: number;
+
+  if (typeof timeString === 'string') {
+    // Essayer d'abord le format time simple (HH:mm:ss ou HH:mm)
+    const timeMatch = timeString.match(/^(\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1], 10);
+      minutes = parseInt(timeMatch[2], 10);
+    } else {
+      // Sinon, essayer de parser comme Date ISO
+      const date = new Date(timeString);
+      if (isNaN(date.getTime())) {
+        console.error('Invalid time format:', timeString);
+        return '00h00';
+      }
+      hours = date.getHours();
+      minutes = date.getMinutes();
+    }
+  } else {
+    if (isNaN(timeString.getTime())) {
+      console.error('Invalid Date object:', timeString);
+      return '00h00';
+    }
+    hours = timeString.getHours();
+    minutes = timeString.getMinutes();
   }
 
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}h${minutes}`;
+  return `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`;
 }
 
 /**
