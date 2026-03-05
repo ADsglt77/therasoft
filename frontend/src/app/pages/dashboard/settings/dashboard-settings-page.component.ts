@@ -186,15 +186,8 @@ export class DashboardSettingsPageComponent implements OnInit {
       return;
     }
 
-    // Réinitialiser les erreurs serveur précédentes
-    Object.keys(form.controls).forEach((key) => {
-      const control = form.get(key);
-      if (control?.hasError('serverError')) {
-        const errors = { ...control.errors };
-        delete errors['serverError'];
-        control.setErrors(Object.keys(errors).length > 0 ? errors : null);
-      }
-    });
+    // Réinitialiser les erreurs serveur précédentes sur tous les champs
+    this.clearServerErrors(form);
 
     // Gérer les erreurs de validation Zod
     if (ApiErrorHandler.isValidationError(error)) {
@@ -215,6 +208,19 @@ export class DashboardSettingsPageComponent implements OnInit {
     // Erreurs générales → Notification uniquement
     this.notificationService.show('danger', extracted.message || fallbackMessage);
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Supprime les erreurs 'serverError' de tous les contrôles du formulaire
+   */
+  private clearServerErrors(form: FormGroup): void {
+    Object.keys(form.controls).forEach((key) => {
+      const control = form.get(key);
+      if (control?.hasError('serverError')) {
+        control.setErrors(null);
+        control.updateValueAndValidity();
+      }
+    });
   }
 
   hasError(form: FormGroup, fieldName: string, errorType: string): boolean {

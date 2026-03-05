@@ -1,26 +1,25 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { patientService } from '../services/patient.service';
 import { verifyAccessToken } from '../../auth/middlewares/jwt.middleware';
-import { patientRdvParamsSchema } from '../schemas/patient.schemas';
+import { patientRdvParamsSchema, PatientRdvParams } from '../schemas/patient.schemas';
 import { updateObservationsSchema } from '../schemas/dossier.schemas';
 import { validateBody } from '../../../middlewares/validate';
 import { ApiError } from '../../../middlewares/errorHandler';
-import { z } from 'zod';
 
 const router = Router();
 
 /**
- * Middleware de validation des paramètres patient/rdv
+ * Parse et valide les paramètres patient/rdv depuis la requête
  */
-function validatePatientRdvParams(req: Request, _res: Response, next: NextFunction): void {
+function parsePatientRdvParams(req: Request): PatientRdvParams {
   try {
-    req.params = patientRdvParamsSchema.parse(req.params) as any;
-    next();
+    return patientRdvParamsSchema.parse(req.params);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return next(new ApiError('Paramètres invalides', 'BAD_REQUEST', 400));
+      throw new ApiError('Paramètres invalides', 'BAD_REQUEST', 400);
     }
-    next(error);
+    throw error;
   }
 }
 
@@ -31,10 +30,9 @@ function validatePatientRdvParams(req: Request, _res: Response, next: NextFuncti
 router.get(
   '/:patientId/rdv/:rdvId/dossier',
   verifyAccessToken,
-  validatePatientRdvParams,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { patientId, rdvId } = req.params as any;
+      const { patientId, rdvId } = parsePatientRdvParams(req);
       const dossier = await patientService.getDossierByPatientAndRdv(patientId, rdvId);
       res.json(dossier);
     } catch (error) {
@@ -50,11 +48,10 @@ router.get(
 router.patch(
   '/:patientId/rdv/:rdvId/dossier/observations',
   verifyAccessToken,
-  validatePatientRdvParams,
   validateBody(updateObservationsSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { patientId, rdvId } = req.params as any;
+      const { patientId, rdvId } = parsePatientRdvParams(req);
       const dossier = await patientService.updateObservations(
         patientId,
         rdvId,
