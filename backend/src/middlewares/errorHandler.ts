@@ -23,26 +23,36 @@ export class ApiError extends Error {
  * Formate les erreurs selon le standard: { error: { code, message, details }, requestId }
  */
 export const errorHandler = (
-  err: ApiError,
+  err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   const requestId = req.headers['x-request-id'] as string || 'unknown';
-  const statusCode = err.statusCode || 500;
-  const code = err.code || 'INTERNAL_ERROR';
-  const message = err.message || 'Une erreur est survenue';
 
-  res.status(statusCode).json({
+  if (err instanceof ApiError) {
+    console.error(`[${requestId}] ApiError ${err.statusCode} ${err.code}: ${err.message}`);
+
+    res.status(err.statusCode).json({
+      error: {
+        code: err.code,
+        message: err.message,
+        details: err.details || null,
+      },
+      requestId,
+    });
+    return;
+  }
+
+  // Unexpected errors — log stack but don't expose internals
+  console.error(`[${requestId}] Unhandled error:`, err);
+
+  res.status(500).json({
     error: {
-      code,
-      message,
-      details: err.details || null,
+      code: 'INTERNAL_ERROR',
+      message: 'Une erreur interne est survenue',
+      details: null,
     },
     requestId,
   });
 };
-
-
-
-

@@ -61,11 +61,16 @@ export class RdvService {
    * Récupère les rendez-vous pour une date spécifique
    */
   async getRdvsByDate(date: Date): Promise<RdvResponse[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
     return prisma.rdv.findMany({
       where: {
         date: {
-          gte: new Date(date.setHours(0, 0, 0, 0)),
-          lt: new Date(date.setHours(23, 59, 59, 999)),
+          gte: startOfDay,
+          lt: endOfDay,
         },
       },
       select: {
