@@ -215,8 +215,8 @@ export class AuthService {
         nom: medecin.nom,
         prenom: medecin.prenom,
         role: medecin.role,
-        avatarUrl: (medecin as any).avatarUrl ?? null,
-        avatarFileName: (medecin as any).avatarFileName ?? null,
+        avatarUrl: medecin.avatarUrl ?? null,
+        avatarFileName: medecin.avatarFileName ?? null,
       },
     };
   }

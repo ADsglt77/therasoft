@@ -7,6 +7,7 @@ import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/
 import { TimetableComponent } from '../../../components/timetable/timetable.component';
 import { PlanningService, Rdv } from '../../../core/services/planning.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { formatTime } from '../../../core/utils/date.utils';
 import { Subscription } from 'rxjs';
 
 /**
@@ -102,8 +103,8 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
             id: rdv.id.toString(),
             rdvId: rdv.id,
             patientId: rdv.patient.id,
-            startTime: this.planningService.formatTime(rdv.heureDebut),
-            endTime: this.planningService.formatTime(rdv.heureFin),
+            startTime: formatTime(rdv.heureDebut),
+            endTime: formatTime(rdv.heureFin),
             title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
             disabled: false,
           };

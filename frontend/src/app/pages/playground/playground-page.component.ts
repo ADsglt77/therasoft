@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarComponent, TimetableComponent } from '../../components';
 import { NotificationService } from '../../core/services/notification.service';
 import { PlanningService, Rdv } from '../../core/services/planning.service';
+import { formatTime } from '../../core/utils/date.utils';
 
 /**
  * Interface pour les slots du timetable
@@ -62,8 +63,8 @@ export class PlaygroundPageComponent implements OnInit {
         this.timetableSlots = rdvsToShow.map((rdv: Rdv) => {
           // Les heures viennent comme strings ISO depuis l'API
           // Exemple: "2000-01-01T08:30:00.000Z" ou "08:30:00"
-          const startTime = this.planningService.formatTime(rdv.heureDebut);
-          const endTime = this.planningService.formatTime(rdv.heureFin);
+          const startTime = formatTime(rdv.heureDebut);
+          const endTime = formatTime(rdv.heureFin);
           
           return {
             id: rdv.id.toString(),
