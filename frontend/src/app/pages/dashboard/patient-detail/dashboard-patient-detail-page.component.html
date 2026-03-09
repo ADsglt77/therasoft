@@ -67,52 +67,38 @@
     <div class="content">
       <div class="observations-wrapper">
         <ui-input type="textarea" [value]="observationsValue" (input)="updateObservations($any($event.target).value)"
-          (blur)="onObservationsBlur()" placeholder="Saisissez vos observations médicales..." id="observations"
-          [disabled]="isSavingObservations" message="Vous pouvez cliquer pour saisir ou modifier les observations."
-          messageType="info" [fullHeight]="true">
+          (blur)="onObservationsBlur()" placeholder="Saisissez vos observations médicales..."
+          id="observations"
+          [disabled]="isSavingObservations"
+          message="Saisie au clavier ou transcription vocale (bouton micro)."
+          messageType="info"
+          [fullHeight]="true">
         </ui-input>
-        <div class="vocal-wrapper">
-          <ui-input-vocal
-            [disabled]="isSavingObservations"
-            (startRecording)="onStartRecording()"
-            (stopRecording)="onStopRecording()"
-            (cancelRecording)="onCancelRecording()">
-          </ui-input-vocal>
+        <div class="transcription-vocal-wrapper">
+          @if (isTranscribing) {
+            <ui-button
+              color="primary700"
+              (click)="stopTranscription()"
+              [disabled]="isSavingObservations"
+              [attr.aria-label]="'Arrêter la transcription vocale'"
+            >
+              <app-icon name="square" [size]="16" color="var(--color-danger)"></app-icon>
+              <span>Arrêter</span>
+            </ui-button>
+          } @else {
+            <ui-button
+              color="primary700"
+              (click)="startTranscription()"
+              [disabled]="isSavingObservations || !isTranscriptionSupported"
+              [attr.aria-label]="'Démarrer la transcription vocale'"
+              [title]="!isTranscriptionSupported ? 'Transcription non supportée par ce navigateur' : 'Remplir les observations par la voix'"
+            >
+              <app-icon name="mic" [size]="20" color="var(--text)"></app-icon>
+              <span>Transcription vocale</span>
+            </ui-button>
+          }
         </div>
       </div>
-
-      <!-- Liste des enregistrements audio -->
-      <ui-audio-recordings-list
-        [recordings]="audioRecordings"
-        [disabled]="isSavingObservations"
-        [patientId]="patientId!"
-        [rdvId]="rdvId!"
-        [currentlyPlayingId]="getCurrentlyPlayingId()"
-        (playRecording)="onPlayRecording($event)"
-        (pauseRecording)="onPauseRecording($event)"
-        (deleteRecording)="onDeleteRecording($event)"
-        (renameRecording)="onRenameRecording($event)"
-      ></ui-audio-recordings-list>
-
-      <!-- Prompt pour nommer l'enregistrement -->
-      @if (isRecordingNamePromptOpen) {
-        <div class="recording-name-prompt-overlay" (click)="cancelSaveRecording()">
-          <div class="recording-name-prompt" (click)="$event.stopPropagation()">
-            <h4>Nommer l'enregistrement</h4>
-            <ui-input
-              type="text"
-              [value]="recordingName"
-              (input)="recordingName = $any($event.target).value"
-              placeholder="Nom de l'enregistrement..."
-              [disabled]="false"
-            ></ui-input>
-            <div class="recording-name-prompt-actions">
-              <ui-button color="gray100" (click)="cancelSaveRecording()">Annuler</ui-button>
-              <ui-button color="primary700" (click)="confirmSaveRecording()">Sauvegarder</ui-button>
-            </div>
-          </div>
-        </div>
-      }
 
       @if (isSavingObservations) {
       <span>Enregistrement en cours...</span>

@@ -57,7 +57,7 @@
           min-height: 0;
         }
 
-        .vocal-wrapper {
+        .transcription-vocal-wrapper {
           display: flex;
           justify-content: flex-end;
           margin-top: $spacing-8;
@@ -113,48 +113,4 @@
       }
     }
   }
-}
-
-// Prompt pour nommer l'enregistrement
-.recording-name-prompt-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.recording-name-prompt {
-  background: color-mix(in srgb, var(--glass-color) var(--glass-surface-alpha), transparent);
-  border: 1px solid color-mix(in srgb, var(--glass-color) var(--glass-border-alpha), transparent);
-  border-radius: $radius-12;
-  padding: $spacing-24;
-  min-width: 400px;
-  max-width: 90vw;
-  @include glass-panel;
-  backdrop-filter: blur(10px);
-
-  h4 {
-    margin: 0 0 $spacing-16 0;
-    font-size: $font-size-h4;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  ui-input {
-    margin-bottom: $spacing-16;
-  }
-}
-
-.recording-name-prompt-actions {
-  display: flex;
-  gap: $spacing-12;
-  justify-content: flex-end;
-  margin-top: $spacing-16;
 }
