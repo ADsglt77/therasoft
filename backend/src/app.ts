@@ -31,6 +31,9 @@ export const createApp = (): Express => {
   app.use(cookieParser());
   app.use(requestIdMiddleware);
 
+  // Servir les fichiers statiques (uploads)
+  app.use('/uploads', express.static('uploads'));
+
   // Routes API
   app.use('/api', apiRoutes);
 
