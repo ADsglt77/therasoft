@@ -35,9 +35,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   dossier: Dossier | null = null;
   observationsValue = '';
   isSavingObservations = false;
-  /** Utilisé par le template : état de la transcription vocale */
   isTranscribing = false;
-  /** Utilisé par le template : reconnaissance vocale supportée par le navigateur */
   isTranscriptionSupported = false;
   private subscriptions = new Subscription();
   private transcriptSub: Subscription | null = null;
