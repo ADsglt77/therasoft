@@ -15,13 +15,10 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-// En local sans Docker : @db: → @localhost
-const url = databaseUrl.replace('@db:', '@localhost:');
-
 console.log(`🔌 Connexion à la base de données...`);
-console.log(`   URL: ${url.replace(/:[^:@]+@/, ':****@')}`);
+console.log(`   URL: ${databaseUrl.replace(/:[^:@]+@/, ':****@')}`);
 
-const pool = new Pool({ connectionString: url });
+const pool = new Pool({ connectionString: databaseUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
