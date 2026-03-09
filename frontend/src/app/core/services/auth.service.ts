@@ -44,6 +44,8 @@ export interface MeResponse {
   providedIn: 'root',
 })
 export class AuthService extends ApiClientService {
+  private tokenStorage: TokenStorageService;
+
   constructor(
     http: HttpClient,
     tokenStorage: TokenStorageService,
@@ -52,8 +54,6 @@ export class AuthService extends ApiClientService {
     super(http);
     this.tokenStorage = tokenStorage;
   }
-
-  private tokenStorage: TokenStorageService;
   
   /**
    * BehaviorSubject pour stocker l'utilisateur actuel
