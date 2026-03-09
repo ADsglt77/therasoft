@@ -1,0 +1,204 @@
+@use '../../../styles/tokens' as *;
+@use '../../../styles/mixins' as *;
+
+:host {
+  display: inline-flex;
+}
+
+.vocal-controls {
+  display: flex;
+  align-items: center;
+  gap: $spacing-8;
+  flex-wrap: wrap;
+}
+
+.vocal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-8;
+  padding: $spacing-8 $spacing-12;
+  border-radius: $radius-8;
+  @include glass-panel;
+  border: 1px solid color-mix(in srgb, var(--glass-color) var(--glass-border-alpha), transparent);
+  background: color-mix(in srgb, var(--glass-color) var(--glass-surface-alpha), transparent);
+  color: var(--text);
+  cursor: pointer;
+  @include transition(all, 150ms);
+  @include focus-visible;
+
+  &:hover:not(&--disabled):not(&--recording) {
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+    border-color: color-mix(in srgb, var(--color-primary-300) 60%, transparent);
+  }
+
+  &:active:not(&--disabled) {
+    transform: scale(0.98);
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--recording {
+    background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+    border-color: var(--color-danger);
+    animation: pulse-recording 1.5s ease-in-out infinite;
+
+    .vocal-icon {
+      animation: pulse-icon 1s ease-in-out infinite;
+    }
+  }
+
+  &--playing {
+    background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+    border-color: var(--color-primary-500);
+  }
+
+  &--ready {
+    background: color-mix(in srgb, var(--color-success) 15%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+  }
+
+  &--stop {
+    background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+    border-color: var(--color-danger);
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 25%, transparent);
+    }
+  }
+
+  &--cancel {
+    padding: $spacing-8;
+    min-width: auto;
+    background: transparent;
+    border-color: transparent;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+      border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+    }
+  }
+
+  &--delete {
+    padding: $spacing-8;
+    min-width: auto;
+    background: transparent;
+    border-color: transparent;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+      border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+    }
+  }
+}
+
+.vocal-icon {
+  flex-shrink: 0;
+}
+
+.vocal-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.vocal-duration {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  padding-left: $spacing-4;
+  border-left: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  margin-left: $spacing-4;
+}
+
+.vocal-recording-info,
+.vocal-playback-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-8;
+  margin-left: $spacing-8;
+  padding-left: $spacing-8;
+  border-left: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.vocal-volume-indicator {
+  width: 40px;
+  height: 4px;
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.vocal-volume-bar {
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    var(--color-success),
+    var(--color-warning),
+    var(--color-danger)
+  );
+  border-radius: 2px;
+  transition: width 0.1s ease-out;
+  min-width: 2px;
+}
+
+.vocal-progress-indicator {
+  width: 60px;
+  height: 4px;
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.vocal-progress-bar {
+  height: 100%;
+  background: var(--color-primary-500);
+  border-radius: 2px;
+  transition: width 0.1s ease-out;
+  min-width: 2px;
+}
+
+.vocal-processing {
+  display: flex;
+  align-items: center;
+  gap: $spacing-8;
+  padding: $spacing-8 $spacing-12;
+  color: var(--text-muted);
+}
+
+.vocal-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--text-muted) 30%, transparent);
+  border-top-color: var(--text-muted);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes pulse-icon {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
