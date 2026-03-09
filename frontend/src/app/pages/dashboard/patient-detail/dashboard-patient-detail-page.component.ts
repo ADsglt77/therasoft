@@ -220,26 +220,29 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.voiceRecognitionService.startTranscription();
     this.isTranscribing = true;
 
-    this.transcriptSub = this.voiceRecognitionService.transcript$.subscribe({
-      next: (result: TranscriptionResult) => {
+    this.transcriptSub = this.voiceRecognitionService.transcript$.subscribe(
+      (result: TranscriptionResult) => {
         const newTranscript = result.transcript.trim();
 
         if (!newTranscript) {
-          // Pas encore de texte reconnu : on garde seulement le texte initial
           this.observationsValue = this.transcriptionInitialText;
           return;
         }
 
         const separator = this.transcriptionInitialText ? '\n\n' : '';
         this.observationsValue = `${this.transcriptionInitialText}${separator}${newTranscript}`;
-      },
-      error: (error) => {
-        this.isTranscribing = false;
+      }
+    );
+
+    const errorSub = this.voiceRecognitionService.error$.subscribe((error) => {
+      this.isTranscribing = false;
+      if (this.transcriptSub) {
+        this.transcriptSub.unsubscribe();
         this.transcriptSub = null;
-        console.error('Erreur de transcription:', error);
-        this.notificationService.show('danger', error?.message || 'Erreur de transcription vocale');
-      },
+      }
+      this.notificationService.show('danger', error?.message || 'Erreur de transcription vocale');
     });
+    this.subscriptions.add(errorSub);
 
     this.notificationService.show('success', 'Transcription vocale démarrée. Parlez dans le micro.');
   }
