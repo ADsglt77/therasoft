@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 
 export interface TranscriptionResult {
   transcript: string;
@@ -18,6 +18,8 @@ export class VoiceRecognitionService {
   private recognition: any = null;
   private transcriptSubject = new Subject<TranscriptionResult>();
   public transcript$ = this.transcriptSubject.asObservable();
+  private errorSubject = new Subject<Error>();
+  public error$ = this.errorSubject.asObservable();
   private isRecognizing = false;
   private finalTranscript = '';
 
@@ -90,7 +92,8 @@ export class VoiceRecognitionService {
             break;
         }
 
-        this.transcriptSubject.error(new Error(errorMessage));
+        this.isRecognizing = false;
+        this.errorSubject.next(new Error(errorMessage));
       };
 
       // Événement : fin de reconnaissance
