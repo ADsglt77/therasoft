@@ -51,6 +51,9 @@ router.patch(
   validateBody(updateObservationsSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const params = patientRdvParamsSchema.parse(req.params);
+      const body = updateObservationsSchema.parse(req.body);
+
       const { patientId, rdvId } = parsePatientRdvParams(req);
       const dossier = await patientService.updateObservations(
         patientId,
@@ -65,4 +68,3 @@ router.patch(
 );
 
 export default router;
-

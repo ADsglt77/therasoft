@@ -2,7 +2,7 @@ import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 
 /**
- * Interface pour le dossier médical retourné
+ * Interface pour le dossier médical retourné (sans champs audio)
  */
 export interface DossierResponse {
   id: number;
@@ -39,44 +39,57 @@ export class PatientService {
     patientId: number,
     rdvId: number
   ): Promise<DossierResponse> {
-    const dossier = await prisma.dossier.findUnique({
-      where: {
-        patientId_rdvId: {
-          patientId,
-          rdvId,
-        },
-      },
-      include: {
-        patient: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-            dateNaissance: true,
-            sexe: true,
+    try {
+      console.log(`[PatientService] Récupération du dossier pour patient ${patientId}, rdv ${rdvId}`);
+      const dossier = await prisma.dossier.findUnique({
+        where: {
+          patientId_rdvId: {
+            patientId,
+            rdvId,
           },
         },
-        rdv: {
-          select: {
-            id: true,
-            date: true,
-            heureDebut: true,
-            heureFin: true,
-            modalite: true,
+        select: {
+          id: true,
+          observations: true,
+          resultats: true,
+          documents: true,
+          createdAt: true,
+          updatedAt: true,
+          patient: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              dateNaissance: true,
+              sexe: true,
+            },
+          },
+          rdv: {
+            select: {
+              id: true,
+              date: true,
+              heureDebut: true,
+              heureFin: true,
+              modalite: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!dossier) {
-      throw new ApiError(
-        'Dossier médical non trouvé pour ce rendez-vous',
-        'NOT_FOUND',
-        404
-      );
+      if (!dossier) {
+        throw new ApiError(
+          'Dossier médical non trouvé pour ce rendez-vous',
+          'NOT_FOUND',
+          404
+        );
+      }
+
+      console.log(`[PatientService] Dossier trouvé: ${JSON.stringify(dossier, null, 2)}`);
+      return dossier;
+    } catch (error: any) {
+      console.error(`[PatientService] Erreur lors de la récupération du dossier:`, error);
+      throw error;
     }
-
-    return dossier;
   }
 
   /**
@@ -85,8 +98,48 @@ export class PatientService {
   async updateObservations(
     patientId: number,
     rdvId: number,
-    observations: string
+    observations: string | null
   ): Promise<DossierResponse> {
+    // Vérifier que le dossier existe
+    const existingDossier = await prisma.dossier.findUnique({
+      where: {
+        patientId_rdvId: {
+          patientId,
+          rdvId,
+        },
+      },
+    });
+
+    if (!existingDossier) {
+      throw new ApiError(
+        'Dossier médical non trouvé pour ce rendez-vous',
+        'NOT_FOUND',
+        404
+      );
+    }
+
+    // Mettre à jour les observations
+    const updatedDossier = await prisma.dossier.update({
+      where: {
+        id: existingDossier.id,
+      },
+      data: {
+        observations: observations, // null ou string non vide (validé par Zod)
+      },
+      select: {
+        id: true,
+        observations: true,
+        resultats: true,
+        documents: true,
+        createdAt: true,
+        updatedAt: true,
+        patient: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            dateNaissance: true,
+            sexe: true,
     // Vérifier que le dossier existe et mettre à jour en une seule opération
     try {
       const updatedDossier = await prisma.dossier.update({
@@ -137,4 +190,3 @@ export class PatientService {
 }
 
 export const patientService = new PatientService();
-

@@ -65,11 +65,41 @@
       <h3>Observations médicales</h3>
     </div>
     <div class="content">
-      <ui-input type="textarea" [value]="observationsValue" (input)="updateObservations($any($event.target).value)"
-        (blur)="onObservationsBlur()" placeholder="Saisissez vos observations médicales..." id="observations"
-        [disabled]="isSavingObservations" message="Vous pouvez cliquer pour saisir ou modifier les observations."
-        messageType="info" [fullHeight]="true">
-      </ui-input>
+      <div class="observations-wrapper">
+        <ui-input type="textarea" [value]="observationsValue" (input)="updateObservations($any($event.target).value)"
+          (blur)="onObservationsBlur()" placeholder="Saisissez vos observations médicales..."
+          id="observations"
+          [disabled]="isSavingObservations"
+          message="Saisie au clavier ou transcription vocale (bouton micro)."
+          messageType="info"
+          [fullHeight]="true">
+        </ui-input>
+        <div class="transcription-vocal-wrapper">
+          @if (isTranscribing) {
+            <ui-button
+              color="primary700"
+              (click)="stopTranscription()"
+              [disabled]="isSavingObservations"
+              [attr.aria-label]="'Arrêter la transcription vocale'"
+            >
+              <app-icon name="square" [size]="16" color="var(--color-danger)"></app-icon>
+              <span>Arrêter</span>
+            </ui-button>
+          } @else {
+            <ui-button
+              color="primary700"
+              (click)="startTranscription()"
+              [disabled]="isSavingObservations || !isTranscriptionSupported"
+              [attr.aria-label]="'Démarrer la transcription vocale'"
+              [title]="!isTranscriptionSupported ? 'Transcription non supportée par ce navigateur' : 'Remplir les observations par la voix'"
+            >
+              <app-icon name="mic" [size]="20" color="var(--text)"></app-icon>
+              <span>Transcription vocale</span>
+            </ui-button>
+          }
+        </div>
+      </div>
+
       @if (isSavingObservations) {
       <span>Enregistrement en cours...</span>
       }

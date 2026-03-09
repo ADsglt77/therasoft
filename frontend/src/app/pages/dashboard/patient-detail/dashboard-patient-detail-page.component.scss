@@ -48,6 +48,20 @@
         gap: $spacing-24;
         flex: 1;
         min-height: 0;
+
+        .observations-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: $spacing-12;
+          flex: 1;
+          min-height: 0;
+        }
+
+        .transcription-vocal-wrapper {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: $spacing-8;
+        }
       }
     }
   }
