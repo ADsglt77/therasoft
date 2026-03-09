@@ -1,7 +1,16 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { z } from 'zod';
 
-dotenv.config();
+// Charger le .env à la racine du monorepo (priorité) ou celui du backend
+const rootEnv = path.resolve(process.cwd(), '..', '.env');
+const localEnv = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(rootEnv)) {
+  dotenv.config({ path: rootEnv });
+} else {
+  dotenv.config({ path: localEnv });
+}
 
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
