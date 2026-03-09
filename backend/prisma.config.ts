@@ -1,13 +1,19 @@
-import { defineConfig, env } from 'prisma/config';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { defineConfig } from 'prisma/config';
 
-/**
- * Prisma 7 configuration for migrations
- * The datasource URL is now configured here instead of in schema.prisma
- */
+const rootEnv = path.resolve(process.cwd(), '..', '.env');
+const localEnv = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(rootEnv)) dotenv.config({ path: rootEnv });
+else dotenv.config({ path: localEnv });
+
 export default defineConfig({
   datasource: {
-    url: "postgresql://postgres:postgres@db:5432/portail_medecin?schema=public",
+    url: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/portail_medecin?schema=public",
+  },
+  migrations: {
+    seed: 'npx tsx prisma/seed.ts',
   },
 });
 

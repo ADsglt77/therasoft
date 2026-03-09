@@ -1,4 +1,4 @@
-import { HttpInterceptorFn, HttpErrorResponse, HttpRequest } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
@@ -6,6 +6,7 @@ import { TokenStorageService } from '../../core/services/token-storage.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ApiErrorHandler } from '../../core/utils/api-error-handler';
 import { TokenRefreshService } from '../../core/services/token-refresh.service';
+import { AUTH_NO_REFRESH_ROUTES, AUTH_COMPONENT_HANDLED_ROUTES, matchesRoute, isApiRequest } from '../../core/constants/api-routes';
 
 /**
  * Interceptor qui gère les erreurs HTTP, notamment les 401 (non autorisé)
@@ -20,13 +21,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       // Si l'erreur est 401 (non autorisé) et qu'on est sur une route API
-      if (error.status === 401 && req.url.includes('/api/')) {
+      if (error.status === 401 && isApiRequest(req.url)) {
         // Ne pas tenter de refresh pour les routes d'authentification
-        if (
-          req.url.includes('/auth/login') ||
-          req.url.includes('/auth/register') ||
-          req.url.includes('/auth/refresh')
-        ) {
+        if (matchesRoute(req.url, AUTH_NO_REFRESH_ROUTES)) {
           return throwError(() => error);
         }
 
@@ -35,8 +32,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           return throwError(() => error);
         }
 
-        // Ne pas rediriger pour les erreurs de changement de mot de passe (gérées dans le composant)
-        if (req.url.includes('/auth/password')) {
+        // Ne pas rediriger pour les erreurs gérées dans le composant
+        if (matchesRoute(req.url, AUTH_COMPONENT_HANDLED_ROUTES)) {
           return throwError(() => error);
         }
 

@@ -140,21 +140,52 @@ export class PatientService {
             prenom: true,
             dateNaissance: true,
             sexe: true,
+    // Vérifier que le dossier existe et mettre à jour en une seule opération
+    try {
+      const updatedDossier = await prisma.dossier.update({
+        where: {
+          patientId_rdvId: {
+            patientId,
+            rdvId,
           },
         },
-        rdv: {
-          select: {
-            id: true,
-            date: true,
-            heureDebut: true,
-            heureFin: true,
-            modalite: true,
+        data: {
+          observations,
+        },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true,
+              dateNaissance: true,
+              sexe: true,
+            },
+          },
+          rdv: {
+            select: {
+              id: true,
+              date: true,
+              heureDebut: true,
+              heureFin: true,
+              modalite: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return updatedDossier;
+      return updatedDossier;
+    } catch (error: any) {
+      // Prisma throws P2025 when the record to update is not found
+      if (error?.code === 'P2025') {
+        throw new ApiError(
+          'Dossier médical non trouvé pour ce rendez-vous',
+          'NOT_FOUND',
+          404
+        );
+      }
+      throw error;
+    }
   }
 }
 

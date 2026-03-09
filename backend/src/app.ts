@@ -16,9 +16,12 @@ export const createApp = (): Express => {
   // Sécurité: Helmet (headers sécurisés)
   app.use(helmet());
 
-  // CORS - Permet toutes les origines en dev (NGINX gère CORS en prod)
+  // CORS : en production on restreint à FRONTEND_ORIGIN, en dev on accepte tout
+  const corsOrigin = env.nodeEnv === 'production' && env.frontendOrigin
+    ? env.frontendOrigin
+    : true;
   app.use(cors({
-    origin: true, // Permet toutes les origines (NGINX gère CORS)
+    origin: corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],

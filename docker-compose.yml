@@ -8,20 +8,20 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_therasoft_v3:/var/lib/postgresql/data
+    networks:
+      - dokploy-network
+      - default
 
   backend:
     build: ./backend
-    # Port non exposé publiquement, accessible uniquement via NGINX
-    # Port 5555 pour Prisma Studio (quand utilisé)
+    # Pas de volume : on utilise l'image buildée (dist/ présent). En dev local, remettre ./backend:/app si besoin.
     ports:
       - "5555:5555"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     depends_on:
       - db
     environment:
+      # En Docker, l’URL doit pointer vers le service db. Construite à partir des mêmes variables que le .env racine.
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
@@ -32,29 +32,34 @@ services:
       DOCKER_CONTAINER: "true"
     stdin_open: true
     tty: true
+    networks:
+      - dokploy-network
+      - default
 
   frontend:
     build: ./frontend
-    ports:
-      - "4200:4200"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    # Image prod : build Angular + nginx qui sert le dist sur le port 80 (pas de volume)
     depends_on:
       - backend
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    stdin_open: true
-    tty: true
+    networks:
+      - dokploy-network
+      - default
 
   nginx:
     build: ./nginx
-    ports:
-      - "80:80"
     depends_on:
       - backend
       - frontend
     restart: unless-stopped
+    networks:
+      - dokploy-network
+      - default
 
 volumes:
-  postgres_data:
+  postgres_data_therasoft_v3:
+
+networks:
+  dokploy-network:
+    external: true
+  default:
+    driver: bridge

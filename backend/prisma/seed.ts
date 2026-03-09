@@ -3,30 +3,25 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import argon2 from 'argon2';
 import dotenv from 'dotenv';
-import { resolve } from 'path';
+import path from 'path';
 
-if (!process.env.DATABASE_URL) {
-  const envPath = resolve(__dirname, '..', '..', '.env');
-  dotenv.config({ path: envPath });
-}
+const rootEnv = path.resolve(process.cwd(), '..', '.env');
+dotenv.config({ path: rootEnv });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-let databaseUrl = process.env.DATABASE_URL;
-
+const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.error('❌ DATABASE_URL non défini');
-  console.error('   Vérifiez que la variable d\'environnement DATABASE_URL est définie');
-  console.error('   Ou qu\'un fichier .env existe avec DATABASE_URL');
+  console.error('❌ DATABASE_URL manquant. Définissez-le dans le .env à la racine du projet.');
   process.exit(1);
 }
 
-if (databaseUrl.includes('@db:') && !process.env.DATABASE_URL?.includes('@db:')) {
-  databaseUrl = databaseUrl.replace('@db:', '@localhost:');
-}
+// En local sans Docker : @db: → @localhost
+const url = databaseUrl.replace('@db:', '@localhost:');
 
 console.log(`🔌 Connexion à la base de données...`);
-console.log(`   URL: ${databaseUrl.replace(/:[^:@]+@/, ':****@')}`);
+console.log(`   URL: ${url.replace(/:[^:@]+@/, ':****@')}`);
 
-const pool = new Pool({ connectionString: databaseUrl });
+const pool = new Pool({ connectionString: url });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
@@ -49,7 +44,15 @@ async function waitForDatabase(maxRetries = 10, delay = 2000) {
 
 async function main() {
   await waitForDatabase();
-  console.log('🌱 Début du seed...\n');
+
+  const medecinCount = await prisma.medecin.count();
+  if (medecinCount > 0) {
+    console.log('✅ Données déjà présentes, seed ignoré (premier deploy déjà effectué).');
+    await prisma.$disconnect();
+    process.exit(0);
+  }
+
+  console.log('🌱 Premier déploiement : début du seed...\n');
 
   console.log('🧹 Nettoyage de la base de données...');
   await prisma.dossier.deleteMany();

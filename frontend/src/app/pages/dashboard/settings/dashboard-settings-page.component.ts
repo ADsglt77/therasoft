@@ -117,40 +117,7 @@ export class DashboardSettingsPageComponent implements OnInit {
       },
       error: (error) => {
         this.isProfileLoading = false;
-
-        // Extraire les informations d'erreur
-        const extracted = ApiErrorHandler.extractError(error);
-
-        // Gérer les erreurs réseau en premier
-        if (ApiErrorHandler.isNetworkError(error)) {
-          this.notificationService.show('danger', extracted.message, 5000);
-          this.cdr.markForCheck();
-          return;
-        }
-
-        // Réinitialiser les erreurs serveur précédentes
-        this.profileForm.get('nom')?.setErrors(null);
-        this.profileForm.get('prenom')?.setErrors(null);
-
-        // Gérer les erreurs de validation Zod
-        if (ApiErrorHandler.isValidationError(error)) {
-          const validationDetails = ApiErrorHandler.getValidationDetails(error);
-          validationDetails.forEach((detail) => {
-            const fieldPath = detail.path?.[0];
-            const fieldControl = this.profileForm.get(fieldPath);
-            if (fieldControl) {
-              const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
-              fieldControl.setErrors({ serverError: errorMessage });
-              fieldControl.markAsTouched();
-            }
-          });
-          this.cdr.markForCheck();
-          return;
-        }
-
-        // Erreurs générales → Notification uniquement
-        this.notificationService.show('danger', extracted.message || NotificationMessages.PROFILE_UPDATE_ERROR);
-        this.cdr.markForCheck();
+        this.handleFormError(this.profileForm, error, NotificationMessages.PROFILE_UPDATE_ERROR);
       },
     });
   }
@@ -179,62 +146,80 @@ export class DashboardSettingsPageComponent implements OnInit {
       error: (error) => {
         this.isPasswordLoading = false;
 
-        // Extraire les informations d'erreur
         const extracted = ApiErrorHandler.extractError(error);
 
-        // Gérer les erreurs réseau en premier
-        if (ApiErrorHandler.isNetworkError(error)) {
-          this.notificationService.show('danger', extracted.message, 5000);
-          this.cdr.markForCheck();
-          return;
-        }
-
-        // Réinitialiser les erreurs serveur précédentes
-        this.passwordForm.get('currentPassword')?.setErrors(null);
-        this.passwordForm.get('newPassword')?.setErrors(null);
-        this.passwordForm.get('confirmPassword')?.setErrors(null);
-
-        // Gérer les erreurs de validation Zod
-        if (ApiErrorHandler.isValidationError(error)) {
-          const validationDetails = ApiErrorHandler.getValidationDetails(error);
-          validationDetails.forEach((detail) => {
-            const fieldPath = detail.path?.[0];
-            const fieldControl = this.passwordForm.get(fieldPath);
-            if (fieldControl) {
-              const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
-              fieldControl.setErrors({ serverError: errorMessage });
-              fieldControl.markAsTouched();
-            }
-          });
-          this.cdr.markForCheck();
-          return;
-        }
-
         // Gérer les erreurs métier spécifiques aux champs
-        if (extracted.code === 'AUTH_INVALID_PASSWORD') {
-          // Erreur de mot de passe actuel incorrect → afficher dans l'input
-          const currentPasswordControl = this.passwordForm.get('currentPassword');
-          if (currentPasswordControl) {
-            currentPasswordControl.setErrors({ 
-              serverError: InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message 
-            });
-            currentPasswordControl.markAsTouched();
+        const fieldErrorMappings: Record<string, string> = {
+          AUTH_INVALID_PASSWORD: 'currentPassword',
+          AUTH_SAME_PASSWORD: 'newPassword',
+        };
+
+        const targetField = extracted.code ? fieldErrorMappings[extracted.code] : undefined;
+        if (targetField) {
+          const control = this.passwordForm.get(targetField);
+          if (control) {
+            const message = extracted.code
+              ? InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message
+              : extracted.message;
+            control.setErrors({ serverError: message });
+            control.markAsTouched();
           }
-        } else if (extracted.code === 'AUTH_SAME_PASSWORD') {
-          // Nouveau mot de passe identique à l'ancien → afficher dans l'input newPassword
-          const newPasswordControl = this.passwordForm.get('newPassword');
-          if (newPasswordControl) {
-            newPasswordControl.setErrors({ 
-              serverError: extracted.message || 'Le nouveau mot de passe doit être différent de l\'ancien'
-            });
-            newPasswordControl.markAsTouched();
-          }
-        } else {
-          // Erreurs générales → Notification uniquement
-          this.notificationService.show('danger', extracted.message || NotificationMessages.PASSWORD_CHANGE_ERROR);
+          this.cdr.markForCheck();
+          return;
         }
-        this.cdr.markForCheck();
+
+        this.handleFormError(this.passwordForm, error, NotificationMessages.PASSWORD_CHANGE_ERROR);
       },
+    });
+  }
+
+  /**
+   * Gestion commune des erreurs de formulaire (réseau, validation Zod, erreurs générales)
+   */
+  private handleFormError(form: FormGroup, error: any, fallbackMessage: string): void {
+    const extracted = ApiErrorHandler.extractError(error);
+
+    // Gérer les erreurs réseau en premier
+    if (ApiErrorHandler.isNetworkError(error)) {
+      this.notificationService.show('danger', extracted.message, 5000);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // Réinitialiser les erreurs serveur précédentes sur tous les champs
+    this.clearServerErrors(form);
+
+    // Gérer les erreurs de validation Zod
+    if (ApiErrorHandler.isValidationError(error)) {
+      const validationDetails = ApiErrorHandler.getValidationDetails(error);
+      validationDetails.forEach((detail) => {
+        const fieldPath = detail.path?.[0];
+        const fieldControl = form.get(fieldPath);
+        if (fieldControl) {
+          const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
+          fieldControl.setErrors({ serverError: errorMessage });
+          fieldControl.markAsTouched();
+        }
+      });
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // Erreurs générales → Notification uniquement
+    this.notificationService.show('danger', extracted.message || fallbackMessage);
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Supprime les erreurs 'serverError' de tous les contrôles du formulaire
+   */
+  private clearServerErrors(form: FormGroup): void {
+    Object.keys(form.controls).forEach((key) => {
+      const control = form.get(key);
+      if (control?.hasError('serverError')) {
+        control.setErrors(null);
+        control.updateValueAndValidity();
+      }
     });
   }
 
