@@ -46,13 +46,6 @@ export { AuthComponent } from './auth/auth.component';
 export { UiInputComponent } from './input/ui-input.component';
 export type { InputType, SelectOption } from './input/ui-input.component';
 
-// Input Vocal
-export { UiInputVocalComponent } from './input-vocal/ui-input-vocal.component';
-export type { VocalState } from './input-vocal/ui-input-vocal.component';
-
-// Audio Recordings List
-export { UiAudioRecordingsListComponent } from './audio-recordings-list/ui-audio-recordings-list.component';
-
 // Calendar
 export { DayCardComponent } from './calendar/month/day-card/day-card.component';
 export type { DayType } from './calendar/month/day-card/day-card.component';
