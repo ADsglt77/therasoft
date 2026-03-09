@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiBaseUrl: '/api', // URL relative via NGINX
+  apiBaseUrl: 'http://localhost:3000/api', // URL relative via NGINX
 };
 
 
