@@ -8,7 +8,7 @@ services:
     ports:
       - "${DB_PORT}:5432"
     volumes:
-      - postgres_data_therasoft:/var/lib/postgresql/data
+      - postgres_data_therasoft_v4:/var/lib/postgresql/data
     networks:
       - dokploy-network
       - default
@@ -56,7 +56,7 @@ services:
       - default
 
 volumes:
-  postgres_data_therasoft:
+  postgres_data_therasoft_v4:
 
 networks:
   dokploy-network:
