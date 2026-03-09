@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 
+# Dev-only override (port 80 en local, ne pas déployer)
+docker-compose.override.yml
+
 # Node
 node_modules/
 npm-debug.log*
