@@ -5,6 +5,12 @@
 } @else if (dossier) {
 
 <div class="header">
+  <app-icon
+    name="arrow-left"
+    [size]="15"
+    [strokeWidth]="3"
+    (click)="goBack()"
+  ></app-icon>
   <app-icon name="calendar" [size]="28"></app-icon>
   <h3>Dossier médical</h3>
 </div>
