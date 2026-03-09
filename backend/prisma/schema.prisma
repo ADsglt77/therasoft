@@ -91,7 +91,7 @@ model Patient {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  rdvs Rdv[]
+  rdvs     Rdv[]
   dossiers Dossier[]
 
   @@index([nom, prenom])
@@ -114,7 +114,7 @@ model Rdv {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  links Modalite[]
+  links    Modalite[]
   dossiers Dossier[]
 
   @@index([patientId])
@@ -160,14 +160,46 @@ model Dossier {
   resultats    String? // Résultats d'examen
   documents    String? // Références aux documents (images, PDFs, etc.)
 
+  // Enregistrement audio des observations
+  observationsAudioUrl        String? @map("observations_audio_url") // URL du fichier audio
+  observationsAudioDuration   Int?    @map("observations_audio_duration") // Durée en secondes
+  observationsAudioTranscript String? @map("observations_audio_transcript") // Transcription texte (optionnelle)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relation avec les enregistrements audio multiples
+  audioRecordings AudioRecording[]
 
   @@unique([patientId, rdvId]) // Un seul dossier par patient par RDV
   @@index([patientId])
   @@index([rdvId])
   @@index([patientId, rdvId])
   @@map("dossier")
+}
+
+// Enregistrements audio multiples pour un dossier
+// Permet d'avoir plusieurs enregistrements nommés par dossier
+model AudioRecording {
+  id Int @id @default(autoincrement())
+
+  // Lien vers le dossier
+  dossierId Int     @map("id_dossier")
+  dossier   Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  // Informations de l'enregistrement
+  name       String // Nom/titre de l'enregistrement (ex: "Consultation initiale", "Suivi post-op")
+  url        String  @map("url") // URL du fichier audio
+  duration   Int     @map("duration") // Durée en secondes
+  transcript String? @map("transcript") // Transcription texte (optionnelle)
+  mimeType   String  @map("mime_type") // Type MIME (audio/mpeg, audio/webm)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([dossierId])
+  @@index([dossierId, createdAt])
+  @@map("audio_recording")
 }
 
 // Sessions pour refresh token (recommandé)
