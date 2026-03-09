@@ -1,0 +1,74 @@
+<div class="audio-recordings-list" *ngIf="recordings.length > 0">
+  <div class="audio-recordings-header">
+    <h4>Enregistrements audio ({{ recordings.length }})</h4>
+  </div>
+
+  <div class="audio-recordings-items">
+    @for (recording of recordings; track recording.id) {
+      <div class="audio-recording-item" [class.audio-recording-item--playing]="isPlaying(recording)">
+        <!-- Nom de l'enregistrement (éditable) -->
+        <div class="audio-recording-name">
+          @if (editingNameId === recording.id) {
+            <input
+              type="text"
+              class="audio-recording-name-input"
+              [(ngModel)]="editingName"
+              (keydown.enter)="saveName(recording)"
+              (keydown.escape)="cancelEditingName()"
+              (blur)="saveName(recording)"
+              [disabled]="disabled"
+              autofocus
+            />
+          } @else {
+            <span class="audio-recording-name-text" (click)="startEditingName(recording)" [title]="'Cliquer pour renommer'">
+              {{ recording.name }}
+            </span>
+            <app-icon
+              *ngIf="!disabled"
+              name="edit"
+              [size]="16"
+              class="audio-recording-edit-icon"
+              (click)="startEditingName(recording); $event.stopPropagation()"
+              [attr.aria-label]="'Renommer l\'enregistrement'"
+              [style.cursor]="'pointer'"
+            ></app-icon>
+          }
+        </div>
+
+        <!-- Informations de l'enregistrement -->
+        <div class="audio-recording-info">
+          <span class="audio-recording-duration">{{ formatDuration(recording.duration) }}</span>
+          <span class="audio-recording-date">{{ formatDate(recording.createdAt) }}</span>
+        </div>
+
+        <!-- Contrôles -->
+        <div class="audio-recording-controls">
+          <button
+            type="button"
+            class="audio-recording-btn audio-recording-btn--play"
+            (click)="onPlayPause(recording)"
+            [disabled]="disabled"
+            [attr.aria-label]="isPlaying(recording) ? 'Mettre en pause' : 'Lire l\'enregistrement'"
+          >
+            <app-icon
+              [name]="isPlaying(recording) ? 'pause' : 'play'"
+              [size]="16"
+              color="var(--text)"
+            ></app-icon>
+          </button>
+
+          <button
+            type="button"
+            class="audio-recording-btn audio-recording-btn--delete"
+            (click)="onDelete(recording)"
+            [disabled]="disabled"
+            [attr.aria-label]="'Supprimer l\'enregistrement'"
+          >
+            <app-icon name="trash" [size]="16" color="var(--color-danger)"></app-icon>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
