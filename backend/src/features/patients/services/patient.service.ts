@@ -40,7 +40,6 @@ export class PatientService {
     rdvId: number
   ): Promise<DossierResponse> {
     try {
-      console.log(`[PatientService] Récupération du dossier pour patient ${patientId}, rdv ${rdvId}`);
       const dossier = await prisma.dossier.findUnique({
         where: {
           patientId_rdvId: {
@@ -84,10 +83,8 @@ export class PatientService {
         );
       }
 
-      console.log(`[PatientService] Dossier trouvé: ${JSON.stringify(dossier, null, 2)}`);
       return dossier;
     } catch (error: any) {
-      console.error(`[PatientService] Erreur lors de la récupération du dossier:`, error);
       throw error;
     }
   }
