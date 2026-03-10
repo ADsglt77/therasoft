@@ -4,6 +4,7 @@ import { registerSchema, loginSchema, changePasswordSchema, updateProfileSchema,
 import { verifyAccessToken } from '../middlewares/jwt.middleware';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { validateBody } from '../../../middlewares/validate';
+import { authRateLimiter } from '../../../middlewares/rateLimiter';
 import { env } from '../../../config/env';
 
 const router = Router();
@@ -12,7 +13,7 @@ const router = Router();
  * POST /api/auth/register
  * Inscription d'un nouveau médecin
  */
-router.post('/register', validateBody(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/register', authRateLimiter, validateBody(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const medecin = await authService.register(req.body);
 
@@ -29,7 +30,7 @@ router.post('/register', validateBody(registerSchema), async (req: Request, res:
  * POST /api/auth/login
  * Connexion d'un médecin
  */
-router.post('/login', validateBody(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', authRateLimiter, validateBody(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { accessToken, refreshToken, medecin } = await authService.login(req.body);
 
@@ -59,7 +60,7 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
  * POST /api/auth/refresh
  * Rafraîchir l'access token avec le refresh token
  */
-router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/refresh', authRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const refreshToken = req.cookies?.refresh_token;
 
