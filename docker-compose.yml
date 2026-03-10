@@ -47,6 +47,7 @@ services:
 
   nginx:
     build: ./nginx
+    # Port 80 exposé uniquement en dev via docker-compose.override.yml
     depends_on:
       - backend
       - frontend
