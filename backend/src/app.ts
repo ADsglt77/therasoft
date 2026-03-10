@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { requestIdMiddleware } from './middlewares/requestId';
 import { errorHandler } from './middlewares/errorHandler';
+import { verifyAccessToken } from './features/auth/middlewares/jwt.middleware';
 import apiRoutes from './routes';
 import { env } from './config/env';
 
@@ -34,8 +35,8 @@ export const createApp = (): Express => {
   app.use(cookieParser());
   app.use(requestIdMiddleware);
 
-  // Servir les fichiers statiques (uploads)
-  app.use('/uploads', express.static('uploads'));
+  // Uploads protégés : seuls les utilisateurs authentifiés y accèdent
+  app.use('/uploads', verifyAccessToken, express.static('uploads'));
 
   // Routes API
   app.use('/api', apiRoutes);
