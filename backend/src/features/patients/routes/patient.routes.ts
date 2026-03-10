@@ -32,8 +32,11 @@ router.get(
   verifyAccessToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.user?.medecinId) {
+        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
+      }
       const { patientId, rdvId } = parsePatientRdvParams(req);
-      const dossier = await patientService.getDossierByPatientAndRdv(patientId, rdvId);
+      const dossier = await patientService.getDossierByPatientAndRdv(patientId, rdvId, req.user.medecinId);
       res.json(dossier);
     } catch (error) {
       next(error);
@@ -51,11 +54,15 @@ router.patch(
   validateBody(updateObservationsSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.user?.medecinId) {
+        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
+      }
       const { patientId, rdvId } = parsePatientRdvParams(req);
       const dossier = await patientService.updateObservations(
         patientId,
         rdvId,
-        req.body.observations
+        req.body.observations,
+        req.user.medecinId
       );
       res.json(dossier);
     } catch (error) {

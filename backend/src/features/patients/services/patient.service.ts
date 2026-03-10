@@ -32,13 +32,37 @@ export interface DossierResponse {
  */
 export class PatientService {
   /**
+   * Vérifie que le RDV est lié au médecin connecté via Modalite → Vacation → medecinId.
+   * Retourne 403 si le médecin n'est pas propriétaire du RDV.
+   */
+  private async verifyRdvOwnership(rdvId: number, medecinId: number): Promise<void> {
+    const link = await prisma.modalite.findFirst({
+      where: {
+        rdvId,
+        vacation: { medecinId },
+      },
+    });
+
+    if (!link) {
+      throw new ApiError(
+        'Accès refusé : ce rendez-vous ne vous appartient pas',
+        'FORBIDDEN',
+        403
+      );
+    }
+  }
+
+  /**
    * Récupère le dossier médical d'un patient pour un RDV spécifique
    * La contrainte unique patientId_rdvId garantit que le RDV appartient au patient
    */
   async getDossierByPatientAndRdv(
     patientId: number,
-    rdvId: number
+    rdvId: number,
+    medecinId: number
   ): Promise<DossierResponse> {
+    await this.verifyRdvOwnership(rdvId, medecinId);
+
     try {
       const dossier = await prisma.dossier.findUnique({
         where: {
@@ -95,9 +119,11 @@ export class PatientService {
   async updateObservations(
     patientId: number,
     rdvId: number,
-    observations: string | null
+    observations: string | null,
+    medecinId: number
   ): Promise<DossierResponse> {
-    // Vérifier que le dossier existe
+    await this.verifyRdvOwnership(rdvId, medecinId);
+
     const existingDossier = await prisma.dossier.findUnique({
       where: {
         patientId_rdvId: {
