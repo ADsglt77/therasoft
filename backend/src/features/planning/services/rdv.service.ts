@@ -24,10 +24,10 @@ export class RdvService {
    * Récupère les rendez-vous pour une période donnée
    */
   async getRdvsByDateRange(
+    medecinId: number,
     startDate?: Date,
     endDate?: Date
   ): Promise<RdvResponse[]> {
-    // Dates par défaut (mois courant)
     const now = new Date();
     const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
     const end = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -35,6 +35,7 @@ export class RdvService {
     return prisma.rdv.findMany({
       where: {
         date: { gte: start, lte: end },
+        links: { some: { vacation: { medecinId } } },
       },
       select: {
         id: true,

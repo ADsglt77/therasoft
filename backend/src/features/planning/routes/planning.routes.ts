@@ -79,8 +79,13 @@ router.get(
   verifyAccessToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.user?.medecinId) {
+        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
+      }
+
       const query = getPlanningQuerySchema.parse(req.query);
       const rdvs = await rdvService.getRdvsByDateRange(
+        req.user.medecinId,
         query.startDate,
         query.endDate
       );
