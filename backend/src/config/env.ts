@@ -1,6 +1,10 @@
+import path from 'path';
 import dotenv from 'dotenv';
 
+// Charge d'abord le .env local au dossier de travail (backend/.env éventuel),
+// puis charge le .env à la racine du repo (cas dev local sans Docker).
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 export const env = {
   port: parseInt(process.env.PORT || '3000', 10),

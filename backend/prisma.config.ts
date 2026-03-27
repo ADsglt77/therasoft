@@ -1,5 +1,9 @@
 import { defineConfig, env } from 'prisma/config';
 import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 /**
  * Prisma 7 configuration for migrations
@@ -7,7 +11,8 @@ import 'dotenv/config';
  */
 export default defineConfig({
   datasource: {
-    url: "postgresql://postgres:postgres@db:5432/portail_medecin?schema=public",
+    // Sans Docker: utilise DATABASE_URL du .env.
+    url: env('DATABASE_URL'),
   },
 });
 
