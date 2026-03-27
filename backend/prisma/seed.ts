@@ -62,78 +62,21 @@ function withUtcTime(base: Date, hours: number, minutes: number): Date {
   return d;
 }
 
+// Source unique de vérité pour le type de RDV (icône Lucide + libellé)
+const RDV_TYPE_META: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
+  [ModaliteType.XRAY]: { typeIcon: 'image', typeDescription: 'Radiographie' },
+  [ModaliteType.CT]: { typeIcon: 'file-text', typeDescription: 'Scanner (CT)' },
+  [ModaliteType.MRI]: { typeIcon: 'clipboard-check', typeDescription: 'IRM' },
+  [ModaliteType.US]: { typeIcon: 'mic', typeDescription: 'Échographie (US)' },
+  [ModaliteType.MAMMO]: { typeIcon: 'heart', typeDescription: 'Mammographie' },
+  [ModaliteType.PET]: { typeIcon: 'sparkles', typeDescription: 'TEP (PET)' },
+  [ModaliteType.OTHER]: { typeIcon: 'info', typeDescription: 'Autre' },
+};
+
 async function main() {
   await waitForDatabase();
 
-  // Mapping pour remplir typeIcon/typeDescription sur les rendez-vous existants.
-  // Important en prod : on ne veut pas quitter immédiatement si des colonnes viennent d'être ajoutées.
-  const rdvTypeMetaUpdate: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
-    [ModaliteType.XRAY]: { typeIcon: '🩻', typeDescription: 'Radiographie' },
-    [ModaliteType.CT]: { typeIcon: '🧠', typeDescription: 'Scanner (CT)' },
-    [ModaliteType.MRI]: { typeIcon: '🧲', typeDescription: 'IRM' },
-    [ModaliteType.US]: { typeIcon: '🩺', typeDescription: 'Échographie (US)' },
-    [ModaliteType.MAMMO]: { typeIcon: '🩷', typeDescription: 'Mammographie' },
-    [ModaliteType.PET]: { typeIcon: '🧪', typeDescription: 'TEP (PET)' },
-    [ModaliteType.OTHER]: { typeIcon: '📄', typeDescription: 'Autre' },
-  };
-
-  const medecinCount = await prisma.medecin.count();
-  const forceReset = process.env.RESET_DB_ON_SEED === 'true' || process.env.FORCE_RESET_DB === 'true';
-
-  if (medecinCount > 0 && !forceReset) {
-    console.log('♻️ Base déjà seedée : mise à jour des champs typeIcon/typeDescription...');
-
-    // Nettoyage des RDV week-end hérités d'anciens seeds (décalages UTC)
-    const existingRdvs = await prisma.rdv.findMany({
-      select: { id: true, date: true },
-    });
-    const weekendRdvIds = existingRdvs
-      .filter((rdv) => {
-        const day = rdv.date.getUTCDay();
-        return day === 0 || day === 6;
-      })
-      .map((rdv) => rdv.id);
-
-    if (weekendRdvIds.length > 0) {
-      await prisma.modalite.deleteMany({
-        where: {
-          rdvId: { in: weekendRdvIds },
-        },
-      });
-      await prisma.dossier.deleteMany({
-        where: {
-          rdvId: { in: weekendRdvIds },
-        },
-      });
-      await prisma.rdv.deleteMany({
-        where: {
-          id: { in: weekendRdvIds },
-        },
-      });
-      console.log(`🧹 ${weekendRdvIds.length} RDV week-end supprimés.`);
-    }
-
-    const modaliteValues = Object.keys(rdvTypeMetaUpdate) as ModaliteType[];
-    for (const modalite of modaliteValues) {
-      const meta = rdvTypeMetaUpdate[modalite];
-      await prisma.rdv.updateMany({
-        where: {
-          modalite,
-          OR: [{ typeIcon: null }, { typeDescription: null }],
-        },
-        data: {
-          typeIcon: meta.typeIcon,
-          typeDescription: meta.typeDescription,
-        },
-      });
-    }
-
-    console.log('✅ Champs typeIcon/typeDescription mis à jour.');
-    await prisma.$disconnect();
-    process.exit(0);
-  }
-
-  console.log('🌱 Premier déploiement : début du seed...\n');
+  console.log('🌱 Seed forcé : reset complet puis recréation des données...\n');
 
   console.log('🧹 Nettoyage de la base de données...');
   await prisma.dossier.deleteMany();
@@ -270,15 +213,6 @@ async function main() {
   ];
   
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
-  const rdvTypeMeta: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
-    [ModaliteType.XRAY]: { typeIcon: '🩻', typeDescription: 'Radiographie' },
-    [ModaliteType.CT]: { typeIcon: '🧠', typeDescription: 'Scanner (CT)' },
-    [ModaliteType.MRI]: { typeIcon: '🧲', typeDescription: 'IRM' },
-    [ModaliteType.US]: { typeIcon: '🩺', typeDescription: 'Échographie (US)' },
-    [ModaliteType.MAMMO]: { typeIcon: '🩷', typeDescription: 'Mammographie' },
-    [ModaliteType.PET]: { typeIcon: '🧪', typeDescription: 'TEP (PET)' },
-    [ModaliteType.OTHER]: { typeIcon: '📄', typeDescription: 'Autre' },
-  };
   // Seulement les médecins (pas admin)
   const medecinsActifs = [medecin2, medecin3];
   const horaires = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
@@ -380,8 +314,8 @@ async function main() {
           heureDebut,
           heureFin,
           modalite: modalite,
-          typeIcon: rdvTypeMeta[modalite].typeIcon,
-          typeDescription: rdvTypeMeta[modalite].typeDescription,
+          typeIcon: RDV_TYPE_META[modalite].typeIcon,
+          typeDescription: RDV_TYPE_META[modalite].typeDescription,
           patientId: patient.id,
         },
       });
