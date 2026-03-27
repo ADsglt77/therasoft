@@ -40,17 +40,6 @@ export class DayCardComponent {
     return classes;
   }
 
-  get badgeText(): string {
-    if (this.type === 'travail' && this.location) {
-      return this.location;
-    }
-    return this.type === 'repos' ? 'Repos' : 'Travail';
-  }
-
-  get badgeVariant(): 'repos' | 'success' {
-    return this.type === 'repos' ? 'repos' : 'success';
-  }
-
   onDayClick(): void {
     if (!this.disabled && this.year !== undefined && this.month !== undefined) {
       this.dayClick.emit({

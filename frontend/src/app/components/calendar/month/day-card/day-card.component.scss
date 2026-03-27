@@ -35,6 +35,24 @@
     }
 }
 
+.day-site {
+    font-size: 0.85rem;
+    color: var(--text);
+    opacity: 0.9;
+    @include text-truncate;
+}
+
+.day-rdv-count {
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+    opacity: 0.95;
+}
+
+.day-rdv-count__value {
+    font-weight: 600;
+}
+
 :host.day-card-component--disabled {
     .day {
         opacity: 0.4;
