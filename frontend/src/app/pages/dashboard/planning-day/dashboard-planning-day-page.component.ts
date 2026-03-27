@@ -197,16 +197,42 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
 
   previousDay(): void {
     if (!this.date || !this.day) return;
-    const newDate = new Date(this.date);
-    newDate.setDate(newDate.getDate() - 1);
-    this.navigateToDate(newDate);
+    this.navigateToDate(this.findPreviousWorkingDay(this.date));
   }
 
   nextDay(): void {
     if (!this.date || !this.day) return;
-    const newDate = new Date(this.date);
-    newDate.setDate(newDate.getDate() + 1);
-    this.navigateToDate(newDate);
+    this.navigateToDate(this.findNextWorkingDay(this.date));
+  }
+
+  /**
+   * Retourne le prochain jour ouvré (lundi-vendredi)
+   */
+  private findNextWorkingDay(from: Date): Date {
+    const date = new Date(from);
+    do {
+      date.setDate(date.getDate() + 1);
+    } while (this.isRestDay(date));
+    return date;
+  }
+
+  /**
+   * Retourne le précédent jour ouvré (lundi-vendredi)
+   */
+  private findPreviousWorkingDay(from: Date): Date {
+    const date = new Date(from);
+    do {
+      date.setDate(date.getDate() - 1);
+    } while (this.isRestDay(date));
+    return date;
+  }
+
+  /**
+   * Jour de repos: samedi (6) ou dimanche (0)
+   */
+  private isRestDay(date: Date): boolean {
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6;
   }
 
   private navigateToDate(date: Date): void {

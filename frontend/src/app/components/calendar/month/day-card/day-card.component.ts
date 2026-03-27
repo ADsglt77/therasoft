@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../icon/app-icon.component';
-import { UiBadgeComponent } from 'src/app/components/badge/ui-badge.component';
+import { UiBadgeComponent } from '../../../badge/ui-badge.component';
 
 
 export type DayType = 'repos' | 'travail';
@@ -38,6 +38,17 @@ export class DayCardComponent {
       classes += ' day-card-component--clickable';
     }
     return classes;
+  }
+
+  get badgeText(): string {
+    if (this.type === 'travail' && this.location) {
+      return this.location;
+    }
+    return this.type === 'repos' ? 'Repos' : 'Travail';
+  }
+
+  get badgeVariant(): 'repos' | 'success' {
+    return this.type === 'repos' ? 'repos' : 'success';
   }
 
   onDayClick(): void {
