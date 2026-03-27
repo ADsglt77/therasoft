@@ -10,6 +10,7 @@ import { formatTime } from '../../core/utils/date.utils';
  */
 interface TimetableSlot {
   id: string;
+  iconName: string;
   startTime: string;
   endTime: string;
   title: string;
@@ -68,9 +69,10 @@ export class PlaygroundPageComponent implements OnInit {
           
           return {
             id: rdv.id.toString(),
+            iconName: rdv.typeIcon || 'info',
             startTime,
             endTime,
-            title: `${rdv.typeIcon || ''} ${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`.trim(),
+            title: `${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
             disabled: false,
           };
         });

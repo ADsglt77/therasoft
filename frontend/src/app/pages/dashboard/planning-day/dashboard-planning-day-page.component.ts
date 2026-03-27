@@ -17,6 +17,7 @@ interface TimetableSlot {
   id: string;
   rdvId: number;
   patientId: number;
+  iconName: string;
   startTime: string;
   endTime: string;
   title: string;
@@ -103,9 +104,10 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
             id: rdv.id.toString(),
             rdvId: rdv.id,
             patientId: rdv.patient.id,
+            iconName: rdv.typeIcon || 'info',
             startTime: formatTime(rdv.heureDebut),
             endTime: formatTime(rdv.heureFin),
-            title: `${rdv.typeIcon || ''} ${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`.trim(),
+            title: `${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
             disabled: false,
           };
         });
