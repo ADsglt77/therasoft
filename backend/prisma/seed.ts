@@ -39,6 +39,29 @@ async function waitForDatabase(maxRetries = 10, delay = 2000) {
   }
 }
 
+function toUtcDateKey(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toUtcMidnightDateFromYmd(dateKey: string): Date {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+}
+
+function isWeekendUtc(date: Date): boolean {
+  const dow = date.getUTCDay();
+  return dow === 0 || dow === 6;
+}
+
+function withUtcTime(base: Date, hours: number, minutes: number): Date {
+  const d = new Date(base);
+  d.setUTCHours(hours, minutes, 0, 0);
+  return d;
+}
+
 async function main() {
   await waitForDatabase();
 
@@ -55,8 +78,40 @@ async function main() {
   };
 
   const medecinCount = await prisma.medecin.count();
-  if (medecinCount > 0) {
+  const forceReset = process.env.RESET_DB_ON_SEED === 'true' || process.env.FORCE_RESET_DB === 'true';
+
+  if (medecinCount > 0 && !forceReset) {
     console.log('♻️ Base déjà seedée : mise à jour des champs typeIcon/typeDescription...');
+
+    // Nettoyage des RDV week-end hérités d'anciens seeds (décalages UTC)
+    const existingRdvs = await prisma.rdv.findMany({
+      select: { id: true, date: true },
+    });
+    const weekendRdvIds = existingRdvs
+      .filter((rdv) => {
+        const day = rdv.date.getUTCDay();
+        return day === 0 || day === 6;
+      })
+      .map((rdv) => rdv.id);
+
+    if (weekendRdvIds.length > 0) {
+      await prisma.modalite.deleteMany({
+        where: {
+          rdvId: { in: weekendRdvIds },
+        },
+      });
+      await prisma.dossier.deleteMany({
+        where: {
+          rdvId: { in: weekendRdvIds },
+        },
+      });
+      await prisma.rdv.deleteMany({
+        where: {
+          id: { in: weekendRdvIds },
+        },
+      });
+      console.log(`🧹 ${weekendRdvIds.length} RDV week-end supprimés.`);
+    }
 
     const modaliteValues = Object.keys(rdvTypeMetaUpdate) as ModaliteType[];
     for (const modalite of modaliteValues) {
@@ -230,18 +285,17 @@ async function main() {
 
   console.log('📅 Création des vacations pour toute l\'année 2026...');
   const vacations: Vacation[] = [];
-  const startDate = new Date('2026-01-01');
-  startDate.setHours(0, 0, 0, 0);
-  const endDate = new Date('2026-12-31');
-  endDate.setHours(23, 59, 59, 999);
+  // Générer en UTC pour éviter les décalages de date (UTC vs locale)
+  const startDate = new Date(Date.UTC(2026, 0, 1, 0, 0, 0, 0));
+  const endDate = new Date(Date.UTC(2026, 11, 31, 0, 0, 0, 0));
 
   let totalDays = 0;
-  for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
-    
+  for (let date = new Date(startDate); date <= endDate; date = new Date(date.getTime() + 24 * 60 * 60 * 1000)) {
+    const dayOfWeek = date.getUTCDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends (UTC)
+
     totalDays++;
-    const currentDate = new Date(date);
+    const currentDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
     
     // 2-4 vacations par jour par médecin
     const vacationsPerMedecin = Math.floor(Math.random() * 3) + 2;
@@ -251,8 +305,7 @@ async function main() {
       
       for (let i = 0; i < vacationsPerMedecin && i < shuffledHoraires.length; i++) {
         const [hours, minutes] = shuffledHoraires[i].split(':');
-        const horaire = new Date(currentDate);
-        horaire.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        const horaire = withUtcTime(currentDate, parseInt(hours), parseInt(minutes));
 
         const villeAvecSites = villesAvecSites[Math.floor(Math.random() * villesAvecSites.length)];
         const site = villeAvecSites.sites[Math.floor(Math.random() * villeAvecSites.sites.length)];
@@ -286,7 +339,7 @@ async function main() {
   // Grouper les vacations par date et médecin
   const vacationsByDateAndMedecin = new Map<string, Vacation[]>();
   for (const vacation of vacations) {
-    const key = `${vacation.date.toISOString().split('T')[0]}_${vacation.medecinId}`;
+    const key = `${toUtcDateKey(vacation.date)}_${vacation.medecinId}`;
     if (!vacationsByDateAndMedecin.has(key)) {
       vacationsByDateAndMedecin.set(key, []);
     }
@@ -296,7 +349,12 @@ async function main() {
   let rdvCount = 0;
   for (const [key, dayVacations] of vacationsByDateAndMedecin.entries()) {
     const [dateStr] = key.split('_');
-    const date = new Date(dateStr + 'T00:00:00');
+    const date = toUtcMidnightDateFromYmd(dateStr);
+
+    // Garde-fou: ne jamais créer de RDV le week-end (cohérent UTC)
+    if (isWeekendUtc(date)) {
+      continue;
+    }
     
     // Générer 5-10 rdv par jour où il y a des vacations
     const rdvsPerDay = Math.floor(Math.random() * 6) + 5;
@@ -308,12 +366,11 @@ async function main() {
       const [hours, minutes] = shuffledHoraires[i].split(':');
       
       // Créer heureDebut et heureFin (durée variable: 20-45 minutes)
-      const heureDebut = new Date(date);
-      heureDebut.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      const heureDebut = withUtcTime(date, parseInt(hours), parseInt(minutes));
       
       const dureeMinutes = [20, 30, 45][Math.floor(Math.random() * 3)];
       const heureFin = new Date(heureDebut);
-      heureFin.setMinutes(heureFin.getMinutes() + dureeMinutes);
+      heureFin.setUTCMinutes(heureFin.getUTCMinutes() + dureeMinutes);
 
       // Utiliser une modalité aléatoire (sera liée à une vacation compatible plus tard)
       const modalite = modalites[Math.floor(Math.random() * modalites.length)];
@@ -344,7 +401,7 @@ async function main() {
   // Grouper les vacations par date et modalité pour optimisation
   const vacationsByDateAndModalite = new Map<string, Vacation[]>();
   for (const vacation of vacations) {
-    const key = `${vacation.date.toISOString().split('T')[0]}_${vacation.modalite}`;
+    const key = `${toUtcDateKey(vacation.date)}_${vacation.modalite}`;
     if (!vacationsByDateAndModalite.has(key)) {
       vacationsByDateAndModalite.set(key, []);
     }
@@ -352,7 +409,7 @@ async function main() {
   }
   
   for (const rdv of rdvs) {
-    const dateKey = rdv.date.toISOString().split('T')[0];
+    const dateKey = toUtcDateKey(rdv.date);
     const key = `${dateKey}_${rdv.modalite}`;
     const compatibleVacations = vacationsByDateAndModalite.get(key) || [];
     
