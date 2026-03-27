@@ -152,20 +152,20 @@ model Modalite {
 model Dossier {
   id Int @id @default(autoincrement())
 
-  // Le dossier est lié à un patient ET à un RDV spécifique
   patientId Int     @map("id_patient")
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   rdvId Int @map("id_rdv")
   rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
 
-  // Informations du dossier
-  observations String? // Observations médicales
-  resultats    String? // Résultats d'examen
-  documents    String? // Références aux documents (images, PDFs, etc.)
+  observations String?
+  resultats    String? // Déprécié — remplacé par DossierFile
+  documents    String? // Déprécié — remplacé par DossierFile
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  files DossierFile[]
 
   @@unique([patientId, rdvId])
 
@@ -173,6 +173,24 @@ model Dossier {
   @@index([rdvId])
   @@index([patientId, rdvId])
   @@map("dossier")
+}
+
+// Fichier attaché à un dossier (résultats d'examen, images, PDFs, etc.)
+model DossierFile {
+  id Int @id @default(autoincrement())
+
+  dossierId Int     @map("id_dossier")
+  dossier   Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  originalName String @map("original_name")
+  storedName   String @map("stored_name")
+  mimeType     String @map("mime_type")
+  size         Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([dossierId])
+  @@map("dossier_file")
 }
 
 // Sessions pour refresh token (recommandé)

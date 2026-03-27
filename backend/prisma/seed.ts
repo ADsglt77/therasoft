@@ -79,6 +79,7 @@ async function main() {
   console.log('🌱 Seed forcé : reset complet puis recréation des données...\n');
 
   console.log('🧹 Nettoyage de la base de données...');
+  await prisma.dossierFile.deleteMany();
   await prisma.dossier.deleteMany();
   await prisma.modalite.deleteMany();
   await prisma.rdv.deleteMany();
