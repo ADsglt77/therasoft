@@ -4,8 +4,10 @@ import { Location } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent } from '../../../components/input/ui-input.component';
+import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PatientService, Dossier } from '../../../core/services/patient.service';
+import { VoiceRecognitionService, TranscriptionResult } from '../../../core/services/voice-recognition.service';
 import { Subscription } from 'rxjs';
 import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
 import { NotificationMessages } from '../../../core/constants/notification-messages';
@@ -16,12 +18,13 @@ import { parseDocumentsList } from '../../../core/utils/string.utils';
 
 /**
  * Page Patient Detail Dashboard
- * Affiche la fiche complète d'un patient
+ * Affiche la fiche complète d'un patient.
+ * Observations : saisie au clavier ou transcription vocale (texte uniquement, pas d'enregistrement audio).
  */
 @Component({
   selector: 'app-dashboard-patient-detail-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiInputComponent],
+  imports: [CommonModule, AppIconComponent, UiInputComponent, UiButtonComponent],
   templateUrl: './dashboard-patient-detail-page.component.html',
   styleUrl: './dashboard-patient-detail-page.component.scss',
 })
@@ -32,7 +35,11 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   dossier: Dossier | null = null;
   observationsValue = '';
   isSavingObservations = false;
+  isTranscribing = false;
+  isTranscriptionSupported = false;
   private subscriptions = new Subscription();
+  private transcriptSub: Subscription | null = null;
+  private transcriptionInitialText = '';
   private saveTimeout: any;
 
   constructor(
@@ -40,10 +47,13 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     private router: Router,
     private location: Location,
     private notificationService: NotificationService,
-    private patientService: PatientService
+    private patientService: PatientService,
+    private voiceRecognitionService: VoiceRecognitionService
   ) {}
 
   ngOnInit(): void {
+    this.isTranscriptionSupported = this.voiceRecognitionService.isSupported();
+
     const sub = this.route.paramMap.subscribe((params) => {
       const patientIdParam = params.get('patientId');
       const rdvIdParam = params.get('rdvId');
@@ -72,10 +82,17 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Sauvegarder avant de quitter si nécessaire
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
       this.saveObservations();
+    }
+    if (this.transcriptSub) {
+      this.transcriptSub.unsubscribe();
+      this.transcriptSub = null;
+    }
+    if (this.isTranscribing) {
+      this.voiceRecognitionService.stopTranscription();
+      this.isTranscribing = false;
     }
     this.subscriptions.unsubscribe();
   }
@@ -91,8 +108,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
         this.dossier = dossier;
         this.observationsValue = dossier.observations || '';
         this.isLoading = false;
-        
-        // Afficher une notification si aucun résultat n'est enregistré
+
         if (!dossier.resultats) {
           this.notificationService.show('information', 'Aucun résultat enregistré pour ce dossier');
         }
@@ -183,6 +199,78 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.location.back();
+  }
+
+  // ========== Transcription vocale (texte uniquement) ==========
+
+  /**
+   * Démarre la transcription vocale : la parole est transcrite en temps réel dans le champ observations.
+   */
+  startTranscription(): void {
+    if (!this.isTranscriptionSupported || this.isTranscribing) return;
+
+    // Mémoriser le texte déjà saisi pour ne pas l'écraser
+    this.transcriptionInitialText = this.observationsValue || '';
+
+    if (this.transcriptSub) {
+      this.transcriptSub.unsubscribe();
+      this.transcriptSub = null;
+    }
+
+    this.voiceRecognitionService.startTranscription();
+    this.isTranscribing = true;
+
+    this.transcriptSub = this.voiceRecognitionService.transcript$.subscribe(
+      (result: TranscriptionResult) => {
+        const newTranscript = result.transcript.trim();
+
+        if (!newTranscript) {
+          this.observationsValue = this.transcriptionInitialText;
+          return;
+        }
+
+        const separator = this.transcriptionInitialText ? '\n\n' : '';
+        this.observationsValue = `${this.transcriptionInitialText}${separator}${newTranscript}`;
+      }
+    );
+
+    const errorSub = this.voiceRecognitionService.error$.subscribe((error) => {
+      this.isTranscribing = false;
+      if (this.transcriptSub) {
+        this.transcriptSub.unsubscribe();
+        this.transcriptSub = null;
+      }
+      this.notificationService.show('danger', error?.message || 'Erreur de transcription vocale');
+    });
+    this.subscriptions.add(errorSub);
+
+    this.notificationService.show('success', 'Transcription vocale démarrée. Parlez dans le micro.');
+  }
+
+  /**
+   * Arrête la transcription et garde le texte dans les observations.
+   */
+  stopTranscription(): void {
+    if (!this.isTranscribing) return;
+
+    this.voiceRecognitionService.stopTranscription();
+    const finalTranscript = this.voiceRecognitionService.getFinalTranscript().trim();
+
+    if (finalTranscript) {
+      const separator = this.transcriptionInitialText ? '\n\n' : '';
+      this.observationsValue = `${this.transcriptionInitialText}${separator}${finalTranscript}`;
+    } else {
+      this.observationsValue = this.transcriptionInitialText;
+    }
+
+    this.updateObservations(this.observationsValue);
+    this.isTranscribing = false;
+    this.transcriptionInitialText = '';
+    if (this.transcriptSub) {
+      this.transcriptSub.unsubscribe();
+      this.transcriptSub = null;
+    }
+    this.notificationService.show('success', 'Transcription arrêtée. Le texte a été conservé.');
   }
 }
 

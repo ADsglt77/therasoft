@@ -1,9 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
 import { authService } from '../services/auth.service';
 import { registerSchema, loginSchema, changePasswordSchema, updateProfileSchema, updateAvatarSchema } from '../schemas/auth.schemas';
 import { verifyAccessToken } from '../middlewares/jwt.middleware';
 import { ApiError } from '../../../middlewares/errorHandler';
+import { validateBody } from '../../../middlewares/validate';
+import { authRateLimiter } from '../../../middlewares/rateLimiter';
 import { env } from '../../../config/env';
 
 const router = Router();
@@ -12,27 +13,15 @@ const router = Router();
  * POST /api/auth/register
  * Inscription d'un nouveau médecin
  */
-router.post('/register', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/register', authRateLimiter, validateBody(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Validation avec Zod
-    const input = registerSchema.parse(req.body);
-
-    // Inscription
-    const medecin = await authService.register(input);
+    const medecin = await authService.register(req.body);
 
     res.status(201).json({
       message: 'Inscription réussie',
       medecin,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(new ApiError(
-        'Données invalides',
-        'VALIDATION_ERROR',
-        422,
-        error.errors
-      ));
-    }
     next(error);
   }
 });
@@ -41,13 +30,9 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
  * POST /api/auth/login
  * Connexion d'un médecin
  */
-router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', authRateLimiter, validateBody(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Validation avec Zod
-    const input = loginSchema.parse(req.body);
-
-    // Connexion
-    const { accessToken, refreshToken, medecin } = await authService.login(input);
+    const { accessToken, refreshToken, medecin } = await authService.login(req.body);
 
     // Supprimer l'ancien cookie s'il existe (avec l'ancien path)
     res.clearCookie('refresh_token', { path: '/api/auth' });
@@ -67,14 +52,6 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       medecin,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(new ApiError(
-        'Données invalides',
-        'VALIDATION_ERROR',
-        422,
-        error.errors
-      ));
-    }
     next(error);
   }
 });
@@ -83,7 +60,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
  * POST /api/auth/refresh
  * Rafraîchir l'access token avec le refresh token
  */
-router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/refresh', authRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const refreshToken = req.cookies?.refresh_token;
 
@@ -161,28 +138,16 @@ router.get('/me', verifyAccessToken, async (req: Request, res: Response, next: N
  * PATCH /api/auth/password
  * Change le mot de passe du médecin connecté (protégé)
  */
-router.patch('/password', verifyAccessToken, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/password', verifyAccessToken, validateBody(changePasswordSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
     }
 
-    // Validation avec Zod
-    const input = changePasswordSchema.parse(req.body);
-
-    // Changer le mot de passe
-    const result = await authService.changePassword(req.user.medecinId, input);
+    const result = await authService.changePassword(req.user.medecinId, req.body);
 
     res.status(200).json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(new ApiError(
-        'Données invalides',
-        'VALIDATION_ERROR',
-        422,
-        error.errors
-      ));
-    }
     next(error);
   }
 });
@@ -191,28 +156,16 @@ router.patch('/password', verifyAccessToken, async (req: Request, res: Response,
  * PATCH /api/auth/me
  * Modifie le profil du médecin connecté (protégé)
  */
-router.patch('/me', verifyAccessToken, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/me', verifyAccessToken, validateBody(updateProfileSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
     }
 
-    // Validation avec Zod
-    const input = updateProfileSchema.parse(req.body);
-
-    // Mettre à jour le profil
-    const medecin = await authService.updateProfile(req.user.medecinId, input);
+    const medecin = await authService.updateProfile(req.user.medecinId, req.body);
 
     res.status(200).json(medecin);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(new ApiError(
-        'Données invalides',
-        'VALIDATION_ERROR',
-        422,
-        error.errors
-      ));
-    }
     next(error);
   }
 });
@@ -221,28 +174,16 @@ router.patch('/me', verifyAccessToken, async (req: Request, res: Response, next:
  * PATCH /api/auth/avatar
  * Met à jour l'avatar du médecin connecté (protégé)
  */
-router.patch('/avatar', verifyAccessToken, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/avatar', verifyAccessToken, validateBody(updateAvatarSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
     }
 
-    // Validation avec Zod
-    const input = updateAvatarSchema.parse(req.body);
-
-    // Mettre à jour l'avatar
-    const medecin = await authService.updateAvatar(req.user.medecinId, input);
+    const medecin = await authService.updateAvatar(req.user.medecinId, req.body);
 
     res.status(200).json(medecin);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return next(new ApiError(
-        'Données invalides',
-        'VALIDATION_ERROR',
-        422,
-        error.errors
-      ));
-    }
     next(error);
   }
 });

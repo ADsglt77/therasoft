@@ -91,7 +91,7 @@ model Patient {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  rdvs Rdv[]
+  rdvs     Rdv[]
   dossiers Dossier[]
 
   @@index([nom, prenom])
@@ -114,7 +114,7 @@ model Rdv {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  links Modalite[]
+  links    Modalite[]
   dossiers Dossier[]
 
   @@index([patientId])
@@ -163,7 +163,8 @@ model Dossier {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([patientId, rdvId]) // Un seul dossier par patient par RDV
+  @@unique([patientId, rdvId])
+
   @@index([patientId])
   @@index([rdvId])
   @@index([patientId, rdvId])

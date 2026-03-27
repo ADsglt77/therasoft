@@ -57,10 +57,14 @@ export class PatientService extends ApiClientService {
     rdvId: number,
     observations: string
   ): Observable<Dossier> {
+    // Convertir chaîne vide en null pour permettre la suppression des observations
+    // Le backend n'accepte que null ou une chaîne non vide
+    const observationsValue = observations.trim() === '' ? null : observations.trim();
     return this.http.patch<Dossier>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/observations`,
-      { observations }
+      { observations: observationsValue }
     );
   }
+
 }
 

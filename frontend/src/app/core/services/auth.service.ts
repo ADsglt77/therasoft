@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, BehaviorSubject, shareReplay, catchError, throwError } from 'rxjs';
+import { Observable, tap, BehaviorSubject, shareReplay } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
 import { TokenStorageService } from './token-storage.service';
 import { Router } from '@angular/router';
@@ -25,6 +25,8 @@ export interface AuthResponse {
     nom: string;
     prenom: string;
     role: string;
+    avatarUrl?: string | null;
+    avatarFileName?: string | null;
   };
 }
 
@@ -42,6 +44,8 @@ export interface MeResponse {
   providedIn: 'root',
 })
 export class AuthService extends ApiClientService {
+  private tokenStorage: TokenStorageService;
+
   constructor(
     http: HttpClient,
     tokenStorage: TokenStorageService,
@@ -50,8 +54,6 @@ export class AuthService extends ApiClientService {
     super(http);
     this.tokenStorage = tokenStorage;
   }
-
-  private tokenStorage: TokenStorageService;
   
   /**
    * BehaviorSubject pour stocker l'utilisateur actuel
@@ -105,7 +107,7 @@ export class AuthService extends ApiClientService {
               nom: response.medecin.nom,
               prenom: response.medecin.prenom,
               role: response.medecin.role,
-              avatarUrl: (response.medecin as any).avatarUrl,
+              avatarUrl: response.medecin.avatarUrl,
             });
           }
         })
@@ -127,9 +129,6 @@ export class AuthService extends ApiClientService {
       .pipe(
         tap((response) => {
           this.tokenStorage.setAccessToken(response.accessToken);
-        }),
-        catchError((error) => {
-          return throwError(() => error);
         })
       );
   }

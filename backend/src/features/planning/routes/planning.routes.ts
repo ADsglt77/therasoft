@@ -1,9 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { planningService } from '../services/planning.service';
 import { rdvService } from '../services/rdv.service';
-import { getPlanningQuerySchema } from '../schemas/planning.schemas';
+import { getPlanningQuerySchema, getRdvsMeQuerySchema } from '../schemas/planning.schemas';
 import { verifyAccessToken } from '../../auth/middlewares/jwt.middleware';
 import { ApiError } from '../../../middlewares/errorHandler';
+import { z } from 'zod';
 
 const router = Router();
 
@@ -51,26 +52,7 @@ router.get(
         throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
       }
 
-      const { date } = req.query;
-      if (!date || typeof date !== 'string') {
-        throw new ApiError('Le paramètre date est requis (format YYYY-MM-DD)', 'BAD_REQUEST', 400);
-      }
-
-      // Parser la date
-      const dateParts = date.split('-');
-      if (dateParts.length !== 3) {
-        throw new ApiError('Format de date invalide. Utilisez YYYY-MM-DD', 'BAD_REQUEST', 400);
-      }
-
-      const year = parseInt(dateParts[0], 10);
-      const month = parseInt(dateParts[1], 10) - 1; // Les mois sont 0-indexés
-      const day = parseInt(dateParts[2], 10);
-
-      if (isNaN(year) || isNaN(month) || isNaN(day)) {
-        throw new ApiError('Format de date invalide. Utilisez YYYY-MM-DD', 'BAD_REQUEST', 400);
-      }
-
-      const targetDate = new Date(year, month, day);
+      const { date: targetDate } = getRdvsMeQuerySchema.parse(req.query);
       const rdvs = await rdvService.getRdvsByMedecinAndDate(
         req.user.medecinId,
         targetDate
@@ -78,6 +60,9 @@ router.get(
 
       res.json({ rdvs, count: rdvs.length });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return next(new ApiError('Le paramètre date est requis (format YYYY-MM-DD)', 'BAD_REQUEST', 400));
+      }
       next(error);
     }
   }
@@ -94,8 +79,13 @@ router.get(
   verifyAccessToken,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      if (!req.user?.medecinId) {
+        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
+      }
+
       const query = getPlanningQuerySchema.parse(req.query);
       const rdvs = await rdvService.getRdvsByDateRange(
+        req.user.medecinId,
         query.startDate,
         query.endDate
       );

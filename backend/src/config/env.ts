@@ -1,22 +1,56 @@
 import path from 'path';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import { z } from 'zod';
 
 // Charge d'abord le .env local au dossier de travail (backend/.env éventuel),
 // puis charge le .env à la racine du repo (cas dev local sans Docker).
 dotenv.config();
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
+// Charger le .env à la racine du monorepo (priorité) ou celui du backend
+const rootEnv = path.resolve(process.cwd(), '..', '.env');
+const localEnv = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(rootEnv)) {
+  dotenv.config({ path: rootEnv });
+} else {
+  dotenv.config({ path: localEnv });
+}
+
+const envSchema = z.object({
+  PORT: z.coerce.number().int().positive().default(3000),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+
+  // JWT
+  JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
+  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+  ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
+
+  // Frontend
+  FRONTEND_ORIGIN: z.string().default('http://localhost:4200'),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+const data = parsed.data;
 
 export const env = {
-  port: parseInt(process.env.PORT || '3000', 10),
-  nodeEnv: process.env.NODE_ENV || 'development',
-  databaseUrl: process.env.DATABASE_URL || '',
-  
+  port: data.PORT,
+  nodeEnv: data.NODE_ENV,
+  databaseUrl: data.DATABASE_URL,
+
   // JWT
-  jwtAccessSecret: process.env.JWT_ACCESS_SECRET || '',
-  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || '',
-  accessTokenTtlMinutes: parseInt(process.env.ACCESS_TOKEN_TTL_MINUTES || '15', 10),
-  refreshTokenTtlDays: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || '7', 10),
-  
+  jwtAccessSecret: data.JWT_ACCESS_SECRET,
+  jwtRefreshSecret: data.JWT_REFRESH_SECRET,
+  accessTokenTtlMinutes: data.ACCESS_TOKEN_TTL_MINUTES,
+  refreshTokenTtlDays: data.REFRESH_TOKEN_TTL_DAYS,
+
   // Frontend
-  frontendOrigin: process.env.FRONTEND_ORIGIN || 'http://localhost:4200',
+  frontendOrigin: data.FRONTEND_ORIGIN,
 } as const;
