@@ -42,9 +42,38 @@ async function waitForDatabase(maxRetries = 10, delay = 2000) {
 async function main() {
   await waitForDatabase();
 
+  // Mapping pour remplir typeIcon/typeDescription sur les rendez-vous existants.
+  // Important en prod : on ne veut pas quitter immédiatement si des colonnes viennent d'être ajoutées.
+  const rdvTypeMetaUpdate: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
+    [ModaliteType.XRAY]: { typeIcon: '🩻', typeDescription: 'Radiographie' },
+    [ModaliteType.CT]: { typeIcon: '🧠', typeDescription: 'Scanner (CT)' },
+    [ModaliteType.MRI]: { typeIcon: '🧲', typeDescription: 'IRM' },
+    [ModaliteType.US]: { typeIcon: '🩺', typeDescription: 'Échographie (US)' },
+    [ModaliteType.MAMMO]: { typeIcon: '🩷', typeDescription: 'Mammographie' },
+    [ModaliteType.PET]: { typeIcon: '🧪', typeDescription: 'TEP (PET)' },
+    [ModaliteType.OTHER]: { typeIcon: '📄', typeDescription: 'Autre' },
+  };
+
   const medecinCount = await prisma.medecin.count();
   if (medecinCount > 0) {
-    console.log('✅ Données déjà présentes, seed ignoré (premier deploy déjà effectué).');
+    console.log('♻️ Base déjà seedée : mise à jour des champs typeIcon/typeDescription...');
+
+    const modaliteValues = Object.keys(rdvTypeMetaUpdate) as ModaliteType[];
+    for (const modalite of modaliteValues) {
+      const meta = rdvTypeMetaUpdate[modalite];
+      await prisma.rdv.updateMany({
+        where: {
+          modalite,
+          OR: [{ typeIcon: null }, { typeDescription: null }],
+        },
+        data: {
+          typeIcon: meta.typeIcon,
+          typeDescription: meta.typeDescription,
+        },
+      });
+    }
+
+    console.log('✅ Champs typeIcon/typeDescription mis à jour.');
     await prisma.$disconnect();
     process.exit(0);
   }
@@ -186,6 +215,15 @@ async function main() {
   ];
   
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
+  const rdvTypeMeta: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
+    [ModaliteType.XRAY]: { typeIcon: '🩻', typeDescription: 'Radiographie' },
+    [ModaliteType.CT]: { typeIcon: '🧠', typeDescription: 'Scanner (CT)' },
+    [ModaliteType.MRI]: { typeIcon: '🧲', typeDescription: 'IRM' },
+    [ModaliteType.US]: { typeIcon: '🩺', typeDescription: 'Échographie (US)' },
+    [ModaliteType.MAMMO]: { typeIcon: '🩷', typeDescription: 'Mammographie' },
+    [ModaliteType.PET]: { typeIcon: '🧪', typeDescription: 'TEP (PET)' },
+    [ModaliteType.OTHER]: { typeIcon: '📄', typeDescription: 'Autre' },
+  };
   // Seulement les médecins (pas admin)
   const medecinsActifs = [medecin2, medecin3];
   const horaires = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
@@ -278,12 +316,15 @@ async function main() {
       heureFin.setMinutes(heureFin.getMinutes() + dureeMinutes);
 
       // Utiliser une modalité aléatoire (sera liée à une vacation compatible plus tard)
+      const modalite = modalites[Math.floor(Math.random() * modalites.length)];
       const rdv = await prisma.rdv.create({
         data: {
           date,
           heureDebut,
           heureFin,
-          modalite: modalites[Math.floor(Math.random() * modalites.length)],
+          modalite: modalite,
+          typeIcon: rdvTypeMeta[modalite].typeIcon,
+          typeDescription: rdvTypeMeta[modalite].typeDescription,
           patientId: patient.id,
         },
       });
