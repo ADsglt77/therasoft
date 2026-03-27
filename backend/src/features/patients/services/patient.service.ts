@@ -1,9 +1,15 @@
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 
-/**
- * Interface pour le dossier médical retourné (sans champs audio)
- */
+export interface DossierFileInfo {
+  id: number;
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  createdAt: Date;
+}
+
 export interface DossierResponse {
   id: number;
   observations: string | null;
@@ -11,6 +17,7 @@ export interface DossierResponse {
   documents: string | null;
   createdAt: Date;
   updatedAt: Date;
+  files: DossierFileInfo[];
   patient: {
     id: number;
     nom: string;
@@ -63,54 +70,42 @@ export class PatientService {
   ): Promise<DossierResponse> {
     await this.verifyRdvOwnership(rdvId, medecinId);
 
-    try {
-      const dossier = await prisma.dossier.findUnique({
-        where: {
-          patientId_rdvId: {
-            patientId,
-            rdvId,
+    const dossier = await prisma.dossier.findUnique({
+      where: {
+        patientId_rdvId: { patientId, rdvId },
+      },
+      select: {
+        id: true,
+        observations: true,
+        resultats: true,
+        documents: true,
+        createdAt: true,
+        updatedAt: true,
+        files: {
+          select: {
+            id: true,
+            originalName: true,
+            storedName: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
           },
+          orderBy: { createdAt: 'desc' },
         },
-        select: {
-          id: true,
-          observations: true,
-          resultats: true,
-          documents: true,
-          createdAt: true,
-          updatedAt: true,
-          patient: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-              dateNaissance: true,
-              sexe: true,
-            },
-          },
-          rdv: {
-            select: {
-              id: true,
-              date: true,
-              heureDebut: true,
-              heureFin: true,
-              modalite: true,
-            },
-          },
+        patient: {
+          select: { id: true, nom: true, prenom: true, dateNaissance: true, sexe: true },
         },
-      });
+        rdv: {
+          select: { id: true, date: true, heureDebut: true, heureFin: true, modalite: true },
+        },
+      },
+    });
 
-      if (!dossier) {
-        throw new ApiError(
-          'Dossier médical non trouvé pour ce rendez-vous',
-          'NOT_FOUND',
-          404
-        );
-      }
-
-      return dossier;
-    } catch (error: any) {
-      throw error;
+    if (!dossier) {
+      throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
     }
+
+    return dossier;
   }
 
   /**
@@ -141,14 +136,9 @@ export class PatientService {
       );
     }
 
-    // Mettre à jour les observations
     const updatedDossier = await prisma.dossier.update({
-      where: {
-        id: existingDossier.id,
-      },
-      data: {
-        observations: observations, // null ou string non vide (validé par Zod)
-      },
+      where: { id: existingDossier.id },
+      data: { observations },
       select: {
         id: true,
         observations: true,
@@ -156,23 +146,22 @@ export class PatientService {
         documents: true,
         createdAt: true,
         updatedAt: true,
-        patient: {
+        files: {
           select: {
             id: true,
-            nom: true,
-            prenom: true,
-            dateNaissance: true,
-            sexe: true,
+            originalName: true,
+            storedName: true,
+            mimeType: true,
+            size: true,
+            createdAt: true,
           },
+          orderBy: { createdAt: 'desc' },
+        },
+        patient: {
+          select: { id: true, nom: true, prenom: true, dateNaissance: true, sexe: true },
         },
         rdv: {
-          select: {
-            id: true,
-            date: true,
-            heureDebut: true,
-            heureFin: true,
-            modalite: true,
-          },
+          select: { id: true, date: true, heureDebut: true, heureFin: true, modalite: true },
         },
       },
     });
