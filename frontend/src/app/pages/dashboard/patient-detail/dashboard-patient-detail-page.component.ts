@@ -6,7 +6,8 @@ import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { NotificationService } from '../../../core/services/notification.service';
-import { PatientService, Dossier } from '../../../core/services/patient.service';
+import { PatientService, Dossier, DossierFile } from '../../../core/services/patient.service';
+import { ExistingFile } from '../../../components/input/ui-input.component';
 import { VoiceRecognitionService, TranscriptionResult } from '../../../core/services/voice-recognition.service';
 import { Subscription } from 'rxjs';
 import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
@@ -14,7 +15,6 @@ import { NotificationMessages } from '../../../core/constants/notification-messa
 import { formatDateLong, formatTime as formatTimeUtil, calculateAge } from '../../../core/utils/date.utils';
 import { formatSexe as formatSexeUtil, getSexeIcon } from '../../../core/constants/sexe.constants';
 import { formatModalite as formatModaliteUtil } from '../../../core/constants/modalite.constants';
-import { parseDocumentsList } from '../../../core/utils/string.utils';
 
 /**
  * Page Patient Detail Dashboard
@@ -37,6 +37,10 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   isSavingObservations = false;
   isTranscribing = false;
   isTranscriptionSupported = false;
+  dossierFiles: DossierFile[] = [];
+  isUploadingFiles = false;
+  isDeletingFileId: number | null = null;
+  clearSelectedTrigger = 0;
   private subscriptions = new Subscription();
   private transcriptSub: Subscription | null = null;
   private transcriptionInitialText = '';
@@ -107,11 +111,11 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       next: (dossier) => {
         this.dossier = dossier;
         this.observationsValue = dossier.observations || '';
+        this.dossierFiles = (dossier.files || []).map((f) => ({
+          ...f,
+          url: `/uploads/dossiers/${f.storedName}`,
+        }));
         this.isLoading = false;
-
-        if (!dossier.resultats) {
-          this.notificationService.show('information', 'Aucun résultat enregistré pour ce dossier');
-        }
       },
       error: (error) => {
         this.isLoading = false;
@@ -188,17 +192,124 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.saveObservations();
   }
 
-  // Méthodes utilitaires exposées pour le template
   formatDate = formatDateLong;
   formatTime = formatTimeUtil;
   getAge = calculateAge;
   formatSexe = formatSexeUtil;
   getSexeIcon = getSexeIcon;
   formatModalite = formatModaliteUtil;
-  getDocumentsList = parseDocumentsList;
 
   goBack(): void {
     this.location.back();
+  }
+
+  // ========== Gestion des fichiers ==========
+
+  get existingFilesForInput(): ExistingFile[] {
+    return this.dossierFiles.map((f) => ({
+      id: f.id,
+      name: f.originalName,
+      size: f.size,
+      mimeType: f.mimeType,
+    }));
+  }
+
+  onFilesSelected(files: File[]): void {
+    if (!this.patientId || !this.rdvId || files.length === 0) return;
+
+    this.isUploadingFiles = true;
+    const sub = this.patientService
+      .uploadDossierFiles(this.patientId, this.rdvId, files)
+      .subscribe({
+        next: (uploaded) => {
+          this.dossierFiles = [...uploaded, ...this.dossierFiles];
+          this.clearSelectedTrigger++;
+          this.isUploadingFiles = false;
+          this.notificationService.show(
+            'success',
+            `${uploaded.length} fichier(s) ajouté(s) avec succès`
+          );
+        },
+        error: (error) => {
+          this.isUploadingFiles = false;
+          const extracted = ApiErrorHandler.extractError(error);
+          this.notificationService.show(
+            'danger',
+            extracted.message || 'Erreur lors de l\'upload'
+          );
+        },
+      });
+    this.subscriptions.add(sub);
+  }
+
+  onFileError(event: { file: File; error: string }): void {
+    this.notificationService.show('danger', `${event.file.name} : ${event.error}`);
+  }
+
+  onExistingFileDownload(file: ExistingFile): void {
+    if (!this.patientId || !this.rdvId) return;
+
+    const sub = this.patientService
+      .downloadDossierFile(this.patientId, this.rdvId, file.id as number)
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = file.name;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        },
+        error: (error) => {
+          const extracted = ApiErrorHandler.extractError(error);
+          this.notificationService.show('danger', extracted.message || 'Téléchargement impossible');
+        },
+      });
+    this.subscriptions.add(sub);
+  }
+
+  onExistingFilePreview(file: ExistingFile): void {
+    if (!this.patientId || !this.rdvId) return;
+
+    const sub = this.patientService
+      .downloadDossierFile(this.patientId, this.rdvId, file.id as number)
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        },
+        error: (error) => {
+          const extracted = ApiErrorHandler.extractError(error);
+          this.notificationService.show('danger', extracted.message || 'Prévisualisation impossible');
+        },
+      });
+    this.subscriptions.add(sub);
+  }
+
+  onExistingFileRemove(file: ExistingFile): void {
+    if (!this.patientId || !this.rdvId) return;
+
+    const fileId = file.id as number;
+    this.isDeletingFileId = fileId;
+    const sub = this.patientService
+      .deleteDossierFile(this.patientId, this.rdvId, fileId)
+      .subscribe({
+        next: () => {
+          this.dossierFiles = this.dossierFiles.filter((f) => f.id !== fileId);
+          this.isDeletingFileId = null;
+          this.notificationService.show('success', `${file.name} supprimé`);
+        },
+        error: (error) => {
+          this.isDeletingFileId = null;
+          const extracted = ApiErrorHandler.extractError(error);
+          this.notificationService.show(
+            'danger',
+            extracted.message || 'Erreur lors de la suppression'
+          );
+        },
+      });
+    this.subscriptions.add(sub);
   }
 
   // ========== Transcription vocale (texte uniquement) ==========

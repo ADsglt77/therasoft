@@ -116,6 +116,24 @@
     }
   }
 
+  .files-section {
+    flex-direction: column !important;
+    gap: $spacing-16 !important;
+    flex: 1;
+    min-height: 0;
+
+    ui-input {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .upload-status {
+      color: var(--color-gray-500);
+      font-size: $font-size-span;
+      font-style: italic;
+    }
+  }
+
   .info-data {
     section {
       display: flex;

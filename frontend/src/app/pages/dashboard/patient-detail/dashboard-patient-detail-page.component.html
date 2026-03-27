@@ -113,42 +113,37 @@
   </section>
 
 
-  <!-- Résultats d'examen -->
+  <!-- Résultats d'examen (upload fichiers) -->
   <section>
     <div class="title">
       <app-icon name="clipboard-check" [size]="20"></app-icon>
       <h4>Résultats d'examen</h4>
     </div>
     <div class="content">
-      @if (dossier.resultats) {
-      <div class="text-content">
-        <p>{{ dossier.resultats }}</p>
+      <div class="files-section">
+        <ui-input
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv"
+          [multiple]="true"
+          [maxSize]="52428800"
+          [existingFiles]="existingFilesForInput"
+          [clearSelectedTrigger]="clearSelectedTrigger"
+          placeholder="Glissez-déposez vos fichiers ici ou cliquez pour sélectionner"
+          (filesSelected)="onFilesSelected($event)"
+          (fileError)="onFileError($event)"
+          (existingFileDownload)="onExistingFileDownload($event)"
+          (existingFilePreview)="onExistingFilePreview($event)"
+          (existingFileRemoved)="onExistingFileRemove($event)"
+          [fullHeight]="true"
+        ></ui-input>
+
+        @if (isUploadingFiles) {
+          <span class="upload-status">Upload en cours...</span>
+        }
       </div>
-      }
     </div>
   </section>
 </div>
-
-<!-- Documents associés
-  <section>
-    <div class="title">
-      <app-icon name="folder" [size]="20"></app-icon>
-      <h3>Documents associés</h3>
-    </div>
-    <div class="content">
-      @if (getDocumentsList(dossier.documents).length > 0) {
-      @for (document of getDocumentsList(dossier.documents); track document) {
-      <div class="document-item">
-        <app-icon name="file" [size]="16"></app-icon>
-        <span>{{ document }}</span>
-      </div>
-      }
-      } @else {
-      <p>Aucun document associé</p>
-      }
-    </div>
-  </section>
- -->
 
 <!-- Métadonnées -->
 <div class="info-data">
