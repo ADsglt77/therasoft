@@ -3,9 +3,16 @@ import { Observable } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
 import { HttpClient } from '@angular/common/http';
 
-/**
- * Interface pour le dossier médical retourné par l'API
- */
+export interface DossierFile {
+  id: number;
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  url: string;
+}
+
 export interface Dossier {
   id: number;
   observations: string | null;
@@ -13,6 +20,7 @@ export interface Dossier {
   documents: string | null;
   createdAt: string;
   updatedAt: string;
+  files: DossierFile[];
   patient: {
     id: number;
     nom: string;
@@ -29,9 +37,6 @@ export interface Dossier {
   };
 }
 
-/**
- * Service pour gérer les appels API liés aux patients et dossiers
- */
 @Injectable({
   providedIn: 'root',
 })
@@ -40,25 +45,17 @@ export class PatientService extends ApiClientService {
     super(http);
   }
 
-  /**
-   * Récupère le dossier médical d'un patient pour un RDV spécifique
-   */
   getDossier(patientId: number, rdvId: number): Observable<Dossier> {
     return this.http.get<Dossier>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier`
     );
   }
 
-  /**
-   * Met à jour les observations médicales d'un dossier
-   */
   updateObservations(
     patientId: number,
     rdvId: number,
     observations: string
   ): Observable<Dossier> {
-    // Convertir chaîne vide en null pour permettre la suppression des observations
-    // Le backend n'accepte que null ou une chaîne non vide
     const observationsValue = observations.trim() === '' ? null : observations.trim();
     return this.http.patch<Dossier>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/observations`,
@@ -66,5 +63,32 @@ export class PatientService extends ApiClientService {
     );
   }
 
+  uploadDossierFiles(patientId: number, rdvId: number, files: File[]): Observable<DossierFile[]> {
+    const formData = new FormData();
+    files.forEach((f) => formData.append('files', f));
+    return this.http.post<DossierFile[]>(
+      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files`,
+      formData
+    );
+  }
+
+  getDossierFiles(patientId: number, rdvId: number): Observable<DossierFile[]> {
+    return this.http.get<DossierFile[]>(
+      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files`
+    );
+  }
+
+  deleteDossierFile(patientId: number, rdvId: number, fileId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files/${fileId}`
+    );
+  }
+
+  downloadDossierFile(patientId: number, rdvId: number, fileId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files/${fileId}/download`,
+      { responseType: 'blob' }
+    );
+  }
 }
 
