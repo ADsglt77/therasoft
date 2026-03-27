@@ -12,6 +12,9 @@
   white-space: nowrap;
   @include glass-panel;
   @include transition();
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // Variants

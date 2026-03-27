@@ -1,7 +1,15 @@
 <div class="day" (click)="onDayClick()">
-  <div class="day-number">{{ dayNumber }}</div>
-  @if (!disabled) {
-    <ui-badge [variant]="badgeVariant" [text]="badgeText"></ui-badge>
+  <div class="header">
+    <div class="day-number">{{ dayNumber }}</div>
+    @if (!disabled) {
+    <div class="day-rdv-count">
+      <app-icon name="calendar-heart" [size]="16" class="day-rdv-count__icon"></app-icon>
+      <span class="day-rdv-count__value">{{ rdvCount }}</span>
+    </div>
+    }
+  </div>
+  @if (!disabled && location) {
+    <ui-badge [variant]="badgeVariant" [text]="badgeText" class="badge"></ui-badge>
   }
 </div>
 

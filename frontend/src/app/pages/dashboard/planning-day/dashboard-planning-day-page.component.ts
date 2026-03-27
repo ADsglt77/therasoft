@@ -105,7 +105,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
             patientId: rdv.patient.id,
             startTime: formatTime(rdv.heureDebut),
             endTime: formatTime(rdv.heureFin),
-            title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+            title: `${rdv.typeIcon || ''} ${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`.trim(),
             disabled: false,
           };
         });

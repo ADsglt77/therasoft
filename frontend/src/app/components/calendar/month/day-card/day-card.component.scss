@@ -21,6 +21,18 @@
         background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
         cursor: pointer;
     }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .day-rdv-count {
+            display: flex;
+            align-items: center;
+            gap: $spacing-4;
+        }
+    }
 }
 
 :host.day-card-component--disabled {

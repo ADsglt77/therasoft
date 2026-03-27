@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UiBadgeComponent } from '../../../badge/ui-badge.component';
+import { AppIconComponent } from '../../../icon/app-icon.component';
+import { UiBadgeComponent } from 'src/app/components/badge/ui-badge.component';
+
 
 export type DayType = 'repos' | 'travail';
 
 @Component({
   selector: 'app-day-card',
   standalone: true,
-  imports: [CommonModule, UiBadgeComponent],
+  imports: [CommonModule, AppIconComponent, UiBadgeComponent],
   templateUrl: './day-card.component.html',
   styleUrl: './day-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,6 +18,7 @@ export class DayCardComponent {
   @Input() dayNumber!: number;
   @Input() type: DayType = 'repos';
   @Input() location?: string; // Lieu de travail si type = 'travail'
+  @Input() rdvCount: number = 0;
   @Input() disabled: boolean = false; // true pour les jours du mois précédent/suivant
   @Input() isToday: boolean = false; // true si c'est le jour actuel
   @Input() year?: number; // Année du jour

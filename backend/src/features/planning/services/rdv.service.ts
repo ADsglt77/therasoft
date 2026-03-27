@@ -9,6 +9,8 @@ export interface RdvResponse {
   heureDebut: Date;
   heureFin: Date;
   modalite: string;
+  typeIcon: string | null;
+  typeDescription: string | null;
   patient: {
     id: number;
     nom: string;
@@ -43,6 +45,8 @@ export class RdvService {
         heureDebut: true,
         heureFin: true,
         modalite: true,
+        typeIcon: true,
+        typeDescription: true,
         patient: {
           select: {
             id: true,
@@ -80,6 +84,8 @@ export class RdvService {
         heureDebut: true,
         heureFin: true,
         modalite: true,
+        typeIcon: true,
+        typeDescription: true,
         patient: {
           select: {
             id: true,
@@ -128,6 +134,8 @@ export class RdvService {
         heureDebut: true,
         heureFin: true,
         modalite: true,
+        typeIcon: true,
+        typeDescription: true,
         patient: {
           select: {
             id: true,
