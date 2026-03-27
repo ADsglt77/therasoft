@@ -5,6 +5,11 @@ WORKDIR /app
 # Librairies nécessaires à Prisma et à l'attente de Postgres
 RUN apk add --no-cache openssl libc6-compat postgresql-client
 
+# Valeur par défaut uniquement pour la phase de build (prisma generate).
+# En runtime, DATABASE_URL est fournie par docker-compose / Dokploy.
+ARG DATABASE_URL=postgresql://postgres:postgres@db:5432/portail_medecin?schema=public
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Installer les dépendances (build + runtime)
 COPY package*.json ./
 RUN npm install
