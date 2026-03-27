@@ -49,6 +49,12 @@
   }
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-8;
+}
+
 .badge {
   align-self: flex-start;
   cursor: pointer;
