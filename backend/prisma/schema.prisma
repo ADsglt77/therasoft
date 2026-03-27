@@ -108,6 +108,10 @@ model Rdv {
 
   modalite ModaliteType
 
+  // Type de rendez-vous (affichage UI : icône + description)
+  typeIcon        String? @map("type_icon")
+  typeDescription String? @map("type_description")
+
   patientId Int     @map("id_patient")
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 

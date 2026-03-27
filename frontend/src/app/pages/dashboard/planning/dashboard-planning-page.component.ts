@@ -5,12 +5,13 @@ import { CardPoint } from '../../../components/card/ui-card.component';
 import { DayCardComponent, DayType } from '../../../components/calendar/month/day-card/day-card.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { SelectOption } from '../../../components/input/ui-input.component';
-import { PlanningService, Vacation } from '../../../core/services/planning.service';
+import { PlanningService, Vacation, Rdv } from '../../../core/services/planning.service';
 
 interface DayData {
   dayNumber: number;
   type: DayType;
   location?: string;
+  rdvCount: number;
   disabled?: boolean;
   isToday?: boolean;
   year: number;
@@ -89,6 +90,10 @@ export class DashboardPlanningPageComponent implements OnInit {
   private vacations: Vacation[] = [];
   private vacationsByDate: Map<string, Vacation[]> = new Map();
 
+  // RDV chargés depuis l'API (pour afficher le nombre sur les cartes jours)
+  private rdvs: Rdv[] = [];
+  private rdvsByDate: Map<string, Rdv[]> = new Map();
+
   // Cache pour optimiser les performances
   private _today: Date | null = null;
   private _cachedMonthName: string | null = null;
@@ -104,6 +109,7 @@ export class DashboardPlanningPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadVacations();
+    this.loadRdvsForMonth();
     this.cdr.markForCheck();
   }
 
@@ -227,7 +233,13 @@ export class DashboardPlanningPageComponent implements OnInit {
   private getVilleForDate(year: number, month: number, day: number): string | undefined {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const vacations = this.vacationsByDate.get(dateKey);
-    return vacations?.[0]?.ville;
+    // Sur la card, on veut le site (pas la ville)
+    return vacations?.[0]?.site;
+  }
+
+  private getRdvCountForDate(year: number, month: number, day: number): number {
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return this.rdvsByDate.get(dateKey)?.length ?? 0;
   }
 
   /**
@@ -248,7 +260,7 @@ export class DashboardPlanningPageComponent implements OnInit {
     // Ajouter les jours du mois précédent (disabled)
     const startDay = daysInPrevMonth - firstDayIndex + 1;
     for (let i = startDay; i <= daysInPrevMonth; i++) {
-      days.push(this.createDayData(i, 'repos', undefined, true, prevYear, prevMonth, i));
+      days.push(this.createDayData(i, 'repos', undefined, 0, true, prevYear, prevMonth, i));
     }
     
     // Ajouter tous les jours du mois actuel
@@ -257,9 +269,10 @@ export class DashboardPlanningPageComponent implements OnInit {
       const dayOfWeek = date.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
-      const ville = this.getVilleForDate(this.currentYear, this.currentMonth, i);
-      const type: DayType = ville ? 'travail' : 'repos';
-      days.push(this.createDayData(i, type, ville, false, this.currentYear, this.currentMonth, i));
+      const site = this.getVilleForDate(this.currentYear, this.currentMonth, i);
+      const type: DayType = site ? 'travail' : 'repos';
+      const rdvCount = this.getRdvCountForDate(this.currentYear, this.currentMonth, i);
+      days.push(this.createDayData(i, type, site, rdvCount, false, this.currentYear, this.currentMonth, i));
     }
     
     // Calculer combien de jours il reste pour compléter 5 semaines
@@ -271,7 +284,7 @@ export class DashboardPlanningPageComponent implements OnInit {
     
     // Ajouter les jours du mois suivant (disabled)
     for (let i = 1; i <= remainingDays; i++) {
-      days.push(this.createDayData(i, 'repos', undefined, true, nextYear, nextMonth, i));
+      days.push(this.createDayData(i, 'repos', undefined, 0, true, nextYear, nextMonth, i));
     }
     
     return days;
@@ -284,6 +297,7 @@ export class DashboardPlanningPageComponent implements OnInit {
     dayNumber: number,
     type: DayType,
     location: string | undefined,
+    rdvCount: number,
     disabled: boolean,
     year: number,
     month: number,
@@ -293,11 +307,39 @@ export class DashboardPlanningPageComponent implements OnInit {
       dayNumber,
       type,
       location,
+      rdvCount,
       disabled,
       isToday: this.isToday(year, month, day),
       year,
       month,
     };
+  }
+
+  private loadRdvsForMonth(): void {
+    this.planningService.getRdvsForMonth(this.currentYear, this.currentMonth).subscribe({
+      next: (response) => {
+        this.rdvs = response.rdvs;
+        this.rdvsByDate.clear();
+        this.rdvs.forEach(rdv => {
+          const dateKey = rdv.date.substring(0, 10); // YYYY-MM-DD
+          if (!this.rdvsByDate.has(dateKey)) {
+            this.rdvsByDate.set(dateKey, []);
+          }
+          this.rdvsByDate.get(dateKey)!.push(rdv);
+        });
+
+        // Invalider le cache des jours pour mettre à jour rdvCount
+        this._cachedDays = null;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des rdvs:', error);
+        this.rdvs = [];
+        this.rdvsByDate.clear();
+        this._cachedDays = null;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   /**

@@ -15,6 +15,7 @@
   }
   @for (day of days; track trackByDay($index, day)) {
   <app-day-card [dayNumber]="day.dayNumber" [type]="day.type" [location]="day.location"
+    [rdvCount]="day.rdvCount"
     [disabled]="day.disabled || false" [isToday]="day.isToday || false" [year]="day.year" [month]="day.month"
     (dayClick)="onDayClick($event)">
   </app-day-card>

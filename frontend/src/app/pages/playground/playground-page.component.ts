@@ -70,7 +70,7 @@ export class PlaygroundPageComponent implements OnInit {
             id: rdv.id.toString(),
             startTime,
             endTime,
-            title: `${rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+            title: `${rdv.typeIcon || ''} ${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`.trim(),
             disabled: false,
           };
         });
