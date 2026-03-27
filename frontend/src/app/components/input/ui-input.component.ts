@@ -11,6 +11,23 @@ export interface SelectOption {
   label: string;
 }
 
+export interface ExistingFile {
+  id: number | string;
+  name: string;
+  size: number;
+  mimeType: string;
+}
+
+interface DisplayFile {
+  key: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  isExisting: boolean;
+  existingFile?: ExistingFile;
+  selectedIndex?: number;
+}
+
 @Component({
   selector: 'ui-input',
   standalone: true,
@@ -34,18 +51,23 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() touched: boolean = false; // État "touched" du champ (pour la validation)
   @Input() dirty: boolean = false; // État "dirty" du champ (pour la validation)
   @Input() options: SelectOption[] = []; // Options pour le select
-  @Input() accept: string = '*/*'; // Types de fichiers acceptés (pour file)
-  @Input() multiple: boolean = false; // Permettre plusieurs fichiers (pour file)
-  @Input() maxSize: number = 0; // Taille maximale en bytes (0 = illimité, pour file)
-  @Input() initialFiles: File[] = []; // Fichiers initiaux à afficher (pour file)
-  @Input() rows: number = 4; // Nombre de lignes pour le textarea
-  @Input() fullHeight: boolean = false; // Pour le textarea, prend toute la hauteur disponible
-  @Output() input = new EventEmitter<Event>(); // Émet l'événement input vers le parent
-  @Output() blur = new EventEmitter<Event>(); // Émet l'événement blur vers le parent
-  @Output() change = new EventEmitter<Event>(); // Émet l'événement change vers le parent (pour select)
-  @Output() filesSelected = new EventEmitter<File[]>(); // Émet les fichiers sélectionnés (pour file)
-  @Output() fileError = new EventEmitter<{ file: File; error: string }>(); // Émet les erreurs de fichier (pour file)
-  @Output() fileRemoved = new EventEmitter<File[]>(); // Émet les fichiers restants après suppression (pour file)
+  @Input() accept: string = '*/*';
+  @Input() multiple: boolean = false;
+  @Input() maxSize: number = 0;
+  @Input() initialFiles: File[] = [];
+  @Input() existingFiles: ExistingFile[] = [];
+  @Input() clearSelectedTrigger: number = 0;
+  @Input() rows: number = 4;
+  @Input() fullHeight: boolean = false;
+  @Output() input = new EventEmitter<Event>();
+  @Output() blur = new EventEmitter<Event>();
+  @Output() change = new EventEmitter<Event>();
+  @Output() filesSelected = new EventEmitter<File[]>();
+  @Output() fileError = new EventEmitter<{ file: File; error: string }>();
+  @Output() fileRemoved = new EventEmitter<File[]>();
+  @Output() existingFileDownload = new EventEmitter<ExistingFile>();
+  @Output() existingFilePreview = new EventEmitter<ExistingFile>();
+  @Output() existingFileRemoved = new EventEmitter<ExistingFile>();
 
   @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
@@ -78,6 +100,18 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     if (changes['initialFiles'] && this.type === 'file') {
       this.syncFilesFromInitial();
     }
+    if (changes['clearSelectedTrigger'] && this.type === 'file') {
+      this.clearSelectedFiles();
+    }
+  }
+
+  private clearSelectedFiles(): void {
+    if (this.selectedFiles.length === 0) return;
+    this.selectedFiles = [];
+    this.updateFileInputValue();
+    this.computeAutoMessage();
+    this.fileRemoved.emit(this.selectedFiles);
+    this.cdr.markForCheck();
   }
 
   /**
@@ -303,9 +337,9 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     }
     if (this.type === 'file') {
       if (this.isDragging) classes.push('ui-input--dragging');
-      if (this.selectedFiles.length > 0) classes.push('ui-input--has-files');
+      if (this.selectedFiles.length > 0 || this.existingFiles.length > 0) classes.push('ui-input--has-files');
     }
-    if (this.type === 'textarea' && this.fullHeight) {
+    if ((this.type === 'textarea' || this.type === 'file') && this.fullHeight) {
       classes.push('ui-input--full-height');
     }
     return classes.join(' ');
@@ -628,12 +662,73 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     return `${this.selectedFiles.length} fichier(s) sélectionné(s)`;
   }
 
-  /**
-   * Détermine quelle icône afficher selon le type de fichier accepté
-   */
   get fileTypeIcon(): string {
     return this.accept.includes('image') ? 'image' : 'file';
   }
 
+  get displayFiles(): DisplayFile[] {
+    const existing: DisplayFile[] = this.existingFiles.map((file) => ({
+      key: `existing-${file.id}`,
+      name: file.name,
+      size: file.size,
+      mimeType: file.mimeType,
+      isExisting: true,
+      existingFile: file,
+    }));
+
+    const selected: DisplayFile[] = this.selectedFiles.map((file, index) => ({
+      key: `selected-${index}-${file.name}-${file.size}`,
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      isExisting: false,
+      selectedIndex: index,
+    }));
+
+    return [...existing, ...selected];
+  }
+
+  getFileMimeIcon(mimeType: string): string {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType === 'application/pdf') return 'file-text';
+    return 'file';
+  }
+
+  onExistingFileDownload(file: ExistingFile, event: MouseEvent): void {
+    event.stopPropagation();
+    this.existingFileDownload.emit(file);
+  }
+
+  onExistingFilePreview(file: ExistingFile, event: MouseEvent): void {
+    event.stopPropagation();
+    this.existingFilePreview.emit(file);
+  }
+
+  onExistingFileRemove(file: ExistingFile, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.disabled) return;
+    this.existingFileRemoved.emit(file);
+  }
+
+  onSelectedFilePreview(fileIndex: number, event: MouseEvent): void {
+    event.stopPropagation();
+    const file = this.selectedFiles[fileIndex];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  onSelectedFileDownload(fileIndex: number, event: MouseEvent): void {
+    event.stopPropagation();
+    const file = this.selectedFiles[fileIndex];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = file.name;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
 }
 

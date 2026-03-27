@@ -18,6 +18,12 @@
       align-items: stretch;
       min-height: 0;
     }
+
+    .file-drop-zone {
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+    }
   }
   
   .label {
@@ -186,8 +192,14 @@
       &-size {
         color: var(--text-muted);
       }
-  
-      &-remove {
+
+      &-actions {
+        display: flex;
+        align-items: center;
+        gap: $spacing-4;
+      }
+
+      &-action {
         background: none;
         border: none;
         cursor: pointer;
@@ -196,15 +208,15 @@
         @include transition(background-color color, 150ms);
         @include icon-center;
         color: var(--text-muted);
-  
-        &:hover:not(:disabled) {
+
+        &:hover {
+          background: color-mix(in srgb, var(--color-primary-300) 20%, transparent);
+          color: var(--text);
+        }
+
+        &--danger:hover {
           background: color-mix(in srgb, var(--color-danger) 20%, transparent);
           color: var(--color-danger);
-        }
-  
-        &:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
         }
       }
     }

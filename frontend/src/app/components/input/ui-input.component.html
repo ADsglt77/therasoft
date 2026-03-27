@@ -3,7 +3,7 @@
 }
 @if (type === 'file') {
 <div #dropZone class="file-drop-zone" [class.file-drop-zone--dragging]="isDragging"
-  [class.file-drop-zone--disabled]="disabled" [class.file-drop-zone--has-files]="selectedFiles.length > 0"
+  [class.file-drop-zone--disabled]="disabled" [class.file-drop-zone--has-files]="displayFiles.length > 0"
   (click)="openFileSelector()">
   <input #fileInput type="file" [accept]="accept" [multiple]="multiple" [disabled]="disabled" style="display: none;"
     (change)="onFileInputChange($event)" />
@@ -11,22 +11,40 @@
     <app-icon [name]="fileTypeIcon" [size]="32" [color]="'var(--color-gray-500)'"></app-icon>
     <span>{{ fileDisplayName }}</span>
   </div>
-  @if (selectedFiles.length > 0) {
+  @if (displayFiles.length > 0) {
   <div class="file-list">
-    @for (file of selectedFiles; track $index) {
+    @for (file of displayFiles; track file.key) {
     <div class="file-item">
-      <app-icon [name]="fileTypeIcon" [size]="16" [color]="'var(--color-gray-500)'"></app-icon>
+      <app-icon [name]="getFileMimeIcon(file.mimeType)" [size]="16" [color]="'var(--color-gray-500)'"></app-icon>
       <span class="file-item-name">{{ file.name }}</span>
       <span class="file-item-size">({{ formatFileSize(file.size) }})</span>
-      <app-icon 
-        class="file-item-remove" 
-        name="x" 
-        [size]="14"
-        (click)="removeFile($index); $event.stopPropagation()"
-        [attr.aria-label]="'Supprimer ' + file.name"
-        [style.cursor]="disabled ? 'not-allowed' : 'pointer'"
-        [style.opacity]="disabled ? '0.5' : '1'">
-      </app-icon>
+      <div class="file-item-actions">
+        <app-icon
+          class="file-item-action"
+          name="eye"
+          [size]="14"
+          (click)="file.isExisting && file.existingFile ? onExistingFilePreview(file.existingFile, $event) : onSelectedFilePreview(file.selectedIndex!, $event)"
+          [attr.aria-label]="'Voir ' + file.name"
+          style="cursor: pointer;">
+        </app-icon>
+        <app-icon
+          class="file-item-action"
+          name="download"
+          [size]="14"
+          (click)="file.isExisting && file.existingFile ? onExistingFileDownload(file.existingFile, $event) : onSelectedFileDownload(file.selectedIndex!, $event)"
+          [attr.aria-label]="'Télécharger ' + file.name"
+          style="cursor: pointer;">
+        </app-icon>
+        <app-icon
+          class="file-item-action file-item-action--danger"
+          name="x"
+          [size]="14"
+          (click)="file.isExisting && file.existingFile ? onExistingFileRemove(file.existingFile, $event) : removeFile(file.selectedIndex!); $event.stopPropagation()"
+          [attr.aria-label]="'Supprimer ' + file.name"
+          [style.cursor]="disabled ? 'not-allowed' : 'pointer'"
+          [style.opacity]="disabled ? '0.5' : '1'">
+        </app-icon>
+      </div>
     </div>
     }
   </div>
