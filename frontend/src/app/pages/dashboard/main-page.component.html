@@ -1,8 +1,10 @@
 <div class="dashboard-layout">
-  <div class="sidebar">
-    <app-menu-dashboard></app-menu-dashboard>
-  </div>
-  <div class="content">
+  <aside class="sidebar-shell" aria-label="Navigation principale">
+    <nav class="sidebar">
+      <app-menu-dashboard></app-menu-dashboard>
+    </nav>
+  </aside>
+  <main class="content">
     <router-outlet></router-outlet>
-  </div>
+  </main>
 </div>
