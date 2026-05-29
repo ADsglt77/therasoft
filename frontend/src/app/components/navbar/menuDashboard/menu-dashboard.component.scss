@@ -1,6 +1,10 @@
 @use '../../../../styles/tokens' as *;
 @use '../../../../styles/mixins' as *;
 
+$nav-duration: 0.5s;
+$nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
+$nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
+
 :host {
   width: 100%;
   max-width: 250px;
@@ -13,6 +17,11 @@
   padding: $spacing-24;
   @include glass-panel;
   border-radius: $radius-12;
+  border: 1px solid transparent;
+  transition:
+    padding $nav-duration $nav-ease,
+    max-width $nav-duration $nav-ease,
+    border-color $nav-duration $nav-ease;
 
   .title {
     display: flex;
@@ -21,9 +30,24 @@
     color: var(--text);
     text-decoration: none;
     cursor: pointer;
+    transition: gap $nav-duration $nav-ease, justify-content $nav-duration $nav-ease;
 
-    h2 {
+    .brand-icon {
+      flex-shrink: 0;
+      transition: transform $nav-duration $nav-ease;
+      transform-origin: center;
+    }
+
+    .brand-title {
+      margin: 0;
+      overflow: hidden;
       white-space: nowrap;
+      max-width: 10rem;
+      opacity: 1;
+      transition:
+        max-width $nav-duration $nav-ease,
+        opacity $nav-duration $nav-ease 60ms,
+        margin $nav-duration $nav-ease;
     }
   }
 
@@ -32,6 +56,10 @@
     flex-direction: column;
     gap: $spacing-12;
     margin-top: 50px;
+    transition:
+      margin-top $nav-duration $nav-ease,
+      gap $nav-duration $nav-ease,
+      align-items $nav-duration $nav-ease;
   }
 
   .profil {
@@ -39,9 +67,29 @@
     display: flex;
     align-items: center;
     gap: $spacing-16;
+    transition: gap $nav-duration $nav-ease, justify-content $nav-duration $nav-ease;
+
+    .profil-avatar-wrap {
+      flex-shrink: 0;
+      overflow: hidden;
+      max-width: 50px;
+      opacity: 1;
+      transform: scale(1);
+      transform-origin: left center;
+      transition:
+        max-width $nav-duration $nav-ease,
+        opacity $nav-duration $nav-ease 80ms,
+        transform $nav-duration $nav-ease 80ms;
+    }
 
     .profil-info {
       min-width: 0;
+      overflow: hidden;
+      max-width: 12rem;
+      opacity: 1;
+      transition:
+        max-width $nav-duration $nav-ease,
+        opacity $nav-duration $nav-ease 80ms;
 
       h6,
       p {
@@ -62,7 +110,10 @@
       cursor: pointer;
       @include icon-center;
       --logout-icon-color: var(--text-muted);
-      @include transition(opacity, 300ms);
+      transition:
+        right $nav-duration $nav-ease,
+        transform $nav-duration $nav-ease,
+        opacity 200ms ease;
 
       &:hover {
         --logout-icon-color: var(--text);
@@ -73,11 +124,25 @@
   &.collapsed {
     max-width: none;
     padding: $spacing-16 $spacing-8;
-    border: 1px solid border-surface-color(40%);
-    border-right: 1px solid border-surface-color(55%);
+    border-color: border-surface-color(40%);
 
     .title {
       justify-content: center;
+      gap: 0;
+
+      .brand-icon {
+        transform: scale(0.78);
+      }
+
+      .brand-title {
+        max-width: 0;
+        opacity: 0;
+        margin: 0;
+        transition:
+          opacity $nav-duration $nav-ease-in,
+          max-width $nav-duration $nav-ease-in,
+          margin $nav-duration $nav-ease-in;
+      }
     }
 
     .links {
@@ -86,13 +151,40 @@
       align-items: center;
     }
 
-    .footer-collapsed {
-      display: flex;
+    .profil {
       justify-content: center;
+      gap: 0;
+
+      .profil-avatar-wrap {
+        max-width: 0;
+        opacity: 0;
+        transform: scale(0.85);
+        pointer-events: none;
+        transition:
+          opacity $nav-duration $nav-ease-in,
+          transform $nav-duration $nav-ease-in,
+          max-width $nav-duration $nav-ease-in;
+      }
+
+      .profil-info {
+        max-width: 0;
+        opacity: 0;
+        transition:
+          opacity $nav-duration $nav-ease-in,
+          max-width $nav-duration $nav-ease-in;
+      }
 
       .icon-logout-wrapper {
         position: static;
       }
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host,
+  :host * {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }

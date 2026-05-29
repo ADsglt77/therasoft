@@ -1,9 +1,7 @@
 <div class="header">
   <a class="title" routerLink="/">
-    <app-icon name="calendar-heart" [size]="collapsed ? 28 : 36"></app-icon>
-    @if (!collapsed) {
-      <h2>TsXcare</h2>
-    }
+    <app-icon name="calendar-heart" [size]="36" class="brand-icon"></app-icon>
+    <h2 class="brand-title">TsXcare</h2>
   </a>
   <div class="links">
     <app-navbar-links icon="globe" text="Site" route="/dashboard/site" [iconOnly]="collapsed"></app-navbar-links>
@@ -11,23 +9,17 @@
     <app-navbar-links icon="settings" text="Settings" route="/dashboard/settings" [iconOnly]="collapsed"></app-navbar-links>
   </div>
 </div>
-@if (!collapsed) {
-  <div class="footer">
-    <div class="profil">
+<div class="footer">
+  <div class="profil">
+    <div class="profil-avatar-wrap">
       <ui-avatar [initial]="userInitials" [avatarUrl]="currentUser?.avatarUrl"></ui-avatar>
-      <div class="profil-info">
-        <h6>{{ currentUser?.nom?.toUpperCase() || 'Chargement...' }}</h6>
-        <p>{{ currentUser?.prenom || '' }}</p>
-      </div>
-      <div class="icon-logout-wrapper" (click)="onLogout()">
-        <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
-      </div>
     </div>
-  </div>
-} @else {
-  <div class="footer footer-collapsed">
+    <div class="profil-info">
+      <h6>{{ currentUser?.nom?.toUpperCase() || 'Chargement...' }}</h6>
+      <p>{{ currentUser?.prenom || '' }}</p>
+    </div>
     <div class="icon-logout-wrapper" (click)="onLogout()" role="button" tabindex="0" aria-label="Se déconnecter">
       <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
     </div>
   </div>
-}
+</div>

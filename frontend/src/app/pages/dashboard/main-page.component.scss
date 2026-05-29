@@ -1,8 +1,9 @@
 @use '../../../styles/tokens' as *;
-@use '../../../styles/mixins' as *;
 
 $sidebar-collapsed-width: 64px;
 $sidebar-expanded-width: 250px;
+$nav-duration: 0.5s;
+$nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
 :host {
   display: flex;
@@ -23,8 +24,9 @@ $sidebar-expanded-width: 250px;
     flex-shrink: 0;
     width: $sidebar-collapsed-width;
     height: calc(100vh - $spacing-16 * 2);
-    @include transition(width, 350ms);
     overflow: hidden;
+    will-change: width;
+    transition: width $nav-duration $nav-ease;
 
     &.expanded {
       width: $sidebar-expanded-width;
@@ -36,5 +38,17 @@ $sidebar-expanded-width: 250px;
     min-width: 0;
     min-height: 0;
     overflow: auto;
+    transition: flex $nav-duration $nav-ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-layout .sidebar,
+  .dashboard-layout .content {
+    transition-duration: 0.01ms !important;
+  }
+
+  .dashboard-layout .sidebar {
+    will-change: auto;
   }
 }
