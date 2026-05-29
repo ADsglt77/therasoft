@@ -11,25 +11,31 @@
     <app-navbar-links icon="settings" text="Settings" route="/dashboard/settings" [iconOnly]="collapsed"></app-navbar-links>
   </div>
 </div>
-<div class="footer">
-  <div class="profil">
-    <ui-avatar [initial]="userInitials" [avatarUrl]="currentUser?.avatarUrl"></ui-avatar>
-    @if (!collapsed) {
+@if (!collapsed) {
+  <div class="footer">
+    <div class="profil">
+      <ui-avatar [initial]="userInitials" [avatarUrl]="currentUser?.avatarUrl"></ui-avatar>
       <div class="profil-info">
         <h6>{{ currentUser?.nom?.toUpperCase() || 'Chargement...' }}</h6>
         <p>{{ currentUser?.prenom || '' }}</p>
       </div>
-      <div class="icon-logout-wrapper" (click)="onLogout()">
-        <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
-      </div>
-    } @else {
       <button
         type="button"
-        class="icon-logout-wrapper icon-logout-collapsed"
+        class="icon-logout-wrapper"
         (click)="onLogout()"
         aria-label="Se déconnecter">
         <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
       </button>
-    }
+    </div>
   </div>
-</div>
+} @else {
+  <div class="footer footer-collapsed">
+    <button
+      type="button"
+      class="icon-logout-wrapper"
+      (click)="onLogout()"
+      aria-label="Se déconnecter">
+      <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
+    </button>
+  </div>
+}

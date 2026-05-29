@@ -14,17 +14,17 @@ $sidebar-expanded-width: 250px;
 
 .dashboard-layout {
   display: flex;
+  align-items: stretch;
   width: 100%;
   height: 100%;
-  position: relative;
+  min-height: 0;
+  gap: $spacing-16;
 
   .sidebar-shell {
-    position: fixed;
-    left: $spacing-16;
-    top: $spacing-16;
-    z-index: 100;
-    height: calc(100vh - $spacing-16 * 2);
+    flex-shrink: 0;
     width: $sidebar-collapsed-width;
+    height: 100%;
+    min-height: 0;
     @include transition(width, 350ms);
 
     &.expanded {
@@ -34,12 +34,14 @@ $sidebar-expanded-width: 250px;
     .sidebar {
       width: 100%;
       height: 100%;
+      min-height: 0;
     }
   }
 
   .content {
     flex: 1;
     min-width: 0;
-    width: 100%;
+    min-height: 0;
+    overflow: auto;
   }
 }

@@ -90,16 +90,12 @@
     }
   }
 
-  &.collapsed .profil {
-    flex-direction: column;
-    gap: $spacing-12;
-
-    .icon-logout-collapsed {
-      position: static;
-    }
+  .footer-collapsed {
+    display: flex;
+    justify-content: center;
   }
 
-  &:not(.collapsed) .profil .icon-logout-wrapper {
+  .profil .icon-logout-wrapper {
     position: absolute;
     right: 0;
   }
