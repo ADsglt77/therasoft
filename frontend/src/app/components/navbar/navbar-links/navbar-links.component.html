@@ -1,5 +1,5 @@
 @if (route) {
-  <a class="link" [routerLink]="route" routerLinkActive="active" (click)="onClick($event)">
+  <a class="link" [routerLink]="route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: exact }" (click)="onClick($event)">
     <app-icon [name]="icon" [size]="20" class="icon"></app-icon>
     <p class="label">{{ text }}</p>
   </a>

@@ -65,6 +65,13 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'site',
+        loadComponent: () =>
+          import('./pages/dashboard/site/dashboard-site-page.component').then(
+            (m) => m.DashboardSitePageComponent
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./pages/dashboard/settings/dashboard-settings-page.component').then(

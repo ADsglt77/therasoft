@@ -1,0 +1,35 @@
+@use '../../../../styles/tokens' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 100px $spacing-24 $spacing-24;
+  gap: 48px;
+  max-width: 80vw;
+  margin: 0 auto;
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    max-width: 500px;
+
+    h5 {
+      opacity: 0.7;
+      line-height: 1.6;
+    }
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    width: 100%;
+  }
+}

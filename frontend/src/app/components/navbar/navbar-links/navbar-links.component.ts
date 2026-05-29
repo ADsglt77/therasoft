@@ -15,6 +15,7 @@ export class NavbarLinksComponent {
   @Input() icon!: string;
   @Input() text!: string;
   @Input() route?: string;
+  @Input() exact = false;
   @Input() action?: () => void;
   @Output() click = new EventEmitter<void>();
 
