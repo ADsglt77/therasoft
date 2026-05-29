@@ -2,27 +2,70 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  width: 60%;
-  min-height: 120px;
+  width: 100%;
+  max-width: 100%;
+  min-height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: $spacing-12;
+  gap: $spacing-8;
   margin: 0 auto;
-  padding: $spacing-24 0;
+  padding: $spacing-8 0;
+
+  @media (min-width: $breakpoint-tablet) {
+    width: 60%;
+    min-height: 120px;
+    gap: $spacing-12;
+    padding: $spacing-24 0;
+  }
 
   .title {
     display: flex;
     align-items: center;
-    gap: $spacing-12;
+    gap: $spacing-8;
     color: var(--text);
+    min-width: 0;
+    flex-shrink: 1;
+
+    @media (min-width: $breakpoint-tablet) {
+      gap: $spacing-12;
+    }
+
+    app-icon {
+      flex-shrink: 0;
+      transform: scale(0.78);
+
+      @media (min-width: $breakpoint-tablet) {
+        transform: scale(1);
+      }
+    }
+
+    h1 {
+      font-size: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      @media (min-width: $breakpoint-tablet) {
+        font-size: 24px;
+      }
+
+      @media (min-width: $breakpoint-desktop) {
+        font-size: 32px;
+      }
+    }
   }
 
   .links {
     display: flex;
     align-items: center;
-    gap: $spacing-12;
+    gap: $spacing-8;
     position: relative;
+    flex-shrink: 0;
+
+    @media (min-width: $breakpoint-tablet) {
+      gap: $spacing-12;
+    }
 
     .avatar-wrapper {
       position: relative;
@@ -30,10 +73,15 @@
 
       .hamburger-menu {
         position: absolute;
-        top: calc(100%);
-        right: -60px;
+        top: calc(100% + #{$spacing-4});
+        right: 0;
         z-index: 1000;
         animation: fadeIn 0.2s ease-in-out;
+
+        @media (min-width: $breakpoint-tablet) {
+          top: calc(100%);
+          right: -60px;
+        }
       }
     }
 
@@ -45,6 +93,7 @@
       background: none;
       border: none;
       padding: 0;
+      flex-shrink: 0;
       @include focus-visible;
 
       &:hover {

@@ -41,7 +41,8 @@
   
   .description {
     color: var(--text-muted);
-    margin: $spacing-12;
+    margin: $spacing-12 0 0;
+    overflow-wrap: break-word;
   }
   
   .point {
