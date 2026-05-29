@@ -16,12 +16,16 @@ export class NavbarLinksComponent {
   @Input() text!: string;
   @Input() route?: string;
   @Input() exact = false;
+  @Input() iconOnly = false;
   @Input() action?: () => void;
   @Output() click = new EventEmitter<void>();
 
-  @HostBinding('class')
-  get hostClasses(): string {
-    return 'navbar-links';
+  @HostBinding('class.navbar-links')
+  readonly hostClass = true;
+
+  @HostBinding('class.icon-only')
+  get isIconOnly(): boolean {
+    return this.iconOnly;
   }
 
   onClick(event: Event): void {
@@ -31,6 +35,7 @@ export class NavbarLinksComponent {
       this.action();
     }
     this.click.emit();
+    (event.currentTarget as HTMLElement)?.blur();
   }
 }
 

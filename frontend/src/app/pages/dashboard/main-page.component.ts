@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { MenuDashboardComponent } from '../../components/navbar/menuDashboard/menu-dashboard.component';
@@ -10,5 +10,27 @@ import { MenuDashboardComponent } from '../../components/navbar/menuDashboard/me
   templateUrl: './main-page.component.html',
   styleUrl: './main-page.component.scss',
 })
-export class DashboardMainPageComponent {}
+export class DashboardMainPageComponent {
+  @ViewChild('sidebarShell') sidebarShell?: ElementRef<HTMLElement>;
 
+  sidebarExpanded = false;
+
+  onSidebarEnter(): void {
+    this.sidebarExpanded = true;
+  }
+
+  onSidebarLeave(): void {
+    this.sidebarExpanded = false;
+    this.blurSidebarFocus();
+  }
+
+  private blurSidebarFocus(): void {
+    const active = document.activeElement;
+    if (
+      active instanceof HTMLElement &&
+      this.sidebarShell?.nativeElement.contains(active)
+    ) {
+      active.blur();
+    }
+  }
+}

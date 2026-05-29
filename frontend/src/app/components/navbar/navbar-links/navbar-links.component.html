@@ -1,11 +1,26 @@
 @if (route) {
-  <a class="link" [routerLink]="route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: exact }" (click)="onClick($event)">
+  <a
+    class="link"
+    [routerLink]="route"
+    routerLinkActive="active"
+    [routerLinkActiveOptions]="{ exact: exact }"
+    [attr.title]="iconOnly ? text : null"
+    [attr.aria-label]="iconOnly ? text : null"
+    (click)="onClick($event)">
     <app-icon [name]="icon" [size]="20" class="icon"></app-icon>
-    <p class="label">{{ text }}</p>
+    @if (!iconOnly) {
+      <p class="label">{{ text }}</p>
+    }
   </a>
 } @else {
-  <a class="link" (click)="onClick($event)">
+  <a
+    class="link"
+    [attr.title]="iconOnly ? text : null"
+    [attr.aria-label]="iconOnly ? text : null"
+    (click)="onClick($event)">
     <app-icon [name]="icon" [size]="20" class="icon"></app-icon>
-    <p class="label">{{ text }}</p>
+    @if (!iconOnly) {
+      <p class="label">{{ text }}</p>
+    }
   </a>
 }

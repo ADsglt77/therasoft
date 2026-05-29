@@ -22,7 +22,18 @@
     color: var(--text);
   }
 
+  &.active {
+    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+    color: var(--text);
+  }
+
   .icon {
     @include icon-center;
   }
+}
+
+:host.icon-only .link {
+  justify-content: center;
+  padding: $spacing-10;
+  width: 100%;
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostBinding, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, Input, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UiAvatarComponent } from '../../avatar/ui-avatar.component';
@@ -17,9 +17,14 @@ import { Subscription } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MenuDashboardComponent implements OnInit, OnDestroy {
-  @HostBinding('class')
-  get hostClasses(): string {
-    return 'menu-dashboard';
+  @Input() collapsed = true;
+
+  @HostBinding('class.menu-dashboard')
+  readonly hostClass = true;
+
+  @HostBinding('class.collapsed')
+  get isCollapsed(): boolean {
+    return this.collapsed;
   }
 
   currentUser: MeResponse | null = null;
