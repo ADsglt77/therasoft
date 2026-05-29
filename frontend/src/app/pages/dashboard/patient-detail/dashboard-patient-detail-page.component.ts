@@ -59,25 +59,31 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.isTranscriptionSupported = this.voiceRecognitionService.isSupported();
 
     const sub = this.route.paramMap.subscribe((params) => {
-      const patientIdParam = params.get('patientId');
+      const date = params.get('date');
       const rdvIdParam = params.get('rdvId');
+      const patientIdFromState = history.state?.patientId as number | undefined;
 
-      if (!patientIdParam || !rdvIdParam) {
+      if (!date || !rdvIdParam) {
         this.notificationService.show('danger', 'Paramètres manquants');
-        this.router.navigate(['/dashboard/planning']);
+        this.router.navigate(['/calendar']);
         return;
       }
 
-      const patientId = parseInt(patientIdParam, 10);
       const rdvId = parseInt(rdvIdParam, 10);
 
-      if (isNaN(patientId) || isNaN(rdvId)) {
-        this.notificationService.show('danger', 'ID patient ou RDV invalide');
-        this.router.navigate(['/dashboard/planning']);
+      if (isNaN(rdvId)) {
+        this.notificationService.show('danger', 'ID de rendez-vous invalide');
+        this.router.navigate(['/calendar', date]);
         return;
       }
 
-      this.patientId = patientId;
+      if (!patientIdFromState || isNaN(patientIdFromState)) {
+        this.notificationService.show('warning', 'Dossier inaccessible depuis ce lien');
+        this.router.navigate(['/calendar', date]);
+        return;
+      }
+
+      this.patientId = patientIdFromState;
       this.rdvId = rdvId;
       this.loadPatientData();
     });

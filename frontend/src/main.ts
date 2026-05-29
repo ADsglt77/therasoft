@@ -43,10 +43,11 @@ initTheme();
  * - / : Page principale (main)
  * - /login : Page de connexion
  * - /register : Page d'inscription
- * - /dashboard : Dashboard (protégé par authGuard)
- *   - /dashboard/planning : Planning
- *   - /dashboard/planning/:day : Planning du jour
- *   - /dashboard/settings : Paramètres
+ * - /calendar : Calendrier mensuel (protégé par authGuard)
+ * - /calendar/:date : Calendrier du jour
+ * - /calendar/:date/:rdvId : Dossier patient
+ * - /site : Page site
+ * - /settings : Paramètres
  */
 bootstrapApplication(AppComponent, {
   providers: [

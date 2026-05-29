@@ -401,7 +401,7 @@ export class DashboardPlanningPageComponent implements OnInit {
     const dateStr = `${event.year}-${month}-${day}`;
     
     // Naviguer vers la page planning-day
-    this.router.navigate(['/dashboard/planning', dateStr]);
+    this.router.navigate(['/calendar', dateStr]);
   }
 }
 

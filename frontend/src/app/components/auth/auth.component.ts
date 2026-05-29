@@ -73,7 +73,7 @@ export class AuthComponent implements OnInit {
     
     // Si l'utilisateur est déjà authentifié, rediriger vers le dashboard
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/calendar']);
       return;
     }
 
@@ -144,7 +144,7 @@ export class AuthComponent implements OnInit {
         this.notificationService.show('success', NotificationMessages.AUTH_LOGIN_SUCCESS);
         
         // Rediriger vers le dashboard
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/calendar']);
       },
       error: (error) => {
         this.isLoading = false;

@@ -51,7 +51,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService
   ) {
     this.route.paramMap.subscribe(params => {
-      this.day = params.get('day');
+      this.day = params.get('date');
       if (this.day) {
         this.parseDate(this.day);
         this.loadRdvs();
@@ -125,14 +125,15 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
 
   onTimetableActionClick(slotId: string): void {
     const slot = this.timetableSlots.find((s) => s.id === slotId);
-    if (slot) {
-      // Naviguer vers le dossier du patient pour ce RDV spécifique
-      this.router.navigate(['/dashboard/patient', slot.patientId, 'rdv', slot.rdvId]);
+    if (slot && this.day) {
+      this.router.navigate(['/calendar', this.day, slot.rdvId], {
+        state: { patientId: slot.patientId },
+      });
     }
   }
 
   goBack(): void {
-    this.router.navigate(['/dashboard/planning']);
+    this.router.navigate(['/calendar']);
   }
 
   get isToday(): boolean {
@@ -242,7 +243,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    this.router.navigate(['/dashboard/planning', dateStr]);
+    this.router.navigate(['/calendar', dateStr]);
     // Le chargement des rendez-vous sera déclenché automatiquement via paramMap
   }
 }
