@@ -3,53 +3,35 @@
 
 :host {
   width: 100%;
+  max-width: 250px;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: $spacing-12;
-  padding: $spacing-16 $spacing-12;
+  margin: 0 auto;
+  padding: $spacing-24;
   @include glass-panel;
   border-radius: $radius-12;
-  border: 1px solid border-surface-color(35%);
-  box-shadow: 2px 0 12px color-mix(in srgb, var(--bg) 25%, transparent);
-  @include transition(padding, 350ms);
-
-  &.collapsed {
-    padding: $spacing-16 $spacing-8;
-    border-right: 1px solid border-surface-color(55%);
-  }
 
   .title {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: $spacing-12;
     color: var(--text);
     text-decoration: none;
     cursor: pointer;
-    @include transition(gap, 350ms);
 
     h2 {
       white-space: nowrap;
     }
   }
 
-  &:not(.collapsed) .title {
-    justify-content: flex-start;
-  }
-
   .links {
     display: flex;
     flex-direction: column;
-    gap: $spacing-8;
-    margin-top: $spacing-24;
-    @include transition(margin-top, 350ms);
-  }
-
-  &.collapsed .links {
-    margin-top: $spacing-16;
-    align-items: center;
+    gap: $spacing-12;
+    margin-top: 50px;
   }
 
   .profil {
@@ -75,14 +57,12 @@
     }
 
     .icon-logout-wrapper {
+      position: absolute;
+      right: 0;
       cursor: pointer;
       @include icon-center;
       --logout-icon-color: var(--text-muted);
       @include transition(opacity, 300ms);
-      background: none;
-      border: none;
-      padding: 0;
-      @include focus-visible;
 
       &:hover {
         --logout-icon-color: var(--text);
@@ -90,13 +70,29 @@
     }
   }
 
-  .footer-collapsed {
-    display: flex;
-    justify-content: center;
-  }
+  &.collapsed {
+    max-width: none;
+    padding: $spacing-16 $spacing-8;
+    border: 1px solid border-surface-color(40%);
+    border-right: 1px solid border-surface-color(55%);
 
-  .profil .icon-logout-wrapper {
-    position: absolute;
-    right: 0;
+    .title {
+      justify-content: center;
+    }
+
+    .links {
+      margin-top: $spacing-16;
+      gap: $spacing-8;
+      align-items: center;
+    }
+
+    .footer-collapsed {
+      display: flex;
+      justify-content: center;
+
+      .icon-logout-wrapper {
+        position: static;
+      }
+    }
   }
 }

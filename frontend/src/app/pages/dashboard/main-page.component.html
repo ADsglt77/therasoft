@@ -1,14 +1,12 @@
 <div class="dashboard-layout">
   <aside
     #sidebarShell
-    class="sidebar-shell"
+    class="sidebar"
     [class.expanded]="sidebarExpanded"
     aria-label="Navigation principale"
     (mouseenter)="onSidebarEnter()"
     (mouseleave)="onSidebarLeave()">
-    <nav class="sidebar">
-      <app-menu-dashboard [collapsed]="!sidebarExpanded"></app-menu-dashboard>
-    </nav>
+    <app-menu-dashboard [collapsed]="!sidebarExpanded"></app-menu-dashboard>
   </aside>
   <main class="content">
     <router-outlet></router-outlet>
