@@ -6,17 +6,12 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden;
 
   .header {
     width: 100%;
     @include surface(5%);
     border-bottom: 1px solid border-surface-color(60%);
-    padding: $spacing-12 $spacing-16;
-
-    @media (min-width: $breakpoint-tablet) {
-      padding: $spacing-16;
-    }
+    padding: 1rem;
   }
 
   .content {
@@ -25,89 +20,30 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-sizing: border-box;
-    padding: $spacing-32 $spacing-16 $spacing-24;
-    gap: $spacing-32;
-    max-width: 100%;
+    padding-top: 100px;
+    gap: 48px;
+    max-width: 80vw;
     margin: 0 auto;
-
-    @media (min-width: $breakpoint-tablet) {
-      padding: 80px $spacing-24 $spacing-32;
-      gap: $spacing-40;
-      max-width: min(90vw, 1200px);
-    }
-
-    @media (min-width: $breakpoint-desktop) {
-      padding-top: 100px;
-      gap: $spacing-48;
-      max-width: min(80vw, 1200px);
-    }
 
     .hero {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: $spacing-12;
+      gap: 16px;
       text-align: center;
-      width: 100%;
       max-width: 500px;
-      padding: 0 $spacing-4;
-
-      @media (min-width: $breakpoint-tablet) {
-        gap: $spacing-16;
-        padding: 0;
-      }
-
-      .hero-icon {
-        transform: scale(0.75);
-
-        @media (min-width: $breakpoint-tablet) {
-          transform: scale(1);
-        }
-      }
-
-      h1 {
-        font-size: 22px;
-        line-height: 1.25;
-        hyphens: auto;
-        overflow-wrap: break-word;
-
-        @media (min-width: $breakpoint-tablet) {
-          font-size: 32px;
-        }
-
-        @media (min-width: $breakpoint-desktop) {
-          font-size: 38px;
-        }
-      }
 
       h5 {
         opacity: 0.7;
         line-height: 1.6;
-        font-size: 14px;
-        font-weight: $font-weight-400;
-        overflow-wrap: break-word;
-
-        @media (min-width: $breakpoint-tablet) {
-          font-size: 16px;
-        }
-
-        @media (min-width: $breakpoint-desktop) {
-          font-size: 18px;
-        }
       }
     }
 
     .cards {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: $spacing-16;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
       width: 100%;
-
-      @media (min-width: 640px) {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-        gap: $spacing-24;
-      }
     }
   }
 
@@ -124,12 +60,11 @@
     z-index: 1000;
     backdrop-filter: blur(30px);
     animation: fadeIn 0.2s ease-in-out;
-    padding: $spacing-16;
   }
 
   .modal-content {
     position: relative;
-    max-width: 100%;
+    max-width: 90%;
     width: fit-content;
     max-height: 90vh;
     overflow-y: auto;
