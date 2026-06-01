@@ -75,13 +75,8 @@
   .mobile-drawer {
     display: none;
   }
-}
 
-// ============================================
-// MOBILE — menu hamburger (drawer)
-// ============================================
-@media (max-width: $breakpoint-tablet) {
-  :host {
+  @media (max-width: $breakpoint-tablet) {
     padding: $spacing-12 $spacing-16;
 
     .links--desktop {
