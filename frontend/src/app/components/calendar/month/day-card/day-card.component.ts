@@ -1,10 +1,14 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../icon/app-icon.component';
-import { UiBadgeComponent } from '../../../badge/ui-badge.component';
+import { UiBadgeComponent, BadgeVariant } from '../../../badge/ui-badge.component';
+import {
+  CalendarDayStatus,
+  dayStatusBadgeText,
+  dayStatusToBadgeVariant,
+} from '../../../../core/utils/calendar-day-status.utils';
 
-
-export type DayType = 'repos' | 'travail';
+export type DayType = CalendarDayStatus;
 
 @Component({
   selector: 'app-day-card',
@@ -41,14 +45,11 @@ export class DayCardComponent {
   }
 
   get badgeText(): string {
-    if (this.type === 'travail' && this.location) {
-      return this.location;
-    }
-    return this.type === 'repos' ? 'Repos' : 'Travail';
+    return dayStatusBadgeText(this.type, this.location);
   }
 
-  get badgeVariant(): 'repos' | 'success' {
-    return this.type === 'repos' ? 'repos' : 'success';
+  get badgeVariant(): BadgeVariant {
+    return dayStatusToBadgeVariant(this.type);
   }
 
   onDayClick(): void {
