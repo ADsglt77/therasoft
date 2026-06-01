@@ -6,6 +6,7 @@ import { DayCardComponent, DayType } from '../../../components/calendar/month/da
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { SelectOption } from '../../../components/input/ui-input.component';
 import { PlanningService, Vacation, Rdv } from '../../../core/services/planning.service';
+import { resolveDayStatus } from '../../../core/utils/calendar-day-status.utils';
 
 interface DayData {
   dayNumber: number;
@@ -235,8 +236,7 @@ export class DashboardPlanningPageComponent implements OnInit {
   private getVilleForDate(year: number, month: number, day: number): string | undefined {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const vacations = this.vacationsByDate.get(dateKey);
-    // Sur la card, on veut le site (pas la ville)
-    return vacations?.[0]?.site;
+    return vacations?.[0]?.ville;
   }
 
   private getRdvCountForDate(year: number, month: number, day: number): number {
@@ -262,19 +262,17 @@ export class DashboardPlanningPageComponent implements OnInit {
     // Ajouter les jours du mois précédent (disabled)
     const startDay = daysInPrevMonth - firstDayIndex + 1;
     for (let i = startDay; i <= daysInPrevMonth; i++) {
-      days.push(this.createDayData(i, 'repos', undefined, 0, true, prevYear, prevMonth, i));
+      const type = resolveDayStatus(prevYear, prevMonth, i, false, true);
+      days.push(this.createDayData(i, type, undefined, 0, true, prevYear, prevMonth, i));
     }
     
     // Ajouter tous les jours du mois actuel
     for (let i = 1; i <= this.daysInMonth; i++) {
-      const date = new Date(this.currentYear, this.currentMonth, i);
-      const dayOfWeek = date.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      
-      const site = this.getVilleForDate(this.currentYear, this.currentMonth, i);
-      const type: DayType = site ? 'travail' : 'repos';
+      const ville = this.getVilleForDate(this.currentYear, this.currentMonth, i);
+      const type = resolveDayStatus(this.currentYear, this.currentMonth, i, !!ville, false);
       const rdvCount = this.getRdvCountForDate(this.currentYear, this.currentMonth, i);
-      days.push(this.createDayData(i, type, site, rdvCount, false, this.currentYear, this.currentMonth, i));
+      const location = type === 'travail' ? ville : undefined;
+      days.push(this.createDayData(i, type, location, rdvCount, false, this.currentYear, this.currentMonth, i));
     }
     
     // Calculer combien de jours il reste pour compléter 5 semaines
@@ -286,7 +284,8 @@ export class DashboardPlanningPageComponent implements OnInit {
     
     // Ajouter les jours du mois suivant (disabled)
     for (let i = 1; i <= remainingDays; i++) {
-      days.push(this.createDayData(i, 'repos', undefined, 0, true, nextYear, nextMonth, i));
+      const type = resolveDayStatus(nextYear, nextMonth, i, false, true);
+      days.push(this.createDayData(i, type, undefined, 0, true, nextYear, nextMonth, i));
     }
     
     return days;
