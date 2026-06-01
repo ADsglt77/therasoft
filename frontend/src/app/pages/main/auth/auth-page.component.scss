@@ -6,29 +6,29 @@
   position: fixed;
   inset: 0;
   z-index: $z-overlay;
-}
 
-.auth-page-overlay {
-  @include overlay;
-  animation: fadeIn $duration-base $ease-standard;
-}
+  .auth-page-overlay {
+    @include overlay;
+    animation: fadeIn $duration-base $ease-standard;
+  }
 
-.auth-page-content {
-  position: relative;
-  max-width: 90%;
-  width: fit-content;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp $duration-slow $ease-out;
+  .auth-page-content {
+    position: relative;
+    max-width: 90%;
+    width: fit-content;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp $duration-slow $ease-out;
 
-  .close-button {
-    position: absolute;
-    top: $spacing-16;
-    right: $spacing-16;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    z-index: 10;
+    .close-button {
+      position: absolute;
+      top: $spacing-16;
+      right: $spacing-16;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      z-index: 10;
+    }
   }
 }
 
@@ -51,4 +51,3 @@
     opacity: 1;
   }
 }
-
