@@ -15,33 +15,37 @@
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
 
-// Variants
-:host[class*="badge--"] {
-  --badge-color: var(--color-warning);
-  background: color-mix(in srgb, var(--badge-color) 20%, transparent);
-  border: 1px solid color-mix(in srgb, var(--badge-color) 40%, transparent);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--badge-color);
-}
+  &[class*='badge--'] {
+    --badge-color: var(--color-warning);
+    background: color-mix(in srgb, var(--badge-color) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--badge-color) 40%, transparent);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    color: var(--badge-color);
+  }
 
-:host.ui-badge--warning { 
-  --badge-color: var(--color-warning); 
-}
-:host.ui-badge--success { 
-  --badge-color: var(--color-success); 
-}
-:host.ui-badge--danger { 
-  --badge-color: var(--color-danger); 
-}
-:host.ui-badge--repos { 
-  --badge-color: var(--color-primary-300); 
-}
-:host.ui-badge--vacances {
-  --badge-color: var(--color-primary-700);
-}
-:host.ui-badge--ferie {
-  --badge-color: var(--color-warning);
+  &.ui-badge--warning {
+    --badge-color: var(--color-warning);
+  }
+
+  &.ui-badge--success {
+    --badge-color: var(--color-success);
+  }
+
+  &.ui-badge--danger {
+    --badge-color: var(--color-danger);
+  }
+
+  &.ui-badge--repos {
+    --badge-color: var(--color-primary-300);
+  }
+
+  &.ui-badge--vacances {
+    --badge-color: var(--color-primary-700);
+  }
+
+  &.ui-badge--ferie {
+    --badge-color: var(--color-warning);
+  }
 }
