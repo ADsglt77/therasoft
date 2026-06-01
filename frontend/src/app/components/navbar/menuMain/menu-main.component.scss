@@ -2,14 +2,15 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  width: 60%;
-  min-height: 120px;
+  width: 100%;
+  max-width: $content-max-width;
+  min-height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-12;
   margin: 0 auto;
-  padding: $spacing-24 0;
+  padding: $spacing-16 $spacing-24;
 
   .title {
     display: flex;
@@ -28,23 +29,27 @@
       position: relative;
       @include icon-center;
 
+      .avatar-button {
+        @include button-reset;
+        @include icon-center;
+        border-radius: $radius-full;
+        @include focus-visible;
+      }
+
       .hamburger-menu {
         position: absolute;
-        top: calc(100%);
+        top: 100%;
         right: -60px;
-        z-index: 1000;
-        animation: fadeIn 0.2s ease-in-out;
+        z-index: $z-dropdown;
+        animation: fadeIn $duration-base $ease-standard;
       }
     }
 
     .icon-moon-wrapper {
-      cursor: pointer;
-      @include icon-center;
+      @include button-reset;
+      @include tap-target;
       --moon-icon-color: var(--text-muted);
-      @include transition(opacity, 300ms);
-      background: none;
-      border: none;
-      padding: 0;
+      @include transition(color, $duration-base);
       @include focus-visible;
 
       &:hover {

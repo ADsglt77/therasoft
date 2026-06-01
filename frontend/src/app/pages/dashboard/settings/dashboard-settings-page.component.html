@@ -1,5 +1,5 @@
 @if (isLoading) {
-<div class="loading">Chargement...</div>
+<div class="loading" role="status" aria-live="polite">Chargement...</div>
 } @else {
 <h2>Informations personnelles</h2>
 <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()">

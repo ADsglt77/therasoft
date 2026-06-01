@@ -4,8 +4,10 @@
 
 @use 'tokens' as *;
 
+// Anneau de focus accessible : outline qui ne décale pas la mise en page
 @mixin focus-ring($color: var(--color-primary-500)) {
-  border: 1px solid $color;
+  outline: 2px solid $color;
+  outline-offset: 2px;
 }
 
 @mixin focus-visible {
@@ -14,8 +16,115 @@
   }
 }
 
-@mixin transition($property: all, $duration: 150ms, $easing: ease-in-out) {
+@mixin transition($property: all, $duration: $duration-base, $easing: $ease-standard) {
   transition: $property $duration $easing;
+}
+
+// Reset des éléments <button> natifs
+@mixin button-reset {
+  appearance: none;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+// Garantit une cible tactile/clic accessible (>= 40px) et centre le contenu
+@mixin tap-target($size: $tap-target-min) {
+  min-width: $size;
+  min-height: $size;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Élévation via tokens d'ombre
+@mixin elevation($level: md) {
+  @if $level == sm {
+    box-shadow: var(--shadow-sm);
+  } @else if $level == lg {
+    box-shadow: var(--shadow-lg);
+  } @else {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// Survol glass standard (mutualise le color-mix répété dans toute l'app)
+@mixin glass-hover {
+  background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+}
+
+// Overlay plein écran pour modales / dialogues
+@mixin overlay {
+  position: fixed;
+  inset: 0;
+  z-index: $z-overlay;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+// ============================================
+// PATTERNS MUTUALISÉS (issus de l'audit)
+// ============================================
+
+// Layout standard d'une page du dashboard
+@mixin dashboard-page($gap: $spacing-16) {
+  display: flex;
+  flex-direction: column;
+  gap: $gap;
+  height: calc(100vh - $spacing-16);
+  padding: 0 $spacing-16 $spacing-16 0;
+  overflow: auto;
+}
+
+// Panneau de contenu (grilles calendrier, sections) - surface translucide
+@mixin panel($padding: $spacing-16) {
+  @include surface(5%);
+  border: 1px solid border-surface-color(10%);
+  border-radius: $radius-16;
+  padding: $padding;
+}
+
+// Bouton-icône circulaire accessible (cible >= 40px)
+@mixin icon-button-circle {
+  @include button-reset;
+  @include tap-target;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: $radius-full;
+  color: var(--text-muted);
+  @include transition(border-color color background-color, $duration-base);
+  @include focus-visible;
+
+  &:hover {
+    border-color: var(--text);
+    color: var(--text);
+    @include glass-hover;
+  }
+}
+
+// En-tête éditorial centré (hero) - landing & pages vitrine
+@mixin hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-16;
+  text-align: center;
+  max-width: 540px;
+}
+
+// Grille de cartes responsive
+@mixin cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: $spacing-24;
+  width: 100%;
 }
 
 @mixin input-base {

@@ -13,7 +13,12 @@
     variant="repos"
     text="VOIR LE DOSSIER"
     [class.disabled]="disabled"
+    role="button"
+    [attr.tabindex]="disabled ? null : 0"
+    [attr.aria-disabled]="disabled"
     (click)="onActionClick()"
+    (keydown.enter)="onActionClick()"
+    (keydown.space)="$event.preventDefault(); onActionClick()"
     class="badge">
   </ui-badge>
 </div>

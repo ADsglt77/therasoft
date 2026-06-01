@@ -1,7 +1,7 @@
 @use '../../../../styles/tokens' as *;
 @use '../../../../styles/mixins' as *;
 
-$nav-duration: 0.5s;
+$nav-duration: $duration-nav;
 $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
 $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -55,7 +55,7 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     gap: $spacing-12;
-    margin-top: 50px;
+    margin-top: $spacing-48;
     transition:
       margin-top $nav-duration $nav-ease,
       gap $nav-duration $nav-ease,
@@ -108,12 +108,14 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
       position: absolute;
       right: 0;
       cursor: pointer;
-      @include icon-center;
+      @include tap-target;
+      @include focus-visible;
+      border-radius: $radius-full;
       --logout-icon-color: var(--text-muted);
       transition:
         right $nav-duration $nav-ease,
         transform $nav-duration $nav-ease,
-        opacity 200ms ease;
+        opacity $duration-base ease;
 
       &:hover {
         --logout-icon-color: var(--text);

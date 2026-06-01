@@ -18,7 +18,14 @@
       <h6>{{ currentUser?.nom?.toUpperCase() || 'Chargement...' }}</h6>
       <p>{{ currentUser?.prenom || '' }}</p>
     </div>
-    <div class="icon-logout-wrapper" (click)="onLogout()" role="button" tabindex="0" aria-label="Se déconnecter">
+    <div
+      class="icon-logout-wrapper"
+      (click)="onLogout()"
+      (keydown.enter)="onLogout()"
+      (keydown.space)="$event.preventDefault(); onLogout()"
+      role="button"
+      tabindex="0"
+      aria-label="Se déconnecter">
       <app-icon name="logout" [size]="20" [color]="'var(--logout-icon-color)'" class="icon"></app-icon>
     </div>
   </div>

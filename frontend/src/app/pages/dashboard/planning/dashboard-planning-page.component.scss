@@ -2,29 +2,27 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-16;
-  height: calc(100vh - $spacing-16);
-  padding: 0 $spacing-16 $spacing-16 0;
-  overflow: auto;
-
-  /*
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-  }
-  */
+  @include dashboard-page;
 
   .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: $spacing-12;
-    @include surface(5%);
-    border: 1px solid border-surface-color(10%);
-    border-radius: $radius-16;
-    padding: $spacing-16;
+    @include panel;
+  }
+
+  .week-day {
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: $font-weight-600;
+    padding: $spacing-4 0;
+  }
+
+  @media (max-width: $breakpoint-tablet) {
+    .calendar-grid {
+      gap: $spacing-8;
+      padding: $spacing-12;
+    }
   }
 }
 

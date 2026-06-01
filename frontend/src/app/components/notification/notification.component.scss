@@ -5,7 +5,7 @@
   position: fixed;
   bottom: $spacing-16;
   right: $spacing-16;
-  z-index: 10000;
+  z-index: $z-notification;
   display: flex;
   flex-direction: column;
   gap: $spacing-12;
@@ -18,13 +18,14 @@
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
-    padding: $spacing-8 $spacing-12;
+    padding: $spacing-12 $spacing-16;
     gap: $spacing-24;
     border-radius: $radius-8;
     letter-spacing: 0.4px;
     white-space: nowrap;
-    animation: slideIn 0.3s ease-out;
-    @include transition(opacity, 200ms);
+    animation: slideIn $duration-slow $ease-out;
+    @include transition(opacity, $duration-base);
+    @include elevation(lg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
 

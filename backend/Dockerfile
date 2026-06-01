@@ -17,6 +17,9 @@ RUN npm install
 # Copier le code source
 COPY . .
 
+# Windows peut enregistrer docker-entrypoint.sh en CRLF : normaliser pour Linux
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh
+
 # Générer le client Prisma (avant le build TypeScript)
 RUN npx prisma generate
 

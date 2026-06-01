@@ -1,6 +1,7 @@
 import { Component, Input, ChangeDetectionStrategy, HostBinding } from '@angular/core';
 
-export type ButtonColor = 'primary900' | 'primary700' | 'primary500' | 'primary300' | 'gray100' | 'connect';
+export type ButtonColor = 'primary900' | 'primary700' | 'primary500' | 'primary300' | 'primary100' | 'gray100' | 'connect';
+export type ButtonSize = 'sm' | 'md';
 
 @Component({
   selector: 'ui-button',
@@ -11,6 +12,8 @@ export type ButtonColor = 'primary900' | 'primary700' | 'primary500' | 'primary3
 })
 export class UiButtonComponent {
   @Input() color: ButtonColor = 'primary700';
+  @Input() size: ButtonSize = 'md';
+  @Input() block: boolean = false;
   @Input() disabled: boolean = false;
 
   @HostBinding('class')
@@ -18,8 +21,10 @@ export class UiButtonComponent {
     return [
       'ui-button',
       `ui-button--${this.color}`,
+      this.size === 'sm' ? 'ui-button--sm' : '',
+      this.block ? 'ui-button--block' : '',
       this.disabled ? 'ui-button--disabled' : '',
-    ].join(' ');
+    ].filter(Boolean).join(' ');
   }
 
   @HostBinding('attr.disabled')

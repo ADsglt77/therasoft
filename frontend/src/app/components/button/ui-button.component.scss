@@ -7,72 +7,66 @@
   justify-content: center;
   gap: $spacing-8;
   padding: $spacing-8 $spacing-16;
+  min-height: $tap-target-min; // Cible tactile accessible
   border-radius: $radius-12;
-  @include transition();
+  font-weight: $font-weight-500;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
+  @include transition(background-color border-color filter, $duration-fast);
   @include focus-visible;
-
-  &:hover:not(.ui-button--disabled) {
-    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
-  }
 
   &.ui-button--disabled {
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
   }
+
+  // Taille compacte
+  &.ui-button--sm {
+    min-height: 32px;
+    padding: $spacing-4 $spacing-12;
+  }
+
+  // Pleine largeur
+  &.ui-button--block {
+    width: 100%;
+  }
 }
 
-// Colors - Glass effect avec couleurs primaires
-:host.ui-button--primary900 { 
-  background: color-mix(in srgb, var(--color-primary-900) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary-900) 60%, transparent);
+// Variante pleine colorée (corrige le survol : on intensifie la couleur au lieu de la laver)
+@mixin btn-solid($color, $text) {
+  background: color-mix(in srgb, $color 82%, transparent);
+  border: 1px solid color-mix(in srgb, $color 60%, transparent);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--text);
+  color: $text;
+
+  &:hover:not(.ui-button--disabled) {
+    background: color-mix(in srgb, $color 95%, transparent);
+    border-color: color-mix(in srgb, $color 80%, transparent);
+  }
+
+  &:active:not(.ui-button--disabled) {
+    filter: brightness(0.94);
+  }
 }
-:host.ui-button--primary700 { 
-  background: color-mix(in srgb, var(--color-primary-700) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary-700) 60%, transparent);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--text);
-}
-:host.ui-button--primary500 { 
-  background: color-mix(in srgb, var(--color-primary-500) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary-500) 60%, transparent);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--text);
-}
-:host.ui-button--primary300 { 
-  background: color-mix(in srgb, var(--color-primary-300) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary-300) 60%, transparent);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--color-primary-900);
-}
-:host.ui-button--primary100 { 
-  background: color-mix(in srgb, var(--color-primary-100) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary-100) 60%, transparent);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--color-primary-900);
-}
-:host.ui-button--gray100 { 
-  background: color-mix(in srgb, var(--color-gray-100) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-gray-100) 60%, transparent);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  color: var(--color-gray-900);
-}
+
+:host.ui-button--primary900 { @include btn-solid(var(--color-primary-900), var(--text)); }
+:host.ui-button--primary700 { @include btn-solid(var(--color-primary-700), var(--text)); }
+:host.ui-button--primary500 { @include btn-solid(var(--color-primary-500), var(--text)); }
+:host.ui-button--primary300 { @include btn-solid(var(--color-primary-300), var(--color-primary-900)); }
+:host.ui-button--primary100 { @include btn-solid(var(--color-primary-100), var(--color-primary-900)); }
+:host.ui-button--gray100   { @include btn-solid(var(--color-gray-100), var(--color-gray-900)); }
+
+// Variante "connect" : glass neutre (bouton secondaire/ghost)
 :host.ui-button--connect {
   @include glass-panel;
   color: var(--text-muted);
   padding: $spacing-8 $spacing-12;
 
   &:hover:not(.ui-button--disabled) {
-    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+    @include glass-hover;
     border-color: color-mix(in srgb, var(--border) 80%, transparent);
     color: var(--text);
   }

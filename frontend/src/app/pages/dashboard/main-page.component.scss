@@ -1,8 +1,5 @@
 @use '../../../styles/tokens' as *;
 
-$sidebar-collapsed-width: 64px;
-$sidebar-expanded-width: 250px;
-$nav-duration: 0.5s;
 $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
 :host {
@@ -22,14 +19,14 @@ $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   .sidebar {
     flex-shrink: 0;
-    width: $sidebar-collapsed-width;
+    width: $sidebar-collapsed;
     height: calc(100vh - $spacing-16 * 2);
     overflow: hidden;
     will-change: width;
-    transition: width $nav-duration $nav-ease;
+    transition: width $duration-nav $nav-ease;
 
     &.expanded {
-      width: $sidebar-expanded-width;
+      width: $sidebar-width;
     }
   }
 
@@ -38,7 +35,7 @@ $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
     min-width: 0;
     min-height: 0;
     overflow: auto;
-    transition: flex $nav-duration $nav-ease;
+    transition: flex $duration-nav $nav-ease;
   }
 }
 

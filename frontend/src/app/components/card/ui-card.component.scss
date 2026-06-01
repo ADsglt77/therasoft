@@ -6,27 +6,29 @@
   padding: $spacing-16;
   @include glass-panel;
   border-radius: $radius-16;
-  @include transition();
+  @include transition(background-color border-color box-shadow);
 
   &:hover {
-    background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+    @include glass-hover;
     border-color: color-mix(in srgb, var(--border) 80%, transparent);
+    @include elevation(md);
   }
-  
+
   .card {
     display: flex;
     flex-direction: column;
+    gap: $spacing-12;
     max-width: 100%;
     overflow: hidden;
   }
-  
+
   .header {
     display: flex;
     flex-direction: column;
     gap: $spacing-8;
     min-width: 0;
   }
-  
+
   .title {
     display: flex;
     align-items: center;
@@ -34,20 +36,25 @@
     min-width: 0;
     color: var(--text);
   }
-  
+
   .icon {
     color: var(--color-primary-300);
   }
-  
+
   .description {
     color: var(--text-muted);
-    margin: $spacing-12;
   }
-  
+
+  .points {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-8;
+  }
+
   .point {
     display: flex;
     align-items: center;
-    gap: $spacing-4;
+    gap: $spacing-8;
     color: var(--text);
   }
 }

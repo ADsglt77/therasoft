@@ -1,4 +1,4 @@
-<div class="day" (click)="onDayClick()">
+<button type="button" class="day" (click)="onDayClick()" [disabled]="disabled">
   <div class="header">
     <div class="day-number">{{ dayNumber }}</div>
     @if (!disabled) {
@@ -11,7 +11,7 @@
   @if (!disabled) {
     <ui-badge [variant]="badgeVariant" [text]="badgeText"></ui-badge>
   }
-</div>
+</button>
 
 
 

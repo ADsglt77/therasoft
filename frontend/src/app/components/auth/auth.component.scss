@@ -7,15 +7,16 @@
   .auth {
     display: flex;
     flex-direction: column;
-    min-width: 600px;
+    width: 100%;
+    max-width: 600px;
     padding: $spacing-32;
     @include glass-panel;
     border-radius: $radius-16;
     gap: $spacing-24;
-    @include transition();
+    @include transition(background-color border-color);
 
     &:hover {
-      background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+      @include glass-hover;
     }
 
     .header {
@@ -60,6 +61,10 @@
 
         .field-wrapper {
           flex: 1;
+        }
+
+        @media (max-width: $breakpoint-tablet) {
+          flex-direction: column;
         }
       }
 

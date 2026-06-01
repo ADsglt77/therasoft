@@ -2,13 +2,21 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
+  @include dashboard-page($spacing-24);
+
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: $spacing-48;
+    color: var(--text-muted);
+    font-style: italic;
+  }
 
   form {
     display: flex;
     flex-direction: column;
-    margin-top: 16px;
+    gap: $spacing-16;
 
     .profile-fields-container {
       display: flex;
@@ -26,7 +34,12 @@
     .form-actions {
       display: flex;
       justify-content: flex-end;
-      margin-top: $spacing-16;
+    }
+  }
+
+  @media (max-width: $breakpoint-tablet) {
+    form .profile-fields-container {
+      flex-direction: column;
     }
   }
 }

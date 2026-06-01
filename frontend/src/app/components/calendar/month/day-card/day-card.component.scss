@@ -6,19 +6,23 @@
 }
 
 .day {
+    @include button-reset;
+    width: 100%;
     height: 100%;
+    text-align: left;
     display: flex;
     flex-direction: column;
     gap: $spacing-16;
     padding: $spacing-12;
     border-radius: $radius-16;
-    @include transition();
+    @include transition(background-color border-color);
     min-height: 80px;
     @include glass-panel;
+    @include focus-visible;
     color: var(--text);
-    
+
     &:hover {
-        background: color-mix(in srgb, var(--glass-color) var(--glass-hover-alpha), transparent);
+        @include glass-hover;
         cursor: pointer;
     }
 

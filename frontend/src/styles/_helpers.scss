@@ -38,6 +38,14 @@
   &--4 { grid-template-columns: repeat(4, 1fr); }
 }
 
+// Typographie - utilitaires de couleur/poids (la taille reste portée par les balises)
+.text-muted { color: var(--text-muted); }
+.text-strong { font-weight: $font-weight-600; }
+.text-center { text-align: center; }
+
+// Réinitialise les marges d'un titre/paragraphe quand le parent gère l'espacement via gap
+.u-no-margin { margin: 0; }
+
 // Screen reader only
 .sr-only {
   position: absolute;

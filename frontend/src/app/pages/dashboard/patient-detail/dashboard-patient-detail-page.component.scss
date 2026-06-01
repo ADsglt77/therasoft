@@ -2,19 +2,14 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - $spacing-16);
-  padding: $spacing-16;
-  overflow: auto;
-  gap: $spacing-40;
+  @include dashboard-page($spacing-24);
 
   .loading {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: $spacing-48;
-    color: var(--color-gray-500);
+    color: var(--text-muted);
     font-style: italic;
   }
 
@@ -23,19 +18,8 @@
     align-items: center;
     gap: $spacing-12;
 
-    app-icon:first-child {
-      cursor: pointer;
-      border: 2px solid color-mix(in srgb, var(--border) 60%, transparent);
-      border-radius: $radius-full;
-      @include transition(border-color opacity, 150ms);
-      padding: $spacing-2;
-      box-sizing: content-box;
-      @include focus-visible;
-
-      &:hover {
-        border-color: var(--text);
-        opacity: 0.8;
-      }
+    .back-button {
+      @include icon-button-circle;
     }
   }
 
@@ -101,14 +85,14 @@
         gap: $spacing-4;
 
         >p:first-child {
-          color: var(--color-gray-500);
+          color: var(--text-muted);
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
       }
 
       >span {
-        color: var(--color-gray-500);
+        color: var(--text-muted);
         font-size: $font-size-span;
         font-style: italic;
         margin-top: -$spacing-8;
@@ -128,7 +112,7 @@
     }
 
     .upload-status {
-      color: var(--color-gray-500);
+      color: var(--text-muted);
       font-size: $font-size-span;
       font-style: italic;
     }
@@ -140,10 +124,22 @@
       justify-content: space-between;
 
       p {
-        color: var(--color-gray-500);
+        color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
+    }
+  }
+
+  @media (max-width: $breakpoint-tablet) {
+    .info-patient,
+    .info-rdv,
+    .info-data {
+      flex-direction: column;
+    }
+
+    section .content {
+      flex-direction: column;
     }
   }
 }

@@ -7,7 +7,15 @@
     <ui-button color="connect" (click)="onLoginClick()">Se connecter</ui-button>
   } @else {
     <div class="avatar-wrapper" (mouseenter)="onAvatarMouseEnter()" (mouseleave)="onAvatarMouseLeave()">
-      <ui-avatar [initial]="getInitial()" [avatarUrl]="currentUser?.avatarUrl"></ui-avatar>
+      <button
+        type="button"
+        class="avatar-button"
+        (click)="onAvatarToggle()"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="showHamburgerMenu"
+        aria-label="Menu du compte">
+        <ui-avatar [initial]="getInitial()" [avatarUrl]="currentUser?.avatarUrl"></ui-avatar>
+      </button>
       @if (showHamburgerMenu) {
         <div class="hamburger-menu" (mouseenter)="onAvatarMouseEnter()" (mouseleave)="onAvatarMouseLeave()">
           <app-menu-hamburger (logout)="onLogout()"></app-menu-hamburger>

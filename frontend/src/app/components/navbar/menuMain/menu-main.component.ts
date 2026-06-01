@@ -101,6 +101,11 @@ export class MenuMainComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  onAvatarToggle(): void {
+    this.showHamburgerMenu = !this.showHamburgerMenu;
+    this.cdr.markForCheck();
+  }
+
   onLogout(): void {
     // Rafraîchir l'état d'authentification immédiatement après le logout
     this.checkAuthentication();

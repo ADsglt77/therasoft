@@ -103,6 +103,31 @@ html[data-theme="light"] {
   --bg-grid-alpha: 15%; /* Grille plus visible */
 }
 
+/* ============================================
+   ELEVATION / OVERLAY / TEXTE-SUR-ACCENT - Dark theme (default)
+   ============================================ */
+:root {
+  /* Ombres (élévation) */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 45%);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 55%);
+
+  /* Couleur d'overlay des modales */
+  --overlay-bg: rgb(0 0 0 / 55%);
+
+  /* Texte lisible sur fonds colorés (boutons pleins) */
+  --text-on-accent: var(--color-gray-50);
+  --text-on-accent-strong: var(--color-primary-900);
+}
+
+/* Élévation / overlay - Light theme */
+html[data-theme="light"] {
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 8%);
+  --shadow-md: 0 6px 18px rgb(15 23 42 / 12%);
+  --shadow-lg: 0 16px 40px rgb(15 23 42 / 18%);
+  --overlay-bg: rgb(15 23 42 / 35%);
+}
+
 // SCSS Variables (for use in SCSS files)
 // Spacing - Valeurs réduites avec plus d'écart
 $spacing-2: 2px;
@@ -244,3 +269,33 @@ $font-weight-400: 400;
 $font-weight-500: 500;
 $font-weight-600: 600;
 $font-weight-700: 700;
+
+// ============================================
+// MOTION - Durées & courbes d'animation
+// ============================================
+$duration-fast: 120ms;
+$duration-base: 200ms;
+$duration-slow: 320ms;
+$duration-nav: 500ms;
+
+$ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+// ============================================
+// Z-INDEX - Échelle d'empilement
+// ============================================
+$z-base: 1;
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-overlay: 1000;
+$z-modal: 1100;
+$z-notification: 10000;
+
+// ============================================
+// LAYOUT - Dimensions structurantes
+// ============================================
+$sidebar-width: 250px;
+$sidebar-collapsed: 64px;
+$content-max-width: 1200px;
+$tap-target-min: 40px; // Cible tactile minimale (accessibilité)

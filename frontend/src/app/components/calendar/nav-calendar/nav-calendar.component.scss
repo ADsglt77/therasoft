@@ -8,16 +8,17 @@
 }
 
 .header {
-    height: 80px;
+    min-height: 80px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: $spacing-16;
     padding: $spacing-16;
     @include glass-panel;
     border-radius: $radius-16;
     position: relative;
-    z-index: 10;
+    z-index: $z-sticky;
 }
 
 .header div {
@@ -31,7 +32,7 @@
 
 .header .day h4,
 .header .month h4 {
-    min-width: 280px;
+    min-width: 220px;
     text-align: center;
     color: var(--text);
 }
@@ -42,19 +43,14 @@
     color: var(--text);
 }
 
-.day app-icon,
-.month app-icon {
-    cursor: pointer;
-    border: 2px solid color-mix(in srgb, var(--border) 60%, transparent);
-    border-radius: $radius-full;
-    @include transition(border-color opacity, 150ms);
-    padding: $spacing-2;
-    box-sizing: content-box;
-    @include focus-visible;
+.nav-arrow {
+    @include icon-button-circle;
+}
 
-    &:hover {
-        border-color: var(--text);
-        opacity: 0.8;
+@media (max-width: $breakpoint-tablet) {
+    .header .day h4,
+    .header .month h4 {
+        min-width: 0;
     }
 }
 

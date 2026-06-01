@@ -1,26 +1,16 @@
 @use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
 
 :host {
   display: block;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
+  inset: 0;
+  z-index: $z-overlay;
 }
 
 .auth-page-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(30px);
-  animation: fadeIn 0.2s ease-in-out;
+  @include overlay;
+  animation: fadeIn $duration-base $ease-standard;
 }
 
 .auth-page-content {
@@ -29,7 +19,7 @@
   width: fit-content;
   max-height: 90vh;
   overflow-y: auto;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp $duration-slow $ease-out;
 
   .close-button {
     position: absolute;

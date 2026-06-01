@@ -33,6 +33,11 @@ export class PasswordStrengthIndicatorComponent implements OnChanges {
     { label: 'Au moins 1 caractère spécial', isValid: false },
   ];
 
+  /** Nombre de critères validés (pour l'attribut ARIA aria-valuenow) */
+  get validCount(): number {
+    return this.rules.filter((rule) => rule.isValid).length;
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['password']) {
       this.evaluatePassword(this.password);

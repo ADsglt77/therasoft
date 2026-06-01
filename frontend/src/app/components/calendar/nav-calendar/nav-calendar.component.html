@@ -4,9 +4,13 @@
         <h4>Calendrier</h4>
     </div>
     <div [class]="centerClass">
-        <app-icon name="arrow-left" [size]="15" [strokeWidth]="3" (click)="onPrevious()"></app-icon>
+        <button type="button" class="nav-arrow" (click)="onPrevious()" aria-label="Précédent">
+            <app-icon name="arrow-left" [size]="18" [strokeWidth]="3"></app-icon>
+        </button>
         <h4>{{ centerText }}</h4>
-        <app-icon name="arrow-right" [size]="15" [strokeWidth]="3" (click)="onNext()"></app-icon>
+        <button type="button" class="nav-arrow" (click)="onNext()" aria-label="Suivant">
+            <app-icon name="arrow-right" [size]="18" [strokeWidth]="3"></app-icon>
+        </button>
     </div>
     @if (mode === 'day') {
     <div class="month-info">
