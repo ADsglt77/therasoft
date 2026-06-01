@@ -1,25 +1,23 @@
 @use '../../../styles/mixins' as *;
 
-// Styles pour app-icon (minimal, les styles sont gérés par lucide-angular)
-
 :host {
   display: inline-flex;
-}
 
-.icon-wrapper {
-  @include icon-center;
-  width: var(--icon-size, 20px);
-  height: var(--icon-size, 20px);
-
-  lucide-icon {
+  .icon-wrapper {
     @include icon-center;
-    width: 100%;
-    height: 100%;
+    width: var(--icon-size, 20px);
+    height: var(--icon-size, 20px);
 
-    svg {
+    lucide-icon {
+      @include icon-center;
       width: 100%;
       height: 100%;
-      @include transition(stroke color, 300ms);
+
+      svg {
+        width: 100%;
+        height: 100%;
+        @include transition(stroke color, 300ms);
+      }
     }
   }
 }
