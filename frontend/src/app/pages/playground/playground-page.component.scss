@@ -1,52 +1,56 @@
 @use '../../../styles/tokens' as *;
 @use '../../../styles/mixins' as *;
 
-.playground {
-  max-width: $content-max-width;
-  margin: 0 auto;
-  padding: $spacing-32 $spacing-16;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-16;
-}
+:host {
+  display: block;
 
-.components {
-  width: fit-content;
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-16;
-
-  &.notifications {
-    flex-direction: column;
-    gap: $spacing-16;
-  }
-
-  &.menu-main {
-    width: 100%;
-    @include surface(5%);
-    border-bottom: 1px solid border-surface-color(60%);
-    padding: $spacing-16;
-  }
-
-  &.calendar {
-    width: 100%;
+  .playground {
+    max-width: $content-max-width;
+    margin: 0 auto;
+    padding: $spacing-32 $spacing-16;
     display: flex;
     flex-direction: column;
     gap: $spacing-16;
-
-    .days {
-      display: flex;
-      flex-wrap: wrap;
-      gap: $spacing-16;
-
-      app-day-card {
-        width: 150px;
-        height: 100px;
-      }
-    }
   }
 
-  &.timetable {
-    width: 100%;
+  .components {
+    width: fit-content;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-16;
+
+    &.notifications {
+      flex-direction: column;
+      gap: $spacing-16;
+    }
+
+    &.menu-main {
+      width: 100%;
+      @include surface(5%);
+      border-bottom: 1px solid border-surface-color(60%);
+      padding: $spacing-16;
+    }
+
+    &.calendar {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-16;
+
+      .days {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $spacing-16;
+
+        app-day-card {
+          width: 150px;
+          height: 100px;
+        }
+      }
+    }
+
+    &.timetable {
+      width: 100%;
+    }
   }
 }
