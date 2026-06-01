@@ -1,76 +1,79 @@
 @use '../../../styles/tokens' as *;
 @use '../../../styles/mixins' as *;
 
-.notification-container {
-  position: fixed;
-  bottom: $spacing-16;
-  right: $spacing-16;
-  left: auto;
-  z-index: $z-notification;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-12;
-  width: max-content;
-  max-width: min(400px, calc(100vw - #{$spacing-16 * 2}));
-  pointer-events: none;
+:host {
+  display: block;
 
-  .notification {
-    pointer-events: auto;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: $spacing-12 $spacing-16;
-    gap: $spacing-24;
-    border-radius: $radius-8;
-    letter-spacing: 0.4px;
-    white-space: nowrap;
-    max-width: 100%;
-    animation: slideIn $duration-slow $ease-out;
-    @include transition(opacity, $duration-base);
-    @include elevation(lg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+  .notification-container {
+    position: fixed;
+    bottom: $spacing-16;
+    right: $spacing-16;
+    left: auto;
+    z-index: $z-notification;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-12;
+    width: max-content;
+    max-width: min(400px, calc(100vw - #{$spacing-16 * 2}));
+    pointer-events: none;
 
-    &:hover {
-      opacity: 0.9;
-    }
-
-    .icon {
-      @include icon-center;
-    }
-
-    // Variants - Glass effect avec couleurs sémantiques
-    &--warning {
-      background: color-mix(in srgb, var(--color-warning) 80%, transparent);
-      border: 1px solid color-mix(in srgb, var(--color-warning) 60%, transparent);
-      color: var(--color-warning-up);
-    }
-
-    &--success {
-      background: color-mix(in srgb, var(--color-success) 80%, transparent);
-      border: 1px solid color-mix(in srgb, var(--color-success) 60%, transparent);
-      color: var(--color-success-up);
-    }
-
-    &--danger {
-      background: color-mix(in srgb, var(--color-danger) 80%, transparent);
-      border: 1px solid color-mix(in srgb, var(--color-danger) 60%, transparent);
-      color: var(--color-danger-up);
-    }
-
-    &--information {
-      background: color-mix(in srgb, var(--color-primary-300) 80%, transparent);
-      border: 1px solid color-mix(in srgb, var(--color-primary-300) 60%, transparent);
-      color: var(--color-primary-900);
-    }
-
-    p {
-      color: inherit;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .notification {
+      pointer-events: auto;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: $spacing-12 $spacing-16;
+      gap: $spacing-24;
+      border-radius: $radius-8;
+      letter-spacing: 0.4px;
       white-space: nowrap;
       max-width: 100%;
+      animation: slideIn $duration-slow $ease-out;
+      @include transition(opacity, $duration-base);
+      @include elevation(lg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+
+      &:hover {
+        opacity: 0.9;
+      }
+
+      .icon {
+        @include icon-center;
+      }
+
+      &--warning {
+        background: color-mix(in srgb, var(--color-warning) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--color-warning) 60%, transparent);
+        color: var(--color-warning-up);
+      }
+
+      &--success {
+        background: color-mix(in srgb, var(--color-success) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--color-success) 60%, transparent);
+        color: var(--color-success-up);
+      }
+
+      &--danger {
+        background: color-mix(in srgb, var(--color-danger) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--color-danger) 60%, transparent);
+        color: var(--color-danger-up);
+      }
+
+      &--information {
+        background: color-mix(in srgb, var(--color-primary-300) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--color-primary-300) 60%, transparent);
+        color: var(--color-primary-900);
+      }
+
+      p {
+        color: inherit;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
     }
   }
 }
@@ -85,4 +88,3 @@
     opacity: 1;
   }
 }
-
