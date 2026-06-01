@@ -2,7 +2,9 @@
   <app-icon name="calendar-heart" [size]="36"></app-icon>
   <h1>TsXcare</h1>
 </div>
-<div class="links">
+
+<!-- Desktop : liens visibles -->
+<div class="links links--desktop">
   @if (!isAuthenticated) {
     <ui-button color="connect" (click)="onLoginClick()">Se connecter</ui-button>
   } @else {
@@ -23,17 +25,63 @@
       }
     </div>
   }
-  <button 
+  <button
     type="button"
     class="icon-moon-wrapper"
     (click)="onToggleTheme()"
     [attr.aria-label]="currentTheme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'"
     [attr.aria-pressed]="currentTheme === 'dark'">
-    <app-icon 
-      [name]="currentTheme === 'dark' ? 'moon' : 'sun'" 
-      [size]="24" 
-      [color]="'var(--moon-icon-color)'" 
+    <app-icon
+      [name]="currentTheme === 'dark' ? 'moon' : 'sun'"
+      [size]="24"
+      [color]="'var(--moon-icon-color)'"
       class="icon">
     </app-icon>
   </button>
 </div>
+
+<!-- Mobile : bouton hamburger -->
+<button
+  type="button"
+  class="hamburger-trigger"
+  (click)="toggleMobileMenu()"
+  [attr.aria-expanded]="mobileMenuOpen"
+  aria-controls="mobile-nav-drawer"
+  aria-label="Ouvrir le menu">
+  <app-icon [name]="mobileMenuOpen ? 'x' : 'menu'" [size]="24"></app-icon>
+</button>
+
+@if (mobileMenuOpen) {
+  <button
+    type="button"
+    class="mobile-overlay"
+    aria-label="Fermer le menu"
+    (click)="closeMobileMenu()">
+  </button>
+  <nav id="mobile-nav-drawer" class="mobile-drawer" aria-label="Menu principal">
+    <div class="mobile-drawer__header">
+      <span class="mobile-drawer__brand">Menu</span>
+      <button type="button" class="mobile-drawer__close" (click)="closeMobileMenu()" aria-label="Fermer">
+        <app-icon name="x" [size]="22"></app-icon>
+      </button>
+    </div>
+    <div class="mobile-drawer__body">
+      @if (!isAuthenticated) {
+        <ui-button color="primary500" [block]="true" (click)="onLoginClick()">Se connecter</ui-button>
+      } @else {
+        <app-navbar-links icon="calendar" text="Calendrier" route="/calendar" (click)="closeMobileMenu()"></app-navbar-links>
+        <app-navbar-links icon="settings" text="Paramètres" route="/settings" (click)="closeMobileMenu()"></app-navbar-links>
+        <app-navbar-links icon="logout" text="Déconnexion" (click)="onMobileLogout()"></app-navbar-links>
+      }
+    </div>
+    <div class="mobile-drawer__footer">
+      <button
+        type="button"
+        class="mobile-theme-toggle"
+        (click)="onToggleTheme()">
+        <app-icon [name]="currentTheme === 'dark' ? 'sun' : 'moon'" [size]="20"></app-icon>
+        <span>{{ currentTheme === 'dark' ? 'Thème clair' : 'Thème sombre' }}</span>
+      </button>
+    </div>
+  </nav>
+}

@@ -7,7 +7,7 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 
 :host {
   width: 100%;
-  max-width: 250px;
+  max-width: $sidebar-width;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -22,6 +22,19 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
     padding $nav-duration $nav-ease,
     max-width $nav-duration $nav-ease,
     border-color $nav-duration $nav-ease;
+
+  .nav-bottom {
+    display: none;
+  }
+
+  .nav-sidebar {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    min-height: 0;
+    gap: $spacing-12;
+  }
 
   .title {
     display: flex;
@@ -188,5 +201,78 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
   :host * {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
+  }
+}
+
+// ============================================
+// MOBILE — barre de navigation en bas
+// ============================================
+@media (max-width: $breakpoint-tablet) {
+  :host {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: $bottom-nav-height;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    margin: 0;
+    border-radius: $radius-16 $radius-16 0 0;
+    border: none;
+    border-top: 1px solid border-surface-color(15%);
+    @include glass-panel(30%, var(--glass-border-alpha), var(--glass-blur));
+    @include elevation(lg);
+    z-index: $z-sticky;
+
+    .nav-sidebar {
+      display: none;
+    }
+
+    &.collapsed {
+      padding: 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      border-color: transparent;
+    }
+
+    .nav-bottom {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-around;
+      width: 100%;
+      min-height: $bottom-nav-height;
+      padding: $spacing-4 $spacing-8;
+      gap: $spacing-4;
+
+      app-navbar-links {
+        flex: 1;
+        min-width: 0;
+        display: block;
+
+        ::ng-deep .link {
+          flex-direction: column;
+          justify-content: center;
+          gap: $spacing-4;
+          width: 100%;
+          min-height: $tap-target-min;
+          padding: $spacing-8 $spacing-4;
+          border-radius: $radius-8;
+          text-align: center;
+
+          .label {
+            max-width: none;
+            opacity: 1;
+            font-size: $font-size-span;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
   }
 }

@@ -21,7 +21,7 @@ $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
     flex-shrink: 0;
     width: $sidebar-collapsed;
     height: calc(100vh - $spacing-16 * 2);
-    overflow: hidden;
+    overflow: visible;
     will-change: width;
     transition: width $duration-nav $nav-ease;
 
@@ -36,6 +36,43 @@ $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
     min-height: 0;
     overflow: auto;
     transition: flex $duration-nav $nav-ease;
+  }
+}
+
+@media (max-width: $breakpoint-tablet) {
+  :host {
+    padding: $spacing-12;
+    padding-bottom: 0;
+  }
+
+  .dashboard-layout {
+    flex-direction: column;
+    gap: 0;
+
+    .sidebar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      top: auto;
+      width: 100% !important;
+      height: auto;
+      z-index: $z-sticky;
+      overflow: visible;
+      pointer-events: none;
+
+      app-menu-dashboard {
+        pointer-events: auto;
+        display: block;
+        width: 100%;
+      }
+    }
+
+    .content {
+      flex: 1;
+      padding-bottom: calc(#{$bottom-nav-height} + #{$spacing-16} + env(safe-area-inset-bottom, 0px));
+      overflow: auto;
+    }
   }
 }
 

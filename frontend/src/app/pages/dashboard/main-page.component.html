@@ -5,7 +5,9 @@
     [class.expanded]="sidebarExpanded"
     aria-label="Navigation principale"
     (mouseenter)="onSidebarEnter()"
-    (mouseleave)="onSidebarLeave()">
+    (mouseleave)="onSidebarLeave()"
+    (focusin)="onSidebarEnter()"
+    (focusout)="onSidebarLeave()">
     <app-menu-dashboard [collapsed]="!sidebarExpanded"></app-menu-dashboard>
   </aside>
   <main class="content">

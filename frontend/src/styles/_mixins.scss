@@ -82,6 +82,13 @@
   height: calc(100vh - $spacing-16);
   padding: 0 $spacing-16 $spacing-16 0;
   overflow: auto;
+
+  @media (max-width: $breakpoint-tablet) {
+    height: auto;
+    min-height: 0;
+    padding: $spacing-12;
+    padding-bottom: $spacing-16;
+  }
 }
 
 // Panneau de contenu (grilles calendrier, sections) - surface translucide

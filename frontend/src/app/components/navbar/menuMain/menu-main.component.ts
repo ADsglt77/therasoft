@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -6,13 +6,21 @@ import { UiButtonComponent } from '../../button/ui-button.component';
 import { UiAvatarComponent } from '../../avatar/ui-avatar.component';
 import { AppIconComponent } from '../../icon/app-icon.component';
 import { MenuHamburgerComponent } from './menuHamburger/menu-hamburger.component';
+import { NavbarLinksComponent } from '../navbar-links/navbar-links.component';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../shared/theme/theme.service';
 
 @Component({
   selector: 'app-menu-main',
   standalone: true,
-  imports: [CommonModule, UiButtonComponent, UiAvatarComponent, AppIconComponent, MenuHamburgerComponent],
+  imports: [
+    CommonModule,
+    UiButtonComponent,
+    UiAvatarComponent,
+    AppIconComponent,
+    MenuHamburgerComponent,
+    NavbarLinksComponent,
+  ],
   templateUrl: './menu-main.component.html',
   styleUrl: './menu-main.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,10 +29,11 @@ export class MenuMainComponent implements OnInit {
   isAuthenticated = false;
   currentUser: MeResponse | null = null;
   showHamburgerMenu = false;
+  mobileMenuOpen = false;
 
   @HostBinding('class')
   get hostClasses(): string {
-    return 'menu-main';
+    return 'menu-main' + (this.mobileMenuOpen ? ' menu-main--mobile-open' : '');
   }
 
   currentTheme: 'dark' | 'light' = 'dark';
@@ -38,21 +47,26 @@ export class MenuMainComponent implements OnInit {
 
   ngOnInit(): void {
     this.checkAuthentication();
-    
-    // Initialiser le thème actuel
     this.currentTheme = this.themeService.getTheme();
-    
-    // Écouter les changements de route pour mettre à jour l'état d'authentification
+
     this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+      .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
         this.checkAuthentication();
+        this.closeMobileMenu();
       });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.mobileMenuOpen) {
+      this.closeMobileMenu();
+    }
   }
 
   checkAuthentication(): void {
     this.isAuthenticated = this.authService.isAuthenticated();
-    
+
     if (this.isAuthenticated) {
       this.authService.getMe().subscribe({
         next: (user) => {
@@ -60,7 +74,6 @@ export class MenuMainComponent implements OnInit {
           this.cdr.markForCheck();
         },
         error: () => {
-          // Si erreur, l'utilisateur n'est probablement plus authentifié
           this.isAuthenticated = false;
           this.currentUser = null;
           this.cdr.markForCheck();
@@ -80,13 +93,10 @@ export class MenuMainComponent implements OnInit {
   }
 
   onLoginClick(): void {
+    this.closeMobileMenu();
     this.router.navigate(['/login']);
   }
 
-  /**
-   * Méthode publique pour rafraîchir l'état d'authentification
-   * Peut être appelée après une connexion réussie
-   */
   refreshAuthState(): void {
     this.checkAuthentication();
   }
@@ -107,10 +117,29 @@ export class MenuMainComponent implements OnInit {
   }
 
   onLogout(): void {
-    // Rafraîchir l'état d'authentification immédiatement après le logout
     this.checkAuthentication();
-    // Fermer le menu hamburger
     this.showHamburgerMenu = false;
+  }
+
+  onMobileLogout(): void {
+    this.closeMobileMenu();
+    this.authService.logout().subscribe({
+      next: () => this.checkAuthentication(),
+      error: () => this.checkAuthentication(),
+    });
+  }
+
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+    this.cdr.markForCheck();
+  }
+
+  closeMobileMenu(): void {
+    if (!this.mobileMenuOpen) {
+      return;
+    }
+    this.mobileMenuOpen = false;
+    this.cdr.markForCheck();
   }
 
   onToggleTheme(): void {
@@ -119,4 +148,3 @@ export class MenuMainComponent implements OnInit {
     this.cdr.markForCheck();
   }
 }
-

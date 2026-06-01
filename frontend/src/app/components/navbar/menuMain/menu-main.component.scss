@@ -2,6 +2,7 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
+  position: relative;
   width: 100%;
   max-width: $content-max-width;
   min-height: 72px;
@@ -17,9 +18,17 @@
     align-items: center;
     gap: $spacing-12;
     color: var(--text);
+
+    h1 {
+      font-size: $font-size-h4;
+
+      @media (min-width: $breakpoint-tablet) {
+        font-size: $font-size-h2;
+      }
+    }
   }
 
-  .links {
+  .links--desktop {
     display: flex;
     align-items: center;
     gap: $spacing-12;
@@ -57,6 +66,133 @@
       }
     }
   }
+
+  .hamburger-trigger {
+    display: none;
+  }
+
+  .mobile-overlay,
+  .mobile-drawer {
+    display: none;
+  }
+}
+
+// ============================================
+// MOBILE — menu hamburger (drawer)
+// ============================================
+@media (max-width: $breakpoint-tablet) {
+  :host {
+    padding: $spacing-12 $spacing-16;
+
+    .links--desktop {
+      display: none;
+    }
+
+    .hamburger-trigger {
+      display: inline-flex;
+      @include icon-button-circle;
+      color: var(--text);
+    }
+
+    .mobile-overlay {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: $z-overlay;
+      @include button-reset;
+      background: var(--overlay-bg);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      animation: fadeIn $duration-base $ease-standard;
+    }
+
+    .mobile-drawer {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(320px, 88vw);
+      z-index: $z-modal;
+      @include glass-panel(25%, var(--glass-border-alpha), var(--glass-blur));
+      border-radius: $radius-16 0 0 $radius-16;
+      border-right: none;
+      @include elevation(lg);
+      animation: slideInRight $duration-slow $ease-out;
+
+      &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: $spacing-16 $spacing-20;
+        border-bottom: 1px solid border-surface-color(12%);
+      }
+
+      &__brand {
+        font-weight: $font-weight-600;
+        font-size: $font-size-h5;
+        color: var(--text);
+      }
+
+      &__close {
+        @include icon-button-circle;
+        color: var(--text-muted);
+      }
+
+      &__body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-4;
+        padding: $spacing-16;
+        overflow-y: auto;
+
+        app-navbar-links,
+        ui-button {
+          width: 100%;
+        }
+
+        ::ng-deep .link {
+          width: 100%;
+          min-height: $tap-target-min;
+          padding: $spacing-12 $spacing-16;
+          border-radius: $radius-12;
+        }
+      }
+
+      &__footer {
+        padding: $spacing-16 $spacing-20;
+        padding-bottom: calc(#{$spacing-16} + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid border-surface-color(12%);
+      }
+    }
+
+    .mobile-theme-toggle {
+      @include button-reset;
+      display: flex;
+      align-items: center;
+      gap: $spacing-12;
+      width: 100%;
+      min-height: $tap-target-min;
+      padding: $spacing-12 $spacing-16;
+      border-radius: $radius-12;
+      color: var(--text);
+      @include transition(background-color, $duration-base);
+      @include focus-visible;
+
+      &:hover {
+        @include glass-hover;
+      }
+    }
+
+    &.menu-main--mobile-open {
+      .hamburger-trigger {
+        position: relative;
+        z-index: #{$z-modal + 1};
+      }
+    }
+  }
 }
 
 @keyframes fadeIn {
@@ -67,5 +203,16 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
