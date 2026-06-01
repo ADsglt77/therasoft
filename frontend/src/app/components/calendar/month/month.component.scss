@@ -2,17 +2,26 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-16;
-}
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-16;
 
-.calendar-grid {
+  .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: $spacing-12;
     @include glass-panel;
     border-radius: $radius-16;
     padding: $spacing-16;
+
+    @media (max-width: $breakpoint-desktop) {
+      grid-template-columns: repeat(5, 1fr);
+
+      > :nth-child(7n + 6),
+      > :nth-child(7n + 7) {
+        display: none;
+      }
+    }
+  }
 }
