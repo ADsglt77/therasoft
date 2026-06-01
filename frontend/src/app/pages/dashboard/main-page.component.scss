@@ -8,81 +8,79 @@ $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
   max-height: 100vh;
   overflow: hidden;
   padding: $spacing-16;
-}
-
-.dashboard-layout {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  gap: $spacing-16;
-  min-height: 0;
-
-  .sidebar {
-    flex-shrink: 0;
-    width: $sidebar-collapsed;
-    height: calc(100vh - $spacing-16 * 2);
-    overflow: visible;
-    will-change: width;
-    transition: width $duration-nav $nav-ease;
-
-    &.expanded {
-      width: $sidebar-width;
-    }
-  }
-
-  .content {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-    overflow: auto;
-    transition: flex $duration-nav $nav-ease;
-  }
-}
-
-@media (max-width: $breakpoint-tablet) {
-  :host {
-    padding: $spacing-12;
-    padding-bottom: 0;
-  }
 
   .dashboard-layout {
-    flex-direction: column;
-    gap: 0;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    gap: $spacing-16;
+    min-height: 0;
 
     .sidebar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      top: auto;
-      width: 100% !important;
-      height: auto;
-      z-index: $z-sticky;
+      flex-shrink: 0;
+      width: $sidebar-collapsed;
+      height: calc(100vh - $spacing-16 * 2);
       overflow: visible;
-      pointer-events: none;
+      will-change: width;
+      transition: width $duration-nav $nav-ease;
 
-      app-menu-dashboard {
-        pointer-events: auto;
-        display: block;
-        width: 100%;
+      &.expanded {
+        width: $sidebar-width;
       }
     }
 
     .content {
       flex: 1;
-      padding-bottom: calc(#{$bottom-nav-height} + #{$spacing-16} + env(safe-area-inset-bottom, 0px));
+      min-width: 0;
+      min-height: 0;
       overflow: auto;
+      transition: flex $duration-nav $nav-ease;
     }
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-layout .sidebar,
-  .dashboard-layout .content {
-    transition-duration: 0.01ms !important;
+  @media (max-width: $breakpoint-tablet) {
+    padding: unset;
+    padding-bottom: 0;
+
+    .dashboard-layout {
+      flex-direction: column;
+      gap: 0;
+
+      .sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        width: 100% !important;
+        height: auto;
+        z-index: $z-sticky;
+        overflow: visible;
+        pointer-events: none;
+
+        app-menu-dashboard {
+          pointer-events: auto;
+          display: block;
+          width: 100%;
+        }
+      }
+
+      .content {
+        flex: 1;
+        padding-bottom: calc(#{$bottom-nav-height} + #{$spacing-16} + env(safe-area-inset-bottom, 0px));
+        overflow: auto;
+      }
+    }
   }
 
-  .dashboard-layout .sidebar {
-    will-change: auto;
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-layout .sidebar,
+    .dashboard-layout .content {
+      transition-duration: 0.01ms !important;
+    }
+
+    .dashboard-layout .sidebar {
+      will-change: auto;
+    }
   }
 }
