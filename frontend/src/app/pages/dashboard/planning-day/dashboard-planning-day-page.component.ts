@@ -8,7 +8,14 @@ import { TimetableComponent } from '../../../components/timetable/timetable.comp
 import { PlanningService, Rdv } from '../../../core/services/planning.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { formatTime } from '../../../core/utils/date.utils';
-import { Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
+import {
+  CalendarDayStatus,
+  dayStatusBadgeText,
+  dayStatusToBadgeVariant,
+  resolveDayStatus,
+} from '../../../core/utils/calendar-day-status.utils';
+import { BadgeVariant } from '../../../components/badge/ui-badge.component';
 
 /**
  * Interface pour les slots du timetable
@@ -41,6 +48,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   date: Date | null = null;
   
   timetableSlots: TimetableSlot[] = [];
+  vacationSite: string | null = null;
   isLoadingRdvs = false;
   private subscriptions = new Subscription();
 
@@ -88,35 +96,38 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   loadRdvs(): void {
     if (!this.date) return;
 
-    // Ne pas charger les rendez-vous les weekends
+    this.isLoadingRdvs = true;
+    this.timetableSlots = [];
+    this.vacationSite = null;
+
     if (this.isWeekend) {
       this.isLoadingRdvs = false;
-      this.timetableSlots = [];
       return;
     }
 
-    this.isLoadingRdvs = true;
-    this.timetableSlots = []; // Réinitialiser avant le chargement
-    const sub = this.planningService.getMyRdvsForDate(this.date).subscribe({
-      next: (response) => {
-        this.timetableSlots = (response.rdvs || []).map((rdv: Rdv) => {
-          return {
-            id: rdv.id.toString(),
-            rdvId: rdv.id,
-            patientId: rdv.patient.id,
-            iconName: rdv.typeIcon || 'info',
-            startTime: formatTime(rdv.heureDebut),
-            endTime: formatTime(rdv.heureFin),
-            title: `${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
-            disabled: false,
-          };
-        });
+    const sub = forkJoin({
+      rdvs: this.planningService.getMyRdvsForDate(this.date),
+      vacations: this.planningService.getVacationsForDate(this.date),
+    }).subscribe({
+      next: ({ rdvs, vacations }) => {
+        this.vacationSite = vacations.vacations?.[0]?.site ?? null;
+        this.timetableSlots = (rdvs.rdvs || []).map((rdv: Rdv) => ({
+          id: rdv.id.toString(),
+          rdvId: rdv.id,
+          patientId: rdv.patient.id,
+          iconName: rdv.typeIcon || 'info',
+          startTime: formatTime(rdv.heureDebut),
+          endTime: formatTime(rdv.heureFin),
+          title: `${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+          disabled: false,
+        }));
         this.isLoadingRdvs = false;
       },
       error: (error) => {
-        console.error('Erreur lors du chargement des rendez-vous:', error);
-        this.notificationService.show('danger', 'Erreur lors du chargement des rendez-vous');
-        this.timetableSlots = []; // S'assurer que c'est un tableau vide en cas d'erreur
+        console.error('Erreur lors du chargement du planning:', error);
+        this.notificationService.show('danger', 'Erreur lors du chargement du planning');
+        this.timetableSlots = [];
+        this.vacationSite = null;
         this.isLoadingRdvs = false;
       },
     });
@@ -160,27 +171,24 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
     return diffDays;
   }
 
-  get dateBadgeText(): string {
-    if (this.isWeekend) return 'Jour de repos';
-    
-    const days = this.daysDifference;
-    if (days === null) return '';
-    if (days === 0) return 'Aujourd\'hui';
-    if (days > 0) {
-      // Passé
-      if (days === 1) return 'Il y a 1 jour';
-      return `Il y a ${days} jours`;
-    } else {
-      // Futur
-      const daysFuture = Math.abs(days);
-      if (daysFuture === 1) return 'Dans 1 jour';
-      return `Dans ${daysFuture} jours`;
+  get dayStatus(): CalendarDayStatus {
+    if (!this.date) {
+      return 'repos';
     }
+    return resolveDayStatus(
+      this.date.getFullYear(),
+      this.date.getMonth(),
+      this.date.getDate(),
+      !!this.vacationSite
+    );
   }
 
-  get badgeVariant(): 'success' | 'repos' {
-    if (this.isToday) return 'success';
-    return 'repos';
+  get dateBadgeText(): string {
+    return dayStatusBadgeText(this.dayStatus, this.vacationSite ?? undefined);
+  }
+
+  get badgeVariant(): BadgeVariant {
+    return dayStatusToBadgeVariant(this.dayStatus);
   }
 
   get monthName(): string {

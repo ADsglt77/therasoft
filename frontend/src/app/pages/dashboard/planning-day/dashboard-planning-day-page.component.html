@@ -13,8 +13,12 @@
 
   @if (date) {
   <div class="planning-section">
-    @if (isWeekend) {
-    <p class="placeholder">Jour de repos</p>
+    @if (dayStatus === 'repos') {
+    <p class="placeholder">Repos</p>
+    } @else if (dayStatus === 'ferie') {
+    <p class="placeholder">Jour férié</p>
+    } @else if (dayStatus === 'vacances') {
+    <p class="placeholder">Vacances</p>
     } @else if (isLoadingRdvs) {
     <p class="placeholder">Chargement des rendez-vous...</p>
     } @else {
