@@ -62,6 +62,129 @@ function withUtcTime(base: Date, hours: number, minutes: number): Date {
   return d;
 }
 
+const SEED_YEAR = 2026;
+
+type VilleAvecSites = { ville: string; sites: string[] };
+type DayAssignment = { ville: string; site: string };
+type WeekSchedule = Map<number, DayAssignment>; // 1 = lundi … 5 = vendredi (ISO)
+type CongesRange = { start: string; end: string };
+
+/** Jours fériés France (tous médecins en repos) */
+const JOURS_FERIES: Set<string> = new Set([
+  `${SEED_YEAR}-01-01`,
+  `${SEED_YEAR}-04-06`,
+  `${SEED_YEAR}-05-01`,
+  `${SEED_YEAR}-05-08`,
+  `${SEED_YEAR}-05-14`,
+  `${SEED_YEAR}-05-25`,
+  `${SEED_YEAR}-07-14`,
+  `${SEED_YEAR}-08-15`,
+  `${SEED_YEAR}-11-01`,
+  `${SEED_YEAR}-11-11`,
+  `${SEED_YEAR}-12-25`,
+]);
+
+/** Clé ISO semaine (ex. 2026-W12) */
+function getIsoWeekKey(date: Date): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function getUtcIsoWeekday(date: Date): number {
+  const d = date.getUTCDay();
+  return d === 0 ? 7 : d;
+}
+
+function isJourFerie(dateKey: string): boolean {
+  return JOURS_FERIES.has(dateKey);
+}
+
+function isJourOuvre(date: Date): boolean {
+  const wd = getUtcIsoWeekday(date);
+  if (wd > 5) return false;
+  return !isJourFerie(toUtcDateKey(date));
+}
+
+/** Congés annuels par médecin (été décalé, printemps / Toussaint / Noël) */
+function getCongesRanges(medecinSlot: number): CongesRange[] {
+  const y = SEED_YEAR;
+  if (medecinSlot === 0) {
+    return [
+      { start: `${y}-04-06`, end: `${y}-04-10` },
+      { start: `${y}-07-06`, end: `${y}-07-31` },
+      { start: `${y}-10-26`, end: `${y}-10-30` },
+      { start: `${y}-12-21`, end: `${y}-12-31` },
+    ];
+  }
+  return [
+    { start: `${y}-04-20`, end: `${y}-04-24` },
+    { start: `${y}-07-20`, end: `${y}-08-14` },
+    { start: `${y}-11-02`, end: `${y}-11-06` },
+    { start: `${y}-12-21`, end: `${y}-12-31` },
+  ];
+}
+
+function isConges(dateKey: string, ranges: CongesRange[]): boolean {
+  return ranges.some((r) => dateKey >= r.start && dateKey <= r.end);
+}
+
+function seededIndex(seed: string, max: number): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % max;
+}
+
+/**
+ * Planning hebdomadaire : 1 ville toute la semaine OU 2 villes en 2 blocs contigus
+ * (ex. lun–mer Paris, jeu–ven Lyon) — jamais d’alternance jour par jour.
+ */
+function buildWeekSchedule(
+  cache: Map<string, WeekSchedule>,
+  villesAvecSites: VilleAvecSites[],
+  medecinId: number,
+  weekKey: string
+): WeekSchedule {
+  const cacheKey = `${weekKey}_${medecinId}`;
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey)!;
+  }
+
+  const pool = [...villesAvecSites].sort(() => Math.random() - 0.5);
+  const twoCities = Math.random() < 0.28;
+  const schedule: WeekSchedule = new Map();
+
+  if (!twoCities) {
+    const city = pool[0];
+    const site = city.sites[seededIndex(`${cacheKey}_site`, city.sites.length)];
+    const assignment = { ville: city.ville, site };
+    for (let wd = 1; wd <= 5; wd++) {
+      schedule.set(wd, assignment);
+    }
+  } else {
+    const cityA = pool[0];
+    const cityB = pool[1];
+    const siteA = cityA.sites[seededIndex(`${cacheKey}_sa`, cityA.sites.length)];
+    const siteB = cityB.sites[seededIndex(`${cacheKey}_sb`, cityB.sites.length)];
+    const splitAfter = seededIndex(`${cacheKey}_split`, 2) === 0 ? 2 : 3;
+    for (let wd = 1; wd <= 5; wd++) {
+      schedule.set(
+        wd,
+        wd <= splitAfter
+          ? { ville: cityA.ville, site: siteA }
+          : { ville: cityB.ville, site: siteB }
+      );
+    }
+  }
+
+  cache.set(cacheKey, schedule);
+  return schedule;
+}
+
 // Source unique de vérité pour le type de RDV (icône Lucide + libellé)
 const RDV_TYPE_META: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
   [ModaliteType.XRAY]: { typeIcon: 'image', typeDescription: 'Radiographie' },
@@ -173,44 +296,44 @@ async function main() {
   const villesAvecSites = [
     {
       ville: 'Paris',
-      sites: ['Hôpital Pitié-Salpêtrière', 'Hôpital Necker', 'Clinique de la Porte de Saint-Cloud']
+      sites: ['Hôpital Pitié-Salpêtrière', 'Hôpital Necker', 'Clinique de la Porte de Saint-Cloud'],
     },
     {
       ville: 'Lyon',
-      sites: ['Hôpital Édouard Herriot', 'Centre Hospitalier Lyon Sud', 'Clinique du Val d\'Ouest']
+      sites: ['Hôpital Édouard Herriot', 'Centre Hospitalier Lyon Sud', 'Clinique du Val d\'Ouest'],
     },
     {
       ville: 'Marseille',
-      sites: ['Hôpital de la Timone', 'Hôpital Nord', 'Clinique Clairval']
+      sites: ['Hôpital de la Timone', 'Hôpital Nord', 'Clinique Clairval'],
     },
     {
       ville: 'Toulouse',
-      sites: ['CHU Toulouse - Purpan', 'CHU Toulouse - Rangueil', 'Clinique Pasteur']
+      sites: ['CHU Toulouse - Purpan', 'CHU Toulouse - Rangueil', 'Clinique Pasteur'],
     },
     {
       ville: 'Nice',
-      sites: ['CHU Nice - Hôpital Pasteur', 'Hôpital Lenval', 'Clinique Saint-Georges']
+      sites: ['CHU Nice - Hôpital Pasteur', 'Hôpital Lenval', 'Clinique Saint-Georges'],
     },
     {
       ville: 'Nantes',
-      sites: ['CHU Nantes - Hôtel-Dieu', 'CHU Nantes - Hôpital Nord', 'Clinique Jules Verne']
+      sites: ['CHU Nantes - Hôtel-Dieu', 'CHU Nantes - Hôpital Nord', 'Clinique Jules Verne'],
     },
     {
       ville: 'Strasbourg',
-      sites: ['Hôpitaux Universitaires de Strasbourg', 'Clinique Sainte-Anne', 'Centre Paul Strauss']
+      sites: ['Hôpitaux Universitaires de Strasbourg', 'Clinique Sainte-Anne', 'Centre Paul Strauss'],
     },
     {
       ville: 'Montpellier',
-      sites: ['CHU Montpellier - Hôpital Lapeyronie', 'CHU Montpellier - Hôpital Gui de Chauliac', 'Clinique Clémentville']
+      sites: ['CHU Montpellier - Hôpital Lapeyronie', 'CHU Montpellier - Hôpital Gui de Chauliac', 'Clinique Clémentville'],
     },
     {
       ville: 'Bordeaux',
-      sites: ['CHU Bordeaux - Hôpital Pellegrin', 'CHU Bordeaux - Hôpital Haut-Lévêque', 'Clinique Tivoli']
+      sites: ['CHU Bordeaux - Hôpital Pellegrin', 'CHU Bordeaux - Hôpital Haut-Lévêque', 'Clinique Tivoli'],
     },
     {
       ville: 'Lille',
-      sites: ['CHU Lille - Hôpital Claude Huriez', 'CHU Lille - Hôpital Roger Salengro', 'Clinique de la Louvière']
-    }
+      sites: ['CHU Lille - Hôpital Claude Huriez', 'CHU Lille - Hôpital Roger Salengro', 'Clinique de la Louvière'],
+    },
   ];
   
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
@@ -218,39 +341,53 @@ async function main() {
   const medecinsActifs = [medecin2, medecin3];
   const horaires = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
-  console.log('📅 Création des vacations pour toute l\'année 2026...');
+  console.log(`📅 Création des vacations pour toute l'année ${SEED_YEAR}...`);
+  console.log('   • Jours ouvrés : lun–ven, hors jours fériés FR');
+  console.log('   • Congés : été, printemps, Toussaint, fin d\'année (décalés par médecin)');
+  console.log('   • Déplacements : max 2 villes/semaine en blocs (ex. lun–mer puis jeu–ven), 1 site/jour');
   const vacations: Vacation[] = [];
-  // Générer en UTC pour éviter les décalages de date (UTC vs locale)
-  const startDate = new Date(Date.UTC(2026, 0, 1, 0, 0, 0, 0));
-  const endDate = new Date(Date.UTC(2026, 11, 31, 0, 0, 0, 0));
+  const weekScheduleCache = new Map<string, WeekSchedule>();
+  const startDate = new Date(Date.UTC(SEED_YEAR, 0, 1, 0, 0, 0, 0));
+  const endDate = new Date(Date.UTC(SEED_YEAR, 11, 31, 0, 0, 0, 0));
 
-  let totalDays = 0;
+  let joursOuvres = 0;
+  let joursConges = 0;
+
   for (let date = new Date(startDate); date <= endDate; date = new Date(date.getTime() + 24 * 60 * 60 * 1000)) {
-    const dayOfWeek = date.getUTCDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends (UTC)
+    if (!isJourOuvre(date)) continue;
 
-    totalDays++;
+    joursOuvres++;
     const currentDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
-    
-    // 2-4 vacations par jour par médecin
+    const dateKey = toUtcDateKey(currentDate);
+    const weekKey = getIsoWeekKey(currentDate);
+    const weekday = getUtcIsoWeekday(currentDate);
     const vacationsPerMedecin = Math.floor(Math.random() * 3) + 2;
-    
-    for (const medecin of medecinsActifs) {
+
+    for (let slot = 0; slot < medecinsActifs.length; slot++) {
+      const medecin = medecinsActifs[slot];
+      const congesRanges = getCongesRanges(slot);
+
+      if (isConges(dateKey, congesRanges)) {
+        joursConges++;
+        continue;
+      }
+
+      const schedule = buildWeekSchedule(weekScheduleCache, villesAvecSites, medecin.id, weekKey);
+      const assignment = schedule.get(weekday);
+      if (!assignment) continue;
+
       const shuffledHoraires = [...horaires].sort(() => Math.random() - 0.5);
-      
+
       for (let i = 0; i < vacationsPerMedecin && i < shuffledHoraires.length; i++) {
         const [hours, minutes] = shuffledHoraires[i].split(':');
         const horaire = withUtcTime(currentDate, parseInt(hours), parseInt(minutes));
-
-        const villeAvecSites = villesAvecSites[Math.floor(Math.random() * villesAvecSites.length)];
-        const site = villeAvecSites.sites[Math.floor(Math.random() * villeAvecSites.sites.length)];
 
         const vacation = await prisma.vacation.create({
           data: {
             date: currentDate,
             horaire,
-            ville: villeAvecSites.ville,
-            site: site,
+            ville: assignment.ville,
+            site: assignment.site,
             modalite: modalites[Math.floor(Math.random() * modalites.length)],
             medecinId: medecin.id,
           },
@@ -258,13 +395,14 @@ async function main() {
         vacations.push(vacation);
       }
     }
-    
-    // Afficher la progression tous les 50 jours
-    if (totalDays % 50 === 0) {
-      console.log(`   Progression: ${totalDays} jours traités, ${vacations.length} vacations créées...`);
+
+    if (joursOuvres % 50 === 0) {
+      console.log(`   Progression: ${joursOuvres} jours ouvrés, ${vacations.length} vacations...`);
     }
   }
-  console.log(`✅ ${vacations.length} vacations créées pour ${totalDays} jours ouvrés\n`);
+  console.log(
+    `✅ ${vacations.length} vacations sur ${joursOuvres} jours ouvrés (${joursConges} créneaux congés/médecin ignorés)\n`
+  );
 
   console.log('📋 Création des rendez-vous pour chaque jour avec vacations...');
   const rdvs: Rdv[] = [];
@@ -286,12 +424,11 @@ async function main() {
     const [dateStr] = key.split('_');
     const date = toUtcMidnightDateFromYmd(dateStr);
 
-    // Garde-fou: ne jamais créer de RDV le week-end (cohérent UTC)
-    if (isWeekendUtc(date)) {
+    if (!isJourOuvre(date)) {
       continue;
     }
-    
-    // Générer 5-10 rdv par jour où il y a des vacations
+
+    const dayModalites = [...new Set(dayVacations.map((v) => v.modalite))];
     const rdvsPerDay = Math.floor(Math.random() * 6) + 5;
     const shuffledPatients = [...createdPatients].sort(() => Math.random() - 0.5);
     const shuffledHoraires = [...rdvHoraires].sort(() => Math.random() - 0.5);
@@ -300,15 +437,13 @@ async function main() {
       const patient = shuffledPatients[i % shuffledPatients.length];
       const [hours, minutes] = shuffledHoraires[i].split(':');
       
-      // Créer heureDebut et heureFin (durée variable: 20-45 minutes)
       const heureDebut = withUtcTime(date, parseInt(hours), parseInt(minutes));
       
       const dureeMinutes = [20, 30, 45][Math.floor(Math.random() * 3)];
       const heureFin = new Date(heureDebut);
       heureFin.setUTCMinutes(heureFin.getUTCMinutes() + dureeMinutes);
 
-      // Utiliser une modalité aléatoire (sera liée à une vacation compatible plus tard)
-      const modalite = modalites[Math.floor(Math.random() * modalites.length)];
+      const modalite = dayModalites[Math.floor(Math.random() * dayModalites.length)];
       const rdv = await prisma.rdv.create({
         data: {
           date,
