@@ -26,16 +26,25 @@
     }
   }
 
-  // Tablette : libellés de jours abrégés, grille un peu plus serrée
+  // Tablette & mobile : lun–ven uniquement (pas de samedi/dimanche)
   @media (max-width: $breakpoint-desktop) {
+    padding: unset;
+    
     .week-day {
       &__full { display: none; }
       &__short { display: inline; }
     }
 
     .calendar-grid {
+      grid-template-columns: repeat(5, 1fr);
       gap: $spacing-8;
       padding: $spacing-12;
+
+      // Masquer sam. (6e) et dim. (7e) de chaque ligne de 7 cellules
+      > :nth-child(7n + 6),
+      > :nth-child(7n + 7) {
+        display: none;
+      }
     }
   }
 
