@@ -47,10 +47,50 @@
     @include icon-button-circle;
 }
 
-@media (max-width: $breakpoint-tablet) {
+// Tablette et moins : le titre garde l'icône, les libellés respirent
+@media (max-width: $breakpoint-desktop) {
+    .header {
+        gap: $spacing-12;
+    }
+
     .header .day h4,
     .header .month h4 {
         min-width: 0;
+    }
+}
+
+// Mobile : le bloc de navigation (flèches + date) occupe toute la largeur,
+// flèches collées aux bords pour rester accessibles au pouce
+@media (max-width: $breakpoint-tablet) {
+    .header {
+        padding: $spacing-12;
+        gap: $spacing-8;
+    }
+
+    .header .title {
+        flex: 0 0 auto;
+    }
+
+    .header .day,
+    .header .month {
+        flex: 1 1 100%;
+        order: 2;
+        justify-content: space-between;
+        gap: $spacing-8;
+    }
+
+    .header .day h4,
+    .header .month h4 {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .header .month-info,
+    .header .year {
+        min-width: 0;
+        order: 1;
     }
 }
 

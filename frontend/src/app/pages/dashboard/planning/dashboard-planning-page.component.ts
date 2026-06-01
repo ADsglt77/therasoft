@@ -80,6 +80,8 @@ export class DashboardPlanningPageComponent implements OnInit {
 
   // Constantes publiques
   readonly weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] as const;
+  // Libellés courts affichés sur tablette / mobile pour éviter le débordement de la grille
+  readonly weekDaysShort = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] as const;
 
   // État du calendrier
   currentDate = new Date();

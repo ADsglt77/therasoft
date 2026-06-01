@@ -10,8 +10,11 @@
   (previous)="previousMonth()" (next)="nextMonth()" (yearChange)="onYearChange($event)">
 </app-nav-calendar>
 <div class="calendar-grid">
-  @for (dayName of weekDays; track dayName) {
-  <div class="week-day">{{ dayName }}</div>
+  @for (dayName of weekDays; track dayName; let i = $index) {
+  <div class="week-day">
+    <span class="week-day__full">{{ dayName }}</span>
+    <span class="week-day__short">{{ weekDaysShort[i] }}</span>
+  </div>
   }
   @for (day of days; track trackByDay($index, day)) {
   <app-day-card [dayNumber]="day.dayNumber" [type]="day.type" [location]="day.location"

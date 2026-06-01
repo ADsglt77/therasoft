@@ -5,11 +5,13 @@
   position: fixed;
   bottom: $spacing-16;
   right: $spacing-16;
+  left: auto;
   z-index: $z-notification;
   display: flex;
   flex-direction: column;
   gap: $spacing-12;
-  max-width: 400px;
+  width: max-content;
+  max-width: min(400px, calc(100vw - #{$spacing-16 * 2}));
   pointer-events: none;
 
   .notification {
@@ -23,6 +25,7 @@
     border-radius: $radius-8;
     letter-spacing: 0.4px;
     white-space: nowrap;
+    max-width: 100%;
     animation: slideIn $duration-slow $ease-out;
     @include transition(opacity, $duration-base);
     @include elevation(lg);
