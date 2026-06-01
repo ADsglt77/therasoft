@@ -61,6 +61,18 @@ export class PlanningService extends ApiClientService {
   }
 
   /**
+   * Récupère les vacations pour une date précise
+   */
+  getVacationsForDate(date: Date): Observable<PlanningResponse> {
+    const dateStr = this.formatDate(date);
+
+    let params = new HttpParams();
+    params = params.set('startDate', dateStr).set('endDate', dateStr);
+
+    return this.http.get<PlanningResponse>(`${this.baseUrl}/planning`, { params });
+  }
+
+  /**
    * Récupère les vacations pour un mois donné
    */
   getVacationsForMonth(year: number, month: number): Observable<PlanningResponse> {
