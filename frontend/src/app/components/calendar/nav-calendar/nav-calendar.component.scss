@@ -2,12 +2,11 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-16;
-}
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-16;
 
-.header {
+  .header {
     min-height: 80px;
     display: flex;
     align-items: center;
@@ -19,78 +18,74 @@
     border-radius: $radius-16;
     position: relative;
     z-index: $z-sticky;
-}
 
-.header div {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: $spacing-16;
-    text-transform: capitalize;
-    color: var(--text);
-}
+    div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-16;
+      text-transform: capitalize;
+      color: var(--text);
+    }
 
-.header .day h4,
-.header .month h4 {
-    min-width: 220px;
-    text-align: center;
-    color: var(--text);
-}
+    .day h4,
+    .month h4 {
+      min-width: 220px;
+      text-align: center;
+      color: var(--text);
+    }
 
-.header .month-info,
-.header .year {
-    min-width: 125px;
-    color: var(--text);
-}
+    .month-info,
+    .year {
+      min-width: 125px;
+      color: var(--text);
+    }
+  }
 
-.nav-arrow {
+  .nav-arrow {
     @include icon-button-circle;
-}
+  }
 
-// Tablette et moins : le titre garde l'icône, les libellés respirent
-@media (max-width: $breakpoint-desktop) {
+  @media (max-width: $breakpoint-desktop) {
     .header {
-        gap: $spacing-12;
-    }
+      gap: $spacing-12;
 
-    .header .day h4,
-    .header .month h4 {
+      .day h4,
+      .month h4 {
         min-width: 0;
+      }
     }
-}
+  }
 
-// Mobile : le bloc de navigation (flèches + date) occupe toute la largeur,
-// flèches collées aux bords pour rester accessibles au pouce
-@media (max-width: $breakpoint-tablet) {
+  @media (max-width: $breakpoint-tablet) {
     .header {
-        padding: $spacing-12;
-        gap: $spacing-8;
-    }
+      padding: $spacing-12;
+      gap: $spacing-8;
 
-    .header .title {
+      .title {
         flex: 0 0 auto;
-    }
+      }
 
-    .header .day,
-    .header .month {
+      .day,
+      .month {
         flex: 1 1 100%;
         order: 2;
         justify-content: space-between;
         gap: $spacing-8;
-    }
 
-    .header .day h4,
-    .header .month h4 {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+        h4 {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
 
-    .header .month-info,
-    .header .year {
+      .month-info,
+      .year {
         min-width: 0;
         order: 1;
+      }
     }
+  }
 }
-
