@@ -7,73 +7,73 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 
 :host {
   display: block;
-}
 
-.link {
-  display: flex;
-  align-items: center;
-  gap: $spacing-12;
-  padding: $spacing-8;
-  min-height: $tap-target-min;
-  border-radius: $radius-8;
-  text-decoration: none;
-  color: var(--text);
-  cursor: pointer;
-  overflow: hidden;
-  @include focus-visible;
-  transition:
-    background $duration-base ease,
-    color $duration-base ease,
-    gap $nav-duration $nav-ease,
-    padding $nav-duration $nav-ease,
-    justify-content $nav-duration $nav-ease;
-
-  &:hover {
-    @include glass-hover;
+  .link {
+    display: flex;
+    align-items: center;
+    gap: $spacing-12;
+    padding: $spacing-8;
+    min-height: $tap-target-min;
+    border-radius: $radius-8;
+    text-decoration: none;
     color: var(--text);
-  }
-
-  &.active {
-    @include glass-hover;
-    color: var(--text);
-  }
-
-  .icon {
-    flex-shrink: 0;
-    @include icon-center;
-  }
-
-  .label {
-    margin: 0;
+    cursor: pointer;
     overflow: hidden;
-    white-space: nowrap;
-    max-width: 12rem;
-    opacity: 1;
+    @include focus-visible;
     transition:
-      max-width $nav-duration $nav-ease,
-      opacity $nav-duration $nav-ease 70ms;
+      background $duration-base ease,
+      color $duration-base ease,
+      gap $nav-duration $nav-ease,
+      padding $nav-duration $nav-ease,
+      justify-content $nav-duration $nav-ease;
+
+    &:hover {
+      @include glass-hover;
+      color: var(--text);
+    }
+
+    &.active {
+      @include glass-hover;
+      color: var(--text);
+    }
+
+    .icon {
+      flex-shrink: 0;
+      @include icon-center;
+    }
+
+    .label {
+      margin: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      max-width: 12rem;
+      opacity: 1;
+      transition:
+        max-width $nav-duration $nav-ease,
+        opacity $nav-duration $nav-ease 70ms;
+    }
   }
-}
 
-:host.icon-only .link {
-  justify-content: center;
-  gap: 0;
-  padding: $spacing-8;
-  width: 100%;
+  &.icon-only .link {
+    justify-content: center;
+    gap: 0;
+    padding: $spacing-8;
+    width: 100%;
 
-  .label {
-    max-width: 0;
-    opacity: 0;
-    transition:
-      opacity $nav-duration $nav-ease-in,
-      max-width $nav-duration $nav-ease-in;
+    .label {
+      max-width: 0;
+      opacity: 0;
+      transition:
+        opacity $nav-duration $nav-ease-in,
+        max-width $nav-duration $nav-ease-in;
+    }
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  :host .link,
-  :host .link .label {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
+  @media (prefers-reduced-motion: reduce) {
+    .link,
+    .link .label {
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
+    }
   }
 }
