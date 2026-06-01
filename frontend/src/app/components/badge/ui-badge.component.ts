@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-export type BadgeVariant = 'warning' | 'success' | 'danger' | 'repos';
+export type BadgeVariant = 'warning' | 'success' | 'danger' | 'repos' | 'vacances' | 'ferie';
 
 @Component({
   selector: 'ui-badge',

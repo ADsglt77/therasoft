@@ -39,3 +39,9 @@
 :host.ui-badge--repos { 
   --badge-color: var(--color-primary-300); 
 }
+:host.ui-badge--vacances {
+  --badge-color: var(--color-primary-700);
+}
+:host.ui-badge--ferie {
+  --badge-color: var(--color-warning);
+}
