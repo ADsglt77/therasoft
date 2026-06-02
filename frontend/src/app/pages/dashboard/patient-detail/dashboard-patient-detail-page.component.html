@@ -4,13 +4,13 @@
 </div>
 } @else if (dossier) {
 
-<div class="header">
+<header class="header">
   <button type="button" class="back-button" (click)="goBack()" aria-label="Retour">
     <app-icon name="arrow-left" [size]="18" [strokeWidth]="3"></app-icon>
   </button>
-  <app-icon name="calendar" [size]="28"></app-icon>
-  <h3>Dossier médical</h3>
-</div>
+  <app-icon name="calendar" [size]="28" class="header__icon"></app-icon>
+  <h3 class="header__title">Dossier médical</h3>
+</header>
 
 
 <div class="info-patient">
@@ -20,7 +20,7 @@
       <app-icon name="user" [size]="28"></app-icon>
       <h4>Informations patient</h4>
     </div>
-    <div class="content">
+    <div class="content content--fields">
       <div class="name">
         <p>Nom complet</p>
         <p>{{ dossier.patient.prenom }} {{ dossier.patient.nom }}</p>
@@ -43,7 +43,7 @@
       <app-icon name="calendar" [size]="20"></app-icon>
       <h4>Rendez-vous</h4>
     </div>
-    <div class="content">
+    <div class="content content--fields">
       <div class="date">
         <p>Date</p>
         <p>{{ formatDate(dossier.rdv.date) }}</p>
@@ -67,7 +67,7 @@
       <app-icon name="file-text" [size]="20"></app-icon>
       <h4>Observations médicales</h4>
     </div>
-    <div class="content">
+    <div class="content content--editor">
       <div class="observations-wrapper">
         <ui-input type="textarea" [value]="observationsValue" (input)="updateObservations($any($event.target).value)"
           (blur)="onObservationsBlur()" placeholder="Saisissez vos observations médicales..."
@@ -75,7 +75,8 @@
           [disabled]="isSavingObservations"
           message="Saisie au clavier ou transcription vocale (bouton micro)."
           messageType="info"
-          [fullHeight]="true">
+          [rows]="isWideLayout ? 1 : 6"
+          [fullHeight]="isWideLayout">
         </ui-input>
         <div class="transcription-vocal-wrapper">
           @if (isTranscribing) {
@@ -116,7 +117,7 @@
       <app-icon name="clipboard-check" [size]="20"></app-icon>
       <h4>Résultats d'examen</h4>
     </div>
-    <div class="content">
+    <div class="content content--editor">
       <div class="files-section">
         <ui-input
           type="file"
@@ -131,7 +132,7 @@
           (existingFileDownload)="onExistingFileDownload($event)"
           (existingFilePreview)="onExistingFilePreview($event)"
           (existingFileRemoved)="onExistingFileRemove($event)"
-          [fullHeight]="true"
+          [fullHeight]="isWideLayout"
         ></ui-input>
 
         @if (isUploadingFiles) {

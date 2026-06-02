@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { CommonModule } from '@angular/common';
@@ -41,6 +41,8 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   isUploadingFiles = false;
   isDeletingFileId: number | null = null;
   clearSelectedTrigger = 0;
+  /** Zone observations/fichiers en pleine hauteur uniquement sur desktop large */
+  isWideLayout = false;
   private subscriptions = new Subscription();
   private transcriptSub: Subscription | null = null;
   private transcriptionInitialText = '';
@@ -55,7 +57,13 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     private voiceRecognitionService: VoiceRecognitionService
   ) {}
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.updateLayoutMode();
+  }
+
   ngOnInit(): void {
+    this.updateLayoutMode();
     this.isTranscriptionSupported = this.voiceRecognitionService.isSupported();
 
     const sub = this.route.paramMap.subscribe((params) => {
@@ -388,6 +396,13 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       this.transcriptSub = null;
     }
     this.notificationService.show('success', 'Transcription arrêtée. Le texte a été conservé.');
+  }
+
+  private updateLayoutMode(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    this.isWideLayout = window.innerWidth > 1024;
   }
 }
 
