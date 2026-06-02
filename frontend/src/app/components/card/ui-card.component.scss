@@ -3,9 +3,9 @@
 
 :host {
   display: block;
-  padding: $spacing-16;
+  padding: $spacing-12;
   @include glass-panel;
-  border-radius: $radius-16;
+  border-radius: $radius-12;
   @include transition(background-color border-color box-shadow);
 
   &:hover {
@@ -17,7 +17,7 @@
   .card {
     display: flex;
     flex-direction: column;
-    gap: $spacing-12;
+    gap: $spacing-8;
     max-width: 100%;
     overflow: hidden;
   }
