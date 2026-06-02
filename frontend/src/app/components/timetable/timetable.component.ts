@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { UiBadgeComponent } from '../badge/ui-badge.component';
 import { AppIconComponent } from '../icon/app-icon.component';
@@ -33,8 +33,14 @@ export class TimetableComponent {
   @Input() title: string = '';
   @Input() iconName: string = 'info';
   @Input() disabled: boolean = false;
+  @Input() compact: boolean = false;
 
   @Output() actionClick = new EventEmitter<void>();
+
+  @HostBinding('class.compact')
+  get isCompact(): boolean {
+    return this.compact;
+  }
 
   onActionClick(): void {
     if (!this.disabled) {

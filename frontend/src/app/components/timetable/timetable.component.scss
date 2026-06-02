@@ -52,6 +52,15 @@
     display: flex;
     align-items: center;
     gap: $spacing-8;
+    min-width: 0;
+  }
+
+  .title {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .badge {
@@ -68,6 +77,55 @@
       opacity: 0.5;
       cursor: not-allowed;
       pointer-events: none;
+    }
+  }
+
+  &.compact {
+    gap: $spacing-8;
+
+    .time-column {
+      width: 42px;
+      gap: $spacing-2;
+    }
+
+    .card {
+      gap: $spacing-6;
+      padding: $spacing-12;
+      border-left-width: 3px;
+    }
+
+    .title-row {
+      gap: $spacing-4;
+    }
+
+    .title {
+      margin: 0;
+      font-size: $font-size-p;
+      line-height: 1.2;
+    }
+  }
+
+  @media (max-width: $breakpoint-mobile-sm) {
+    gap: $spacing-8;
+
+    .time-column {
+      width: 38px;
+      gap: $spacing-2;
+      min-height: auto;
+    }
+
+    .time-line {
+      margin-left: $spacing-2;
+    }
+
+    .card {
+      padding: $spacing-12;
+      gap: $spacing-6;
+      border-left-width: 3px;
+    }
+
+    .title-row {
+      gap: $spacing-4;
     }
   }
 }
