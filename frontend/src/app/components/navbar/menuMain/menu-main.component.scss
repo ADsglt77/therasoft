@@ -5,13 +5,13 @@
   position: relative;
   width: 100%;
   max-width: $content-max-width;
-  min-height: 72px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: $spacing-12;
   margin: 0 auto;
-  padding: $spacing-16 $spacing-24;
+  padding: $spacing-12 $spacing-16;
 
   .title {
     display: flex;
