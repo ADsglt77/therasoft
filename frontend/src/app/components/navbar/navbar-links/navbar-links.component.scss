@@ -11,8 +11,8 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
   .link {
     display: flex;
     align-items: center;
-    gap: $spacing-12;
-    padding: $spacing-8;
+    gap: $spacing-8;
+    padding: $spacing-6 $spacing-8;
     min-height: $tap-target-min;
     border-radius: $radius-8;
     text-decoration: none;
