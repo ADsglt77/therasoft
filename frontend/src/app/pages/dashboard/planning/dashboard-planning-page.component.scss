@@ -2,17 +2,65 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  @include dashboard-page;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 0 $spacing-16 $spacing-16 0;
+  box-sizing: border-box;
+  gap: $spacing-12;
+
+  app-nav-calendar {
+    flex-shrink: 0;
+  }
+
+  .calendar-shell {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
   .calendar-grid {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-8;
+    overflow: hidden;
+    @include panel($spacing-12);
+  }
+
+  .weekdays,
+  .week-row {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: $spacing-12;
-    @include panel;
+    gap: $spacing-8;
+    min-height: 0;
+  }
+
+  .weekdays {
+    flex-shrink: 0;
+  }
+
+  .week-row {
+    flex: 1 1 0;
+    min-height: 0;
+
+    app-day-card {
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
   }
 
   .week-day {
     min-width: 0;
+    align-self: center;
     text-align: center;
     color: var(--text-muted);
     font-weight: $font-weight-600;
@@ -26,33 +74,48 @@
     }
   }
 
-  // Tablette & mobile : lun–ven uniquement (pas de samedi/dimanche)
+  // Tablette & mobile : lun–ven, lignes de semaine étirées jusqu'en bas
   @media (max-width: $breakpoint-desktop) {
-    padding: unset;
-    
+    padding: $spacing-12;
+    padding-bottom: $spacing-12;
+
     .week-day {
-      &__full { display: none; }
-      &__short { display: inline; }
-    }
-
-    .calendar-grid {
-      grid-template-columns: repeat(5, 1fr);
-      gap: $spacing-8;
-      padding: $spacing-12;
-
-      // Masquer sam. (6e) et dim. (7e) de chaque ligne de 7 cellules
-      > :nth-child(7n + 6),
-      > :nth-child(7n + 7) {
+      &__full {
         display: none;
       }
+
+      &__short {
+        display: inline;
+      }
+    }
+
+    .weekdays,
+    .week-row {
+      grid-template-columns: repeat(5, 1fr);
+      gap: $spacing-6;
+    }
+
+    .weekdays .week-day:nth-child(6),
+    .weekdays .week-day:nth-child(7),
+    .week-row > app-day-card:nth-child(6),
+    .week-row > app-day-card:nth-child(7) {
+      display: none;
     }
   }
 
-  // Mobile : grille très compacte, sans débordement horizontal
   @media (max-width: $breakpoint-tablet) {
+    padding: $spacing-8;
+    padding-bottom: $spacing-8;
+    gap: $spacing-8;
+
     .calendar-grid {
-      gap: $spacing-4;
+      gap: $spacing-6;
       padding: $spacing-8;
+    }
+
+    .weekdays,
+    .week-row {
+      gap: $spacing-4;
     }
 
     .week-day {
@@ -61,4 +124,3 @@
     }
   }
 }
-

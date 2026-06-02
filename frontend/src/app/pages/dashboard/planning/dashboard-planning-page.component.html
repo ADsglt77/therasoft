@@ -1,26 +1,34 @@
-<!-- Cards
-<div class="cards">
-  @for (card of cards; track $index) {
-  <ui-card [icon]="card.icon" [title]="card.title" [description]="card.description" [points]="card.points">
-  </ui-card>
-  }
-</div>
--->
 <app-nav-calendar mode="month" [monthName]="monthName" [currentYear]="currentYear" [yearOptions]="yearOptions"
   (previous)="previousMonth()" (next)="nextMonth()" (yearChange)="onYearChange($event)">
 </app-nav-calendar>
-<div class="calendar-grid">
-  @for (dayName of weekDays; track dayName; let i = $index) {
-  <div class="week-day">
-    <span class="week-day__full">{{ dayName }}</span>
-    <span class="week-day__short">{{ weekDaysShort[i] }}</span>
+
+<div class="calendar-shell">
+  <div class="calendar-grid">
+    <div class="weekdays" role="row">
+      @for (dayName of weekDays; track dayName; let i = $index) {
+      <div class="week-day">
+        <span class="week-day__full">{{ dayName }}</span>
+        <span class="week-day__short">{{ weekDaysShort[i] }}</span>
+      </div>
+      }
+    </div>
+
+    @for (week of calendarWeeks; track $index) {
+    <div class="week-row" role="row">
+      @for (day of week; track trackByDay($index, day)) {
+      <app-day-card
+        [dayNumber]="day.dayNumber"
+        [type]="day.type"
+        [location]="day.location"
+        [rdvCount]="day.rdvCount"
+        [disabled]="day.disabled || false"
+        [isToday]="day.isToday || false"
+        [year]="day.year"
+        [month]="day.month"
+        (dayClick)="onDayClick($event)">
+      </app-day-card>
+      }
+    </div>
+    }
   </div>
-  }
-  @for (day of days; track trackByDay($index, day)) {
-  <app-day-card [dayNumber]="day.dayNumber" [type]="day.type" [location]="day.location"
-    [rdvCount]="day.rdvCount"
-    [disabled]="day.disabled || false" [isToday]="day.isToday || false" [year]="day.year" [month]="day.month"
-    (dayClick)="onDayClick($event)">
-  </app-day-card>
-  }
 </div>

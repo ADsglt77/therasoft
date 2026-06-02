@@ -182,6 +182,16 @@ export class DashboardPlanningPageComponent implements OnInit {
   /**
    * Génère la liste des jours à afficher (mis en cache)
    */
+  /** 5 semaines × 7 jours — une ligne flex par semaine pour remplir la hauteur */
+  get calendarWeeks(): DayData[][] {
+    const all = this.days;
+    const weeks: DayData[][] = [];
+    for (let i = 0; i < all.length; i += DAYS_PER_WEEK) {
+      weeks.push(all.slice(i, i + DAYS_PER_WEEK));
+    }
+    return weeks;
+  }
+
   get days(): DayData[] {
     const cacheKey = `${this.currentYear}-${this.currentMonth}`;
     
