@@ -9,10 +9,10 @@
     flex-direction: column;
     width: 100%;
     max-width: 600px;
-    padding: $spacing-32;
+    padding: $spacing-24;
     @include glass-panel;
-    border-radius: $radius-16;
-    gap: $spacing-24;
+    border-radius: $radius-12;
+    gap: $spacing-16;
     @include transition(background-color border-color);
 
     &:hover {
@@ -47,17 +47,17 @@
     .form {
       display: flex;
       flex-direction: column;
-      gap: $spacing-16;
+      gap: $spacing-12;
 
       .field-wrapper {
         display: flex;
         flex-direction: column;
-        gap: $spacing-8;
+        gap: $spacing-6;
       }
 
       .name-fields {
         display: flex;
-        gap: $spacing-16;
+        gap: $spacing-12;
 
         .field-wrapper {
           flex: 1;
