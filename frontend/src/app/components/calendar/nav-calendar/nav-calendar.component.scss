@@ -48,7 +48,8 @@
 
   @media (max-width: $breakpoint-desktop) {
     .header {
-      gap: $spacing-12;
+      min-height: 72px;
+      gap: $spacing-8;
 
       .day h4,
       .month h4 {
@@ -59,8 +60,9 @@
 
   @media (max-width: $breakpoint-tablet) {
     .header {
-      padding: $spacing-12;
-      gap: $spacing-8;
+      min-height: 64px;
+      padding: $spacing-8;
+      gap: $spacing-4;
 
       .title {
         flex: 0 0 auto;
@@ -71,7 +73,7 @@
         flex: 1 1 100%;
         order: 2;
         justify-content: space-between;
-        gap: $spacing-8;
+        gap: $spacing-4;
 
         h4 {
           flex: 1;
