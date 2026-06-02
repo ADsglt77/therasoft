@@ -160,42 +160,10 @@ export class VoiceRecognitionService {
   }
 
   /**
-   * Annule la transcription en cours
-   */
-  cancelTranscription(): void {
-    if (!this.recognition || !this.isRecognizing) {
-      return;
-    }
-
-    try {
-      this.recognition.abort();
-      this.finalTranscript = '';
-      this.isRecognizing = false;
-    } catch (error) {
-      console.error('Erreur lors de l\'annulation de la transcription:', error);
-    }
-  }
-
-  /**
-   * Vérifie si une transcription est en cours
-   */
-  isTranscribing(): boolean {
-    return this.isRecognizing;
-  }
-
-  /**
    * Retourne la transcription finale actuelle
    */
   getFinalTranscript(): string {
     return this.finalTranscript.trim();
-  }
-
-  /**
-   * Réinitialise la transcription
-   */
-  reset(): void {
-    this.finalTranscript = '';
-    this.isRecognizing = false;
   }
 }
 
