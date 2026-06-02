@@ -6,14 +6,14 @@
 
   .content {
     width: 100%;
-    @include panel($spacing-24);
+    @include panel;
   }
 
   .info-badge {
     display: inline-flex;
     align-items: center;
-    gap: $spacing-8;
-    margin-bottom: $spacing-24;
+    gap: $spacing-6;
+    margin-bottom: $spacing-12;
   }
 
   .planning-section {
@@ -32,7 +32,7 @@
     .timetable-list {
       display: flex;
       flex-direction: column;
-      gap: $spacing-12;
+      gap: $spacing-8;
       min-height: 0;
       overflow: auto;
       overflow-x: hidden;
