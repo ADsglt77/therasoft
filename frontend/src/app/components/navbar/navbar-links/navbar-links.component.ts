@@ -29,8 +29,10 @@ export class NavbarLinksComponent {
   }
 
   onClick(event: Event): void {
-    if (this.action) {
+    if (!this.route) {
       event.preventDefault();
+    }
+    if (this.action) {
       event.stopPropagation();
       this.action();
     }
