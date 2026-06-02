@@ -13,7 +13,6 @@
   /* Colors - Gray */
   --color-gray-50: rgb(250, 251, 252);
   --color-gray-100: rgb(244, 246, 248);
-  --color-gray-200: rgb(232, 236, 239);
   --color-gray-500: rgb(107, 118, 132);
   --color-gray-700: rgb(47, 53, 58);
   --color-gray-900: rgb(32, 34, 37);
@@ -114,10 +113,6 @@ html[data-theme="light"] {
 
   /* Couleur d'overlay des modales */
   --overlay-bg: rgb(0 0 0 / 55%);
-
-  /* Texte lisible sur fonds colorés (boutons pleins) */
-  --text-on-accent: var(--color-gray-50);
-  --text-on-accent-strong: var(--color-primary-900);
 }
 
 /* Élévation / overlay - Light theme */
@@ -144,7 +139,6 @@ $spacing-48: 48px;
 
 // Radius - Valeurs réduites avec plus d'écart
 $radius-4: 4px;
-$radius-6: 6px;
 $radius-8: 8px;
 $radius-12: 12px;
 $radius-16: 16px;
@@ -281,12 +275,10 @@ $duration-nav: 500ms;
 
 $ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 $ease-out: cubic-bezier(0, 0, 0.2, 1);
-$ease-in: cubic-bezier(0.4, 0, 1, 1);
 
 // ============================================
 // Z-INDEX - Échelle d'empilement
 // ============================================
-$z-base: 1;
 $z-dropdown: 100;
 $z-sticky: 200;
 $z-overlay: 1000;
