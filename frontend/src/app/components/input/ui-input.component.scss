@@ -230,7 +230,6 @@
     font-size: $font-size-h5;
     @include transition(border-color, 150ms);
     width: 100%;
-    @include focus-visible;
     outline: none;
 
     &::placeholder {
