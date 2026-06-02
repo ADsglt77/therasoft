@@ -12,9 +12,9 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: $spacing-12;
+  gap: $spacing-8;
   margin: 0 auto;
-  padding: $spacing-24;
+  padding: $spacing-12;
   @include glass-panel;
   border-radius: $radius-12;
   border: 1px solid transparent;
@@ -67,8 +67,8 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
   .links {
     display: flex;
     flex-direction: column;
-    gap: $spacing-12;
-    margin-top: $spacing-48;
+    gap: $spacing-8;
+    margin-top: $spacing-20;
     transition:
       margin-top $nav-duration $nav-ease,
       gap $nav-duration $nav-ease,
@@ -138,7 +138,7 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 
   &.collapsed {
     max-width: none;
-    padding: $spacing-16 $spacing-8;
+    padding: $spacing-12 $spacing-8;
     border-color: border-surface-color(40%);
 
     .title {
