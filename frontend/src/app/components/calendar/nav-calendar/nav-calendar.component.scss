@@ -4,18 +4,18 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: $spacing-16;
+  gap: $spacing-12;
 
   .header {
-    min-height: 80px;
+    min-height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: $spacing-16;
-    padding: $spacing-16;
+    gap: $spacing-12;
+    padding: $spacing-12;
     @include glass-panel;
-    border-radius: $radius-16;
+    border-radius: $radius-12;
     position: relative;
     z-index: $z-sticky;
 
