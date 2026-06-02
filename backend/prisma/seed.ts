@@ -2,16 +2,10 @@ import { PrismaClient, Role, Sexe, ModaliteType, Vacation, Rdv } from '@prisma/c
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import argon2 from 'argon2';
-import dotenv from 'dotenv';
-import path from 'path';
-
-const rootEnv = path.resolve(process.cwd(), '..', '.env');
-dotenv.config({ path: rootEnv });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.error('❌ DATABASE_URL manquant. Définissez-le dans le .env à la racine du projet.');
+  console.error('❌ DATABASE_URL manquant. Lancez le seed via Docker : docker compose exec backend npm run prisma:seed');
   process.exit(1);
 }
 

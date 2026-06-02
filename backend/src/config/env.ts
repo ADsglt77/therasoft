@@ -1,34 +1,20 @@
-import path from 'path';
-import dotenv from 'dotenv';
-import fs from 'fs';
 import { z } from 'zod';
 
-// Charge d'abord le .env local au dossier de travail (backend/.env éventuel),
-// puis charge le .env à la racine du repo (cas dev local sans Docker).
-dotenv.config();
-dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
-// Charger le .env à la racine du monorepo (priorité) ou celui du backend
-const rootEnv = path.resolve(process.cwd(), '..', '.env');
-const localEnv = path.resolve(process.cwd(), '.env');
-if (fs.existsSync(rootEnv)) {
-  dotenv.config({ path: rootEnv });
-} else {
-  dotenv.config({ path: localEnv });
-}
-
+/**
+ * Variables injectées par Docker Compose au runtime.
+ * Pas de chargement .env : tout passe par process.env du conteneur.
+ */
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
-  // JWT
   JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
   JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
   ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
 
-  // Frontend
-  FRONTEND_ORIGIN: z.string().default('http://localhost:4200'),
+  FRONTEND_ORIGIN: z.string().default('http://localhost'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -45,12 +31,10 @@ export const env = {
   nodeEnv: data.NODE_ENV,
   databaseUrl: data.DATABASE_URL,
 
-  // JWT
   jwtAccessSecret: data.JWT_ACCESS_SECRET,
   jwtRefreshSecret: data.JWT_REFRESH_SECRET,
   accessTokenTtlMinutes: data.ACCESS_TOKEN_TTL_MINUTES,
   refreshTokenTtlDays: data.REFRESH_TOKEN_TTL_DAYS,
 
-  // Frontend
   frontendOrigin: data.FRONTEND_ORIGIN,
 } as const;
