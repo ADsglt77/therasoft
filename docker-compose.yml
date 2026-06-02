@@ -7,12 +7,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data_therasoft_v1:/var/lib/postgresql/data
-    networks:
-      - default
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 5s
-      timeout: 5s
       retries: 10
 
   backend:
@@ -20,6 +17,7 @@ services:
       context: ./backend
       args:
         DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
+    image: therasoft-backend
     depends_on:
       db:
         condition: service_healthy
@@ -34,15 +32,11 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       NODE_ENV: ${NODE_ENV:-production}
       RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-true}
-    networks:
-      - default
 
   frontend:
     build: ./frontend
     depends_on:
       - backend
-    networks:
-      - default
 
   nginx:
     build: ./nginx
@@ -52,12 +46,19 @@ services:
       - backend
       - frontend
     restart: unless-stopped
-    networks:
-      - default
+
+  studio:
+    profiles: [studio]
+    image: therasoft-backend
+    pull_policy: never
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
+    ports:
+      - "5555:5555"
+    entrypoint: ["sh", "-c", "npx prisma studio --url \"$$DATABASE_URL\" --port 5555 --browser none"]
 
 volumes:
   postgres_data_therasoft_v1:
-
-networks:
-  default:
-    driver: bridge
