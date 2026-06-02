@@ -22,10 +22,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: $spacing-8;
-  padding: $spacing-8 $spacing-16;
+  gap: $spacing-6;
+  padding: $spacing-6 $spacing-12;
   min-height: $tap-target-min;
-  border-radius: $radius-12;
+  border-radius: $radius-8;
   font-weight: $font-weight-500;
   line-height: 1.2;
   white-space: nowrap;
