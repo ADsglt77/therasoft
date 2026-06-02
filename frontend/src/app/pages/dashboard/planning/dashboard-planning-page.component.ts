@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { CardPoint } from '../../../components/card/ui-card.component';
 import { DayCardComponent, DayType } from '../../../components/calendar/month/day-card/day-card.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { SelectOption } from '../../../components/input/ui-input.component';
@@ -36,49 +35,6 @@ const YEAR_RANGE = 5; // Années avant/après l'année actuelle
   styleUrl: './dashboard-planning-page.component.scss',
 })
 export class DashboardPlanningPageComponent implements OnInit {
-  cards: Array<{ icon?: string; title?: string; description?: string; points?: CardPoint[] }> = [
-    {
-      icon: 'calendar',
-      title: 'Aujourd\'hui',
-      description: 'Un aperçu rapide de votre journée : vacations, sites et modalités programmées.',
-      points: [
-        { icon: 'check', text: 'Vacations du jour en un coup d\'œil' },
-        { icon: 'check', text: 'Sites et modalités associées' },
-        { icon: 'check', text: 'Accès direct aux détails' }
-      ]
-    },
-    {
-      icon: 'folder',
-      title: 'Dossiers à traiter',
-      description: 'Retrouvez les dossiers patients liés à vos vacations pour vérification et annotation.',
-      points: [
-        { icon: 'check', text: 'Dossiers triés par priorité' },
-        { icon: 'check', text: 'Accès aux examens et historiques' },
-        { icon: 'check', text: 'Création d\'annotations rapide' }
-      ]
-    },
-    {
-      icon: 'message-circle',
-      title: 'Messages',
-      description: 'Échangez avec vos collègues sans quitter le portail pour aller plus vite au quotidien.',
-      points: [
-        { icon: 'check', text: 'Conversations par équipe' },
-        { icon: 'check', text: 'Messages courts et efficaces' },
-        { icon: 'check', text: 'Centralisation des échanges' }
-      ]
-    },
-    {
-      icon: 'bell',
-      title: 'Notifications',
-      description: 'Restez informé des changements et rappels importants liés à votre activité.',
-      points: [
-        { icon: 'check', text: 'Alertes de planning' },
-        { icon: 'check', text: 'Rappels et actions attendues' },
-        { icon: 'check', text: 'Suivi des nouveautés' }
-      ]
-    }
-  ];
-
   // Constantes publiques
   readonly weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] as const;
   // Libellés courts affichés sur tablette / mobile pour éviter le débordement de la grille
@@ -360,8 +316,9 @@ export class DashboardPlanningPageComponent implements OnInit {
     this.currentDate = new Date(this.currentYear, this.currentMonth, 1);
     this._cachedDays = null; // Invalider le cache
     this._cachedMonthName = null; // Invalider le cache du nom du mois
-    // Recharger les vacations pour le nouveau mois
+    // Recharger les vacations et les RDV pour le nouveau mois
     this.loadVacations();
+    this.loadRdvsForMonth();
     this.cdr.markForCheck();
   }
 
