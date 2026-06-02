@@ -99,18 +99,6 @@ export class PlanningService extends ApiClientService {
   }
 
   /**
-   * Récupère les rendez-vous pour une date spécifique
-   */
-  getRdvsForDate(date: Date): Observable<RdvsResponse> {
-    const dateStr = this.formatDate(date);
-    
-    let params = new HttpParams();
-    params = params.set('startDate', dateStr).set('endDate', dateStr);
-
-    return this.http.get<RdvsResponse>(`${this.baseUrl}/planning/rdvs`, { params });
-  }
-
-  /**
    * Récupère les rendez-vous du médecin connecté pour une date spécifique
    */
   getMyRdvsForDate(date: Date): Observable<RdvsResponse> {
