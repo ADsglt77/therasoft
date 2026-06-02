@@ -34,9 +34,10 @@
   </div>
 </div>
 
-<!-- Mobile : mêmes liens que la sidebar, en barre fixe en bas -->
+<!-- Mobile / tablette : barre fixe en bas (sidebar masquée) -->
 <nav class="nav-bottom" aria-label="Navigation principale">
   <app-navbar-links icon="globe" text="Site" route="/site" [exact]="true"></app-navbar-links>
   <app-navbar-links icon="calendar" text="Calendrier" route="/calendar"></app-navbar-links>
   <app-navbar-links icon="settings" text="Paramètres" route="/settings" [exact]="true"></app-navbar-links>
+  <app-navbar-links icon="logout" text="Déconnexion" (click)="onLogout()"></app-navbar-links>
 </nav>
