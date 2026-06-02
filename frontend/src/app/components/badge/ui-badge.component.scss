@@ -2,17 +2,20 @@
 @use '../../../styles/mixins' as *;
 
 :host {
+  box-sizing: border-box;
   width: fit-content;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: $spacing-4 $spacing-12;
-  border-radius: $radius-16;
-  letter-spacing: 0.4px;
+  padding: $spacing-4 $spacing-8;
+  border-radius: $radius-12;
+  letter-spacing: 0.2px;
+  font-size: $font-size-span;
+  line-height: 1.2;
   white-space: nowrap;
   @include glass-panel;
   @include transition();
-  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
 
