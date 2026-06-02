@@ -6,13 +6,13 @@
 
   .notification-container {
     position: fixed;
-    bottom: $spacing-16;
-    right: $spacing-16;
+    bottom: $spacing-12;
+    right: $spacing-12;
     left: auto;
     z-index: $z-notification;
     display: flex;
     flex-direction: column;
-    gap: $spacing-12;
+    gap: $spacing-8;
     width: max-content;
     max-width: min(400px, calc(100vw - #{$spacing-16 * 2}));
     pointer-events: none;
@@ -23,8 +23,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: space-between;
-      padding: $spacing-12 $spacing-16;
-      gap: $spacing-24;
+      padding: $spacing-8 $spacing-12;
+      gap: $spacing-16;
       border-radius: $radius-8;
       letter-spacing: 0.4px;
       white-space: nowrap;
