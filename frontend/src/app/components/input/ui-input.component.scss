@@ -68,7 +68,7 @@
       left: 0;
       right: 0;
       z-index: 1000;
-      @include glass-panel(40%, var(--glass-border-alpha), var(--glass-blur));
+      @include glass-panel(80%, var(--glass-border-alpha), var(--glass-blur));
       border-radius: $radius-8;
       padding: $spacing-4;
       max-height: 200px;
