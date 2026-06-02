@@ -75,27 +75,27 @@
 // ============================================
 
 // Layout standard d'une page du dashboard
-@mixin dashboard-page($gap: $spacing-16) {
+@mixin dashboard-page($gap: $spacing-12) {
   display: flex;
   flex-direction: column;
   gap: $gap;
-  height: calc(100vh - $spacing-16);
-  padding: 0 $spacing-16 $spacing-16 0;
+  height: calc(100vh - $spacing-12);
+  padding: 0 $spacing-12 $spacing-12 0;
   overflow: auto;
 
   @media (max-width: $breakpoint-tablet) {
     height: auto;
     min-height: 0;
-    padding: $spacing-12;
-    padding-bottom: $spacing-16;
+    padding: $spacing-8;
+    padding-bottom: $spacing-12;
   }
 }
 
 // Panneau de contenu (grilles calendrier, sections) - surface translucide
-@mixin panel($padding: $spacing-16) {
+@mixin panel($padding: $spacing-12) {
   @include surface(5%);
   border: 1px solid border-surface-color(10%);
-  border-radius: $radius-16;
+  border-radius: $radius-12;
   padding: $padding;
 }
 
@@ -121,7 +121,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: $spacing-16;
+  gap: $spacing-12;
   text-align: center;
   max-width: 540px;
 }
@@ -129,8 +129,8 @@
 // Grille de cartes responsive
 @mixin cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: $spacing-24;
+  grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+  gap: $spacing-12;
   width: 100%;
 }
 
