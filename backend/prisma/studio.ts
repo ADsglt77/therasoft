@@ -1,11 +1,33 @@
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
+import dotenv from 'dotenv';
+import path from 'path';
 
-const dbUrl = 'postgresql://postgres:postgres@db:5432/portail_medecin?schema=public';
+// .env racine du monorepo, puis backend/.env en secours
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
-console.log('📊 Prisma Studio: http://localhost:5555\n');
+const dbUrl =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:postgres@localhost:5432/portail_medecin?schema=public';
 
-execSync(`HOST=0.0.0.0 npx prisma studio --url "${dbUrl}" --port 5555 --browser none`, {
+const port = process.env.PRISMA_STUDIO_PORT || '5555';
+const backendRoot = path.resolve(__dirname, '..');
+
+console.log(`📊 Prisma Studio: http://localhost:${port}\n`);
+
+const result = spawnSync(`npx prisma studio --port ${port} --browser none`, {
   stdio: 'inherit',
-  shell: '/bin/sh',
+  cwd: backendRoot,
+  shell: true,
+  env: {
+    ...process.env,
+    DATABASE_URL: dbUrl,
+  },
 });
 
+if (result.error) {
+  console.error(result.error.message);
+  process.exit(1);
+}
+
+process.exit(result.status ?? 0);
