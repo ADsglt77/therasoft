@@ -2,13 +2,13 @@
 @use '../../../../styles/mixins' as *;
 
 :host {
-  @include dashboard-page($spacing-24);
+  @include dashboard-page;
 
   .loading {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: $spacing-48;
+    padding: $spacing-24;
     color: var(--text-muted);
     font-style: italic;
   }
@@ -16,12 +16,12 @@
   form {
     display: flex;
     flex-direction: column;
-    gap: $spacing-16;
+    gap: $spacing-12;
 
     .profile-fields-container {
       display: flex;
       flex-direction: row;
-      gap: $spacing-24;
+      gap: $spacing-12;
     }
 
     .container-inputs {
