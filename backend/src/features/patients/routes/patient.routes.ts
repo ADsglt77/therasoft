@@ -93,21 +93,6 @@ router.post(
   }
 );
 
-router.get(
-  '/:patientId/rdv/:rdvId/dossier/files',
-  verifyAccessToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const medecinId = requireAuth(req);
-      const { patientId, rdvId } = parsePatientRdvParams(req);
-      const files = await dossierFileService.listFiles(patientId, rdvId, medecinId);
-      res.json(files);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
 router.delete(
   '/:patientId/rdv/:rdvId/dossier/files/:fileId',
   verifyAccessToken,

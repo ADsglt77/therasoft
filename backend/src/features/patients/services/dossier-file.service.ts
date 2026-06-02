@@ -75,22 +75,6 @@ class DossierFileService {
     return created.map(toFileResponse);
   }
 
-  async listFiles(
-    patientId: number,
-    rdvId: number,
-    medecinId: number
-  ): Promise<DossierFileResponse[]> {
-    await this.verifyRdvOwnership(rdvId, medecinId);
-    const dossierId = await this.getDossierId(patientId, rdvId);
-
-    const files = await prisma.dossierFile.findMany({
-      where: { dossierId },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return files.map(toFileResponse);
-  }
-
   async deleteFile(
     patientId: number,
     rdvId: number,
