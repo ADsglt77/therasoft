@@ -1,7 +1,0 @@
-# Copier en docker-compose.override.yml pour exposer nginx sur le port 80 en dev local.
-# Ce fichier est ignoré par git pour ne pas être déployé en prod.
-# Commande : cp docker-compose.override.example.yml docker-compose.override.yml
-services:
-  nginx:
-    ports:
-      - "80:80"

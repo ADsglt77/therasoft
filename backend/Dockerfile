@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat postgresql-client
 
 # Valeur par défaut uniquement pour la phase de build (prisma generate).
-# En runtime, DATABASE_URL est fournie par docker-compose / Dokploy.
+# En runtime, DATABASE_URL est fournie par docker-compose.
 ARG DATABASE_URL=postgresql://postgres:postgres@db:5432/portail_medecin?schema=public
 ENV DATABASE_URL=${DATABASE_URL}
 
