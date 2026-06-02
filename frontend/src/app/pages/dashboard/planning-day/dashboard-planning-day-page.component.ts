@@ -31,6 +31,10 @@ interface TimetableSlot {
   disabled: boolean;
 }
 
+type TimelineItem =
+  | { kind: 'slot'; id: string; slot: TimetableSlot }
+  | { kind: 'gap'; id: string; from: string; to: string; heightPx: number };
+
 /**
  * Page Planning Day Dashboard
  * Affiche le planning pour un jour spécifique
@@ -51,6 +55,8 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   vacationSite: string | null = null;
   isLoadingRdvs = false;
   private subscriptions = new Subscription();
+  private readonly timelinePxPerMinute = 0.45;
+  private readonly timelineMinGapPx = 16;
 
   constructor(
     private route: ActivatedRoute,
@@ -143,6 +149,41 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  get timelineItems(): TimelineItem[] {
+    const sorted = [...this.timetableSlots].sort(
+      (a, b) => this.parseHoursToMinutes(a.startTime) - this.parseHoursToMinutes(b.startTime)
+    );
+
+    const items: TimelineItem[] = [];
+    let previousEnd: number | null = null;
+
+    for (const slot of sorted) {
+      const startMin = this.parseHoursToMinutes(slot.startTime);
+      const endMin = this.parseHoursToMinutes(slot.endTime);
+
+      if (previousEnd !== null && startMin > previousEnd) {
+        const gapMinutes = startMin - previousEnd;
+        items.push({
+          kind: 'gap',
+          id: `gap_${previousEnd}_${startMin}`,
+          from: this.minutesToLabel(previousEnd),
+          to: this.minutesToLabel(startMin),
+          heightPx: Math.max(this.timelineMinGapPx, Math.round(gapMinutes * this.timelinePxPerMinute)),
+        });
+      }
+
+      items.push({
+        kind: 'slot',
+        id: slot.id,
+        slot,
+      });
+
+      previousEnd = Math.max(previousEnd ?? endMin, endMin);
+    }
+
+    return items;
+  }
+
   goBack(): void {
     this.router.navigate(['/calendar']);
   }
@@ -204,6 +245,18 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   get dayNumber(): number {
     if (!this.date) return 0;
     return this.date.getDate();
+  }
+
+  private parseHoursToMinutes(time: string): number {
+    const match = time.match(/^(\d{2})h(\d{2})$/);
+    if (!match) return 0;
+    return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+  }
+
+  private minutesToLabel(totalMinutes: number): string {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${String(h).padStart(2, '0')}h${String(m).padStart(2, '0')}`;
   }
 
   previousDay(): void {

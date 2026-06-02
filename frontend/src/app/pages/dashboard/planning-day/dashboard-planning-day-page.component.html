@@ -26,11 +26,17 @@
     <p class="placeholder">Aucun rendez-vous programmé pour ce jour</p>
     } @else {
     <div class="timetable-list">
-      @for (slot of timetableSlots; track slot.id) {
-      <app-timetable [startTime]="slot.startTime" [endTime]="slot.endTime" [title]="slot.title"
-        [iconName]="slot.iconName"
-        [disabled]="slot.disabled" (actionClick)="onTimetableActionClick(slot.id)">
+      @for (item of timelineItems; track item.id) {
+      @if (item.kind === 'gap') {
+      <div class="time-gap" [style.height.px]="item.heightPx" role="separator" aria-label="Pause">
+        <span class="time-gap__range">{{ item.from }} - {{ item.to }}</span>
+      </div>
+      } @else {
+      <app-timetable [startTime]="item.slot.startTime" [endTime]="item.slot.endTime" [title]="item.slot.title"
+        [iconName]="item.slot.iconName"
+        [disabled]="item.slot.disabled" [compact]="true" (actionClick)="onTimetableActionClick(item.slot.id)">
       </app-timetable>
+      }
       }
     </div>
     }
