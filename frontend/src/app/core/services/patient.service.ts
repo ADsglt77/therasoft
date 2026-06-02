@@ -72,12 +72,6 @@ export class PatientService extends ApiClientService {
     );
   }
 
-  getDossierFiles(patientId: number, rdvId: number): Observable<DossierFile[]> {
-    return this.http.get<DossierFile[]>(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files`
-    );
-  }
-
   deleteDossierFile(patientId: number, rdvId: number, fileId: number): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files/${fileId}`
