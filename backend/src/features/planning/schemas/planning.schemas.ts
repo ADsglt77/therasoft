@@ -16,14 +16,10 @@ export const getPlanningQuerySchema = z.object({
   endDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
 });
 
-export type GetPlanningQuery = z.infer<typeof getPlanningQuerySchema>;
-
 /**
  * Schéma de validation pour le paramètre date de GET /api/planning/rdvs/me
  */
 export const getRdvsMeQuerySchema = z.object({
   date: dateStringToLocal,
 });
-
-export type GetRdvsMeQuery = z.infer<typeof getRdvsMeQuerySchema>;
 

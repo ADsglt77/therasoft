@@ -63,44 +63,6 @@ export class RdvService {
   }
 
   /**
-   * Récupère les rendez-vous pour une date spécifique
-   */
-  async getRdvsByDate(date: Date): Promise<RdvResponse[]> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    return prisma.rdv.findMany({
-      where: {
-        date: {
-          gte: startOfDay,
-          lt: endOfDay,
-        },
-      },
-      select: {
-        id: true,
-        date: true,
-        heureDebut: true,
-        heureFin: true,
-        modalite: true,
-        typeIcon: true,
-        typeDescription: true,
-        patient: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-          },
-        },
-      },
-      orderBy: {
-        heureDebut: 'asc',
-      },
-    });
-  }
-
-  /**
    * Récupère les rendez-vous d'un médecin pour une date spécifique
    * Les rendez-vous sont liés au médecin via Modalite -> Vacation -> Medecin
    */
