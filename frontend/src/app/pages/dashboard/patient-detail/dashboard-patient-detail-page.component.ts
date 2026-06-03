@@ -206,6 +206,17 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.saveObservations();
   }
 
+  /** Une seule date affichée : modification si le dossier a changé, sinon création */
+  get dossierTimestamp(): { label: string; date: string } | null {
+    if (!this.dossier) return null;
+    const created = new Date(this.dossier.createdAt).getTime();
+    const updated = new Date(this.dossier.updatedAt).getTime();
+    if (updated > created + 1000) {
+      return { label: 'Modifié le', date: this.dossier.updatedAt };
+    }
+    return { label: 'Créé le', date: this.dossier.createdAt };
+  }
+
   formatDate = formatDateLong;
   formatTime = formatTimeUtil;
   getAge = calculateAge;

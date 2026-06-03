@@ -83,8 +83,7 @@
       justify-content: space-between;
       gap: $spacing-12 $spacing-24;
 
-      .created-at,
-      .updated-at {
+      .dossier-timestamp {
         display: flex;
         flex-direction: column;
         gap: $spacing-4;

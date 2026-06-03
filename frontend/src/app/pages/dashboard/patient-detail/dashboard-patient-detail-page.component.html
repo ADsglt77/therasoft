@@ -146,14 +146,12 @@
 <!-- Métadonnées -->
 <div class="info-data">
   <section>
-    <div class="created-at">
-      <p>Créé le</p>
-      <p>{{ formatDate(dossier.createdAt) }}</p>
-    </div>
-    <div class="updated-at">
-      <p>Modifié le</p>
-      <p>{{ formatDate(dossier.updatedAt) }}</p>
-    </div>
+    @if (dossierTimestamp; as ts) {
+      <div class="dossier-timestamp">
+        <p>{{ ts.label }}</p>
+        <p>{{ formatDate(ts.date) }}</p>
+      </div>
+    }
   </section>
 </div>
 
