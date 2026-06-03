@@ -7,6 +7,7 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 
 :host {
   display: block;
+  min-width: 0;
 
   .link {
     display: flex;
