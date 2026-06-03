@@ -2,27 +2,26 @@
 
 Planning + dossiers patients · Angular · Express · PostgreSQL · **Docker only**
 
-## Lancer
+## Lancer (local)
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-→ http://localhost
+→ http://localhost (`docker-compose.override.yml` expose le port 80 en local uniquement)
 
 ## Déploiement Dokploy
 
-Si le déploiement échoue avec `Bind for 0.0.0.0:80 failed: port is already allocated`, le port 80 est déjà utilisé (proxy Dokploy, ancien stack, etc.).
+Dokploy n’utilise que `docker-compose.yml` (sans port 80 sur l’hôte) — **ne pas** ajouter de second fichier compose sauf besoin particulier.
 
-**Solution recommandée** — ajouter le fichier compose Dokploy (pas de port publié sur l'hôte) :
+Dans Dokploy :
 
-- Fichiers compose : `docker-compose.yml` + `docker-compose.dokploy.yml`
-- Dans Dokploy, domaine → service **nginx**, port **80** (réseau interne Docker)
+1. **Compose file** : `docker-compose.yml` seulement
+2. **Domaine** → service **nginx**, port conteneur **80**
+3. Variables : `RESET_DB_ON_SEED=false`, `FRONTEND_ORIGIN=https://ton-domaine.fr`, JWT ≥ 32 caractères
 
-Variables prod importantes : `RESET_DB_ON_SEED=false`, `FRONTEND_ORIGIN=https://ton-domaine.fr`, secrets JWT ≥ 32 caractères.
-
-**Alternative** — libérer le port 80 sur le serveur ou changer `HTTP_PORT` (ex. `8080`) si tu n'utilises pas le proxy Dokploy.
+Si l’erreur `port is already allocated` revient, un autre service occupe encore le port 80 sur le serveur (ancien déploiement) — le retirer dans Dokploy ou arrêter l’ancien conteneur.
 
 ## Connexion
 
