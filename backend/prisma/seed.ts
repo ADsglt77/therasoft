@@ -180,16 +180,6 @@ function buildWeekSchedule(
 }
 
 // Source unique de vérité pour le type de RDV (icône Lucide + libellé)
-const RDV_TYPE_META: Record<ModaliteType, { typeIcon: string; typeDescription: string }> = {
-  [ModaliteType.XRAY]: { typeIcon: 'image', typeDescription: 'Radiographie' },
-  [ModaliteType.CT]: { typeIcon: 'file-text', typeDescription: 'Scanner (CT)' },
-  [ModaliteType.MRI]: { typeIcon: 'clipboard-check', typeDescription: 'IRM' },
-  [ModaliteType.US]: { typeIcon: 'mic', typeDescription: 'Échographie (US)' },
-  [ModaliteType.MAMMO]: { typeIcon: 'heart', typeDescription: 'Mammographie' },
-  [ModaliteType.PET]: { typeIcon: 'sparkles', typeDescription: 'TEP (PET)' },
-  [ModaliteType.OTHER]: { typeIcon: 'info', typeDescription: 'Autre' },
-};
-
 async function main() {
   await waitForDatabase();
 
@@ -208,7 +198,7 @@ async function main() {
     console.log('🧹 Nettoyage de la base de données...');
     await prisma.dossierFile.deleteMany();
     await prisma.dossier.deleteMany();
-    await prisma.modalite.deleteMany();
+    await prisma.rdvVacation.deleteMany();
     await prisma.rdv.deleteMany();
     await prisma.vacation.deleteMany();
     await prisma.patient.deleteMany();
@@ -225,12 +215,12 @@ async function main() {
 
   const medecin1 = await prisma.medecin.create({
     data: {
-      nom: 'Admin',
-      prenom: 'Admin',
+      nom: 'Secrétariat',
+      prenom: 'Demo',
       specialite: '',
-      email: 'admin@admin.admin',
+      email: 'secretaire@demo.demo',
       passwordHash,
-      role: Role.ADMIN,
+      role: Role.SECRETAIRE,
       isActive: true,
     },
   });
@@ -458,8 +448,6 @@ async function main() {
           heureDebut,
           heureFin,
           modalite: modalite,
-          typeIcon: RDV_TYPE_META[modalite].typeIcon,
-          typeDescription: RDV_TYPE_META[modalite].typeDescription,
           patientId: patient.id,
         },
       });
@@ -473,7 +461,7 @@ async function main() {
   }
   console.log(`✅ ${rdvs.length} rendez-vous créés\n`);
 
-  console.log('🔗 Création des liens Modalite (liaison rdv <-> vacation)...');
+  console.log('🔗 Création des liaisons RDV ↔ vacation (même modalité / machine)...');
   let modaliteCount = 0;
   
   // Grouper les vacations par date et modalité pour optimisation
@@ -506,7 +494,7 @@ async function main() {
         const vacation = nearbyVacations[Math.floor(Math.random() * nearbyVacations.length)];
         
         try {
-          await prisma.modalite.create({
+          await prisma.rdvVacation.create({
             data: {
               rdvId: rdv.id,
               vacationId: vacation.id,
@@ -523,7 +511,7 @@ async function main() {
       console.log(`   Progression: ${modaliteCount} liens créés...`);
     }
   }
-  console.log(`✅ ${modaliteCount} liens Modalite créés\n`);
+  console.log(`✅ ${modaliteCount} liaisons RDV-vacation créées\n`);
 
   console.log('📁 Création des dossiers médicaux pour chaque RDV...');
   let dossierCount = 0;
@@ -566,73 +554,15 @@ async function main() {
     ],
   };
 
-  const resultatsTemplates: Record<ModaliteType, string[]> = {
-    [ModaliteType.XRAY]: [
-      'Pas d\'anomalie osseuse ou articulaire décelée. Structures anatomiques normales.',
-      'Opacités pulmonaires discrètes sans signe de complication.',
-      'Alignement osseux correct. Pas de signe de fracture ou de lésion.',
-    ],
-    [ModaliteType.CT]: [
-      'Pas de lésion focale décelée. Structures anatomiques normales.',
-      'Contraste normal des structures vasculaires. Pas d\'anomalie de rehaussement.',
-      'Pas de collection ou d\'épanchement anormal.',
-    ],
-    [ModaliteType.MRI]: [
-      'Signal normal des structures anatomiques. Pas de lésion focale décelée.',
-      'Pas d\'anomalie de signal ou de rehaussement pathologique.',
-      'Structures anatomiques normales sans signe de pathologie.',
-    ],
-    [ModaliteType.US]: [
-      'Échogénicité normale des structures examinées.',
-      'Flux vasculaires normaux sans signe de sténose ou de thrombose.',
-      'Pas d\'anomalie morphologique ou structurelle décelée.',
-    ],
-    [ModaliteType.MAMMO]: [
-      'Pas d\'opacité suspecte décelée. Densité mammaire normale.',
-      'Pas de microcalcifications suspectes. Examen normal.',
-      'Structures mammaires normales sans signe de pathologie.',
-    ],
-    [ModaliteType.PET]: [
-      'Métabolisme normal sans hyperfixation pathologique.',
-      'Pas de lésion hypermétabolique décelée.',
-      'Distribution normale du traceur sans anomalie focale.',
-    ],
-    [ModaliteType.OTHER]: [
-      'Examen normal sans anomalie décelée.',
-      'Résultats dans les limites de la normale.',
-    ],
-  };
-
-  const documentsTemplates = [
-    'images/rdv_{rdvId}/image_001.dcm',
-    'images/rdv_{rdvId}/image_002.dcm',
-    'images/rdv_{rdvId}/series_001/',
-    'reports/rdv_{rdvId}/rapport_medical.pdf',
-  ];
-
   for (const rdv of rdvs) {
-    // Sélectionner aléatoirement une observation et un résultat selon la modalité
     const observationsList = observationsTemplates[rdv.modalite] || observationsTemplates[ModaliteType.OTHER];
-    const resultatsList = resultatsTemplates[rdv.modalite] || resultatsTemplates[ModaliteType.OTHER];
-    
     const observation = observationsList[Math.floor(Math.random() * observationsList.length)];
-    const resultat = resultatsList[Math.floor(Math.random() * resultatsList.length)];
-    
-    // Générer 1-3 documents aléatoirement
-    const numDocuments = Math.floor(Math.random() * 3) + 1;
-    const documents = Array.from({ length: numDocuments }, () => {
-      const template = documentsTemplates[Math.floor(Math.random() * documentsTemplates.length)];
-      return template.replace('{rdvId}', rdv.id.toString());
-    }).join(', ');
 
     try {
       await prisma.dossier.create({
         data: {
-          patientId: rdv.patientId,
           rdvId: rdv.id,
           observations: observation,
-          resultats: resultat,
-          documents: documents,
         },
       });
       dossierCount++;
@@ -648,13 +578,16 @@ async function main() {
 
   console.log('✨ Seed terminé avec succès !\n');
   console.log('📊 Résumé:');
-  console.log(`   - ${3} médecins (1 admin, 2 médecins actifs)`);
+  console.log(`   - ${3} comptes (1 secrétaire, 2 médecins actifs)`);
   console.log(`   - ${createdPatients.length} patients`);
   console.log(`   - ${vacations.length} vacations (année 2026 complète)`);
   console.log(`   - ${rdvs.length} rendez-vous`);
-  console.log(`   - ${modaliteCount} liens Modalite (${Math.round(modaliteCount / rdvs.length * 100)}% des rdv liés)`);
+  console.log(`   - ${modaliteCount} liaisons RDV-vacation (${Math.round(modaliteCount / rdvs.length * 100)}% des rdv liés)`);
   console.log(`   - ${dossierCount} dossiers médicaux (${Math.round(dossierCount / rdvs.length * 100)}% des rdv avec dossier)\n`);
   console.log('🔑 Identifiants:');
+  console.log('   Secrétaire:');
+  console.log('     Email: secretaire@demo.demo');
+  console.log('     Password: Azertyuiop1!');
   console.log('   Médecin 1:');
   console.log('     Email: user@user.user');
   console.log('     Password: Azertyuiop1!');
