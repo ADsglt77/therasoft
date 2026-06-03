@@ -1,17 +1,37 @@
 import { createApp } from './app';
 import { env } from './config/env';
+import { logger } from './lib/logger';
+import { prisma, pool } from './lib/prisma';
 
 const app = createApp();
 
 const server = app.listen(env.port, () => {
-  console.log(`🚀 Server running on port ${env.port}`);
-  console.log(`📡 Health check: http://localhost:${env.port}/api/health`);
+  logger.info({ port: env.port }, 'Server started');
 });
 
-// Gestion gracieuse de l'arrêt
+async function shutdown(signal: string): Promise<void> {
+  logger.info({ signal }, 'Shutdown signal received');
+
+  await new Promise<void>((resolve, reject) => {
+    server.close((err) => (err ? reject(err) : resolve()));
+  });
+
+  await prisma.$disconnect();
+  await pool.end();
+  logger.info('HTTP server and database connections closed');
+  process.exit(0);
+}
+
 process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
+  shutdown('SIGTERM').catch((err) => {
+    logger.error({ err }, 'Shutdown failed');
+    process.exit(1);
+  });
+});
+
+process.on('SIGINT', () => {
+  shutdown('SIGINT').catch((err) => {
+    logger.error({ err }, 'Shutdown failed');
+    process.exit(1);
   });
 });

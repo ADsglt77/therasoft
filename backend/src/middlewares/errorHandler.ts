@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../lib/logger';
 
 /**
  * Classe d'erreur API
@@ -31,7 +32,7 @@ export const errorHandler = (
   const requestId = req.headers['x-request-id'] as string || 'unknown';
 
   if (err instanceof ApiError) {
-    console.error(`[${requestId}] ApiError ${err.statusCode} ${err.code}: ${err.message}`);
+    logger.warn({ requestId, code: err.code, statusCode: err.statusCode }, err.message);
 
     res.status(err.statusCode).json({
       error: {
@@ -45,7 +46,7 @@ export const errorHandler = (
   }
 
   // Unexpected errors — log stack but don't expose internals
-  console.error(`[${requestId}] Unhandled error:`, err);
+  logger.error({ requestId, err }, 'Unhandled error');
 
   res.status(500).json({
     error: {
