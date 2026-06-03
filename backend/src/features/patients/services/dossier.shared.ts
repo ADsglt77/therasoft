@@ -3,12 +3,24 @@ import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 
 /**
- * Vérifie que le RDV est lié au médecin connecté via Modalite → Vacation → medecinId.
- * Lève une 403 si le médecin n'est pas propriétaire du RDV.
- * Helper partagé par patient.service et dossier-file.service.
+ * Vérifie que le RDV appartient au patient indiqué dans l'URL.
+ */
+export async function assertPatientOwnsRdv(patientId: number, rdvId: number): Promise<void> {
+  const rdv = await prisma.rdv.findUnique({
+    where: { id: rdvId },
+    select: { patientId: true },
+  });
+
+  if (!rdv || rdv.patientId !== patientId) {
+    throw new ApiError('Rendez-vous non trouvé pour ce patient', 'NOT_FOUND', 404);
+  }
+}
+
+/**
+ * Vérifie que le RDV est planifiable par le médecin (liaison RDV ↔ vacation même modalité).
  */
 export async function verifyRdvOwnership(rdvId: number, medecinId: number): Promise<void> {
-  const link = await prisma.modalite.findFirst({
+  const link = await prisma.rdvVacation.findFirst({
     where: { rdvId, vacation: { medecinId } },
   });
 
@@ -17,14 +29,9 @@ export async function verifyRdvOwnership(rdvId: number, medecinId: number): Prom
   }
 }
 
-/**
- * Sélection Prisma commune pour la lecture d'un dossier (lecture et mise à jour).
- */
 export const dossierSelect = {
   id: true,
   observations: true,
-  resultats: true,
-  documents: true,
   createdAt: true,
   updatedAt: true,
   files: {
@@ -38,10 +45,16 @@ export const dossierSelect = {
     },
     orderBy: { createdAt: 'desc' as const },
   },
-  patient: {
-    select: { id: true, nom: true, prenom: true, dateNaissance: true, sexe: true },
-  },
   rdv: {
-    select: { id: true, date: true, heureDebut: true, heureFin: true, modalite: true },
+    select: {
+      id: true,
+      date: true,
+      heureDebut: true,
+      heureFin: true,
+      modalite: true,
+      patient: {
+        select: { id: true, nom: true, prenom: true, dateNaissance: true, sexe: true },
+      },
+    },
   },
 } satisfies Prisma.DossierSelect;

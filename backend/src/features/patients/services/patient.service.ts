@@ -1,6 +1,11 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
-import { verifyRdvOwnership, dossierSelect } from './dossier.shared';
+import {
+  assertPatientOwnsRdv,
+  verifyRdvOwnership,
+  dossierSelect,
+} from './dossier.shared';
 
 export interface DossierFileInfo {
   id: number;
@@ -14,8 +19,6 @@ export interface DossierFileInfo {
 export interface DossierResponse {
   id: number;
   observations: string | null;
-  resultats: string | null;
-  documents: string | null;
   createdAt: Date;
   updatedAt: Date;
   files: DossierFileInfo[];
@@ -35,25 +38,37 @@ export interface DossierResponse {
   };
 }
 
+type DossierRow = Prisma.DossierGetPayload<{ select: typeof dossierSelect }>;
+
+function mapDossier(dossier: DossierRow): DossierResponse {
+  const { rdv, ...rest } = dossier;
+  return {
+    ...rest,
+    patient: rdv.patient,
+    rdv: {
+      id: rdv.id,
+      date: rdv.date,
+      heureDebut: rdv.heureDebut,
+      heureFin: rdv.heureFin,
+      modalite: rdv.modalite,
+    },
+  };
+}
+
 /**
  * Service de gestion des patients et dossiers
  */
 export class PatientService {
-  /**
-   * Récupère le dossier médical d'un patient pour un RDV spécifique
-   * La contrainte unique patientId_rdvId garantit que le RDV appartient au patient
-   */
   async getDossierByPatientAndRdv(
     patientId: number,
     rdvId: number,
     medecinId: number
   ): Promise<DossierResponse> {
+    await assertPatientOwnsRdv(patientId, rdvId);
     await verifyRdvOwnership(rdvId, medecinId);
 
     const dossier = await prisma.dossier.findUnique({
-      where: {
-        patientId_rdvId: { patientId, rdvId },
-      },
+      where: { rdvId },
       select: dossierSelect,
     });
 
@@ -61,27 +76,20 @@ export class PatientService {
       throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
     }
 
-    return dossier;
+    return mapDossier(dossier);
   }
 
-  /**
-   * Met à jour les observations médicales d'un dossier
-   */
   async updateObservations(
     patientId: number,
     rdvId: number,
     observations: string | null,
     medecinId: number
   ): Promise<DossierResponse> {
+    await assertPatientOwnsRdv(patientId, rdvId);
     await verifyRdvOwnership(rdvId, medecinId);
 
     const existingDossier = await prisma.dossier.findUnique({
-      where: {
-        patientId_rdvId: {
-          patientId,
-          rdvId,
-        },
-      },
+      where: { rdvId },
     });
 
     if (!existingDossier) {
@@ -98,7 +106,7 @@ export class PatientService {
       select: dossierSelect,
     });
 
-    return updatedDossier;
+    return mapDossier(updatedDossier);
   }
 }
 

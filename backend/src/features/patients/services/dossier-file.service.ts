@@ -3,7 +3,7 @@ import fs from 'fs';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { UPLOADS_ROOT } from '../../../middlewares/upload';
-import { verifyRdvOwnership } from './dossier.shared';
+import { assertPatientOwnsRdv, verifyRdvOwnership } from './dossier.shared';
 
 export interface DossierFileResponse {
   id: number;
@@ -35,8 +35,9 @@ function toFileResponse(
 
 class DossierFileService {
   private async getDossierId(patientId: number, rdvId: number): Promise<number> {
+    await assertPatientOwnsRdv(patientId, rdvId);
     const dossier = await prisma.dossier.findUnique({
-      where: { patientId_rdvId: { patientId, rdvId } },
+      where: { rdvId },
       select: { id: true },
     });
     if (!dossier) {
