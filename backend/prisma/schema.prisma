@@ -193,6 +193,24 @@ model DossierFile {
   @@map("dossier_file")
 }
 
+// Journal d'accès aux données médicales (traçabilité RGPD)
+// Enregistre les consultations et modifications de dossiers / fichiers patients.
+model AuditLog {
+  id Int @id @default(autoincrement())
+
+  medecinId  Int    @map("id_medecin")
+  action     String
+  resource   String
+  resourceId String? @map("resource_id")
+  ip         String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([medecinId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
 // Sessions pour refresh token (recommandé)
 // - Simple: access token JWT court + refresh token en cookie httpOnly
 // - Stocker UNIQUEMENT un hash du refresh token

@@ -193,18 +193,32 @@ const RDV_TYPE_META: Record<ModaliteType, { typeIcon: string; typeDescription: s
 async function main() {
   await waitForDatabase();
 
-  console.log('🌱 Seed forcé : reset complet puis recréation des données...\n');
+  const resetOnSeed = process.env.RESET_DB_ON_SEED === 'true';
+  const existingMedecins = await prisma.medecin.count();
 
-  console.log('🧹 Nettoyage de la base de données...');
-  await prisma.dossierFile.deleteMany();
-  await prisma.dossier.deleteMany();
-  await prisma.modalite.deleteMany();
-  await prisma.rdv.deleteMany();
-  await prisma.vacation.deleteMany();
-  await prisma.patient.deleteMany();
-  await prisma.authSession.deleteMany();
-  await prisma.medecin.deleteMany();
-  console.log('✅ Base de données nettoyée\n');
+  // Seed idempotent : si on ne force pas le reset et que des données existent déjà,
+  // on ne touche à rien (cas production / redémarrage normal).
+  if (!resetOnSeed && existingMedecins > 0) {
+    console.log('⏭️  Seed ignoré : médecins déjà présents et RESET_DB_ON_SEED=false.\n');
+    return;
+  }
+
+  if (resetOnSeed) {
+    console.log('🌱 Seed forcé (RESET_DB_ON_SEED=true) : reset complet puis recréation...\n');
+    console.log('🧹 Nettoyage de la base de données...');
+    await prisma.dossierFile.deleteMany();
+    await prisma.dossier.deleteMany();
+    await prisma.modalite.deleteMany();
+    await prisma.rdv.deleteMany();
+    await prisma.vacation.deleteMany();
+    await prisma.patient.deleteMany();
+    await prisma.authSession.deleteMany();
+    await prisma.auditLog.deleteMany();
+    await prisma.medecin.deleteMany();
+    console.log('✅ Base de données nettoyée\n');
+  } else {
+    console.log('🌱 Base vide : initialisation des données de démonstration...\n');
+  }
 
   console.log('👨‍⚕️ Création des médecins...');
   const passwordHash = await argon2.hash('Azertyuiop1!');
