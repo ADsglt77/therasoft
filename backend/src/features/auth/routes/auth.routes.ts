@@ -15,6 +15,10 @@ const router = Router();
  */
 router.post('/register', authRateLimiter, validateBody(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!env.allowPublicRegister) {
+      throw new ApiError('Inscription désactivée', 'AUTH_REGISTER_DISABLED', 403);
+    }
+
     const medecin = await authService.register(req.body);
 
     res.status(201).json({

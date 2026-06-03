@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
+import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 
 /**
@@ -20,11 +21,11 @@ declare global {
  * Middleware pour vérifier et valider le JWT access token
  * Attache req.user avec { medecinId, role }
  */
-export const verifyAccessToken = (
+export const verifyAccessToken = async (
   req: Request,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -34,6 +35,16 @@ export const verifyAccessToken = (
 
     const token = authHeader.substring(7); // Enlever "Bearer "
     const decoded = authService.verifyAccessToken(token);
+
+    // Vérifier que le médecin existe toujours et reste actif (compte non désactivé)
+    const medecin = await prisma.medecin.findUnique({
+      where: { id: decoded.medecinId },
+      select: { id: true, isActive: true },
+    });
+
+    if (!medecin || !medecin.isActive) {
+      throw new ApiError('Compte invalide ou désactivé', 'AUTH_ACCOUNT_INVALID', 401);
+    }
 
     // Attacher les infos utilisateur à la requête
     req.user = {

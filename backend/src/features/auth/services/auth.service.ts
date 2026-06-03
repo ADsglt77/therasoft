@@ -160,19 +160,20 @@ export class AuthService {
       },
     });
 
+    // Message générique pour ne pas révéler si l'email existe (anti-énumération)
     if (!medecin) {
-      throw new ApiError('Aucun compte trouvé avec cet email', 'AUTH_EMAIL_NOT_FOUND', 401);
+      throw new ApiError('Identifiants invalides', 'AUTH_INVALID_CREDENTIALS', 401);
     }
 
-    // Vérifier si le compte est actif
-    if (!medecin.isActive) {
-      throw new ApiError('Votre compte est désactivé. Veuillez contacter l\'administrateur', 'AUTH_ACCOUNT_INACTIVE', 403);
-    }
-
-    // Vérifier le mot de passe
+    // Vérifier le mot de passe avant l'état du compte (toujours message générique)
     const isPasswordValid = await this.verifyPassword(medecin.passwordHash, input.password);
     if (!isPasswordValid) {
-      throw new ApiError('Mot de passe incorrect', 'AUTH_INVALID_PASSWORD', 401);
+      throw new ApiError('Identifiants invalides', 'AUTH_INVALID_CREDENTIALS', 401);
+    }
+
+    // Compte désactivé : message explicite seulement après authentification réussie
+    if (!medecin.isActive) {
+      throw new ApiError('Votre compte est désactivé. Veuillez contacter l\'administrateur', 'AUTH_ACCOUNT_INACTIVE', 403);
     }
 
     // Mettre à jour lastLoginAt
@@ -268,17 +269,11 @@ export class AuthService {
       throw new ApiError('Compte invalide ou désactivé', 'AUTH_ACCOUNT_INVALID', 401);
     }
 
-    // Rotation: révoquer l'ancienne session
-    await prisma.authSession.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
-    });
-
     // Calculer la nouvelle date d'expiration
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + env.refreshTokenTtlDays);
 
-    // Créer une nouvelle session d'abord
+    // Créer la nouvelle session (hash temporaire) pour obtenir son id
     const newSession = await prisma.authSession.create({
       data: {
         medecinId,
@@ -291,11 +286,17 @@ export class AuthService {
     const newRefreshToken = this.generateRefreshToken(medecinId, newSession.id);
     const newRefreshTokenHash = await this.hashRefreshToken(newRefreshToken);
 
-    // Mettre à jour la session avec le hash
-    await prisma.authSession.update({
-      where: { id: newSession.id },
-      data: { refreshTokenHash: newRefreshTokenHash },
-    });
+    // Rotation atomique : révoquer l'ancienne session ET activer la nouvelle ensemble
+    await prisma.$transaction([
+      prisma.authSession.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      }),
+      prisma.authSession.update({
+        where: { id: newSession.id },
+        data: { refreshTokenHash: newRefreshTokenHash },
+      }),
+    ]);
 
     // Générer un nouvel access token
     const accessToken = this.generateAccessToken(medecin.id, medecin.role);
@@ -388,13 +389,18 @@ export class AuthService {
     // Hasher le nouveau mot de passe
     const newPasswordHash = await this.hashPassword(input.newPassword);
 
-    // Mettre à jour le mot de passe
-    await prisma.medecin.update({
-      where: { id: medecinId },
-      data: {
-        passwordHash: newPasswordHash,
-      },
-    });
+    // Mettre à jour le mot de passe ET révoquer toutes les sessions actives
+    // (déconnexion de tous les appareils) de façon atomique.
+    await prisma.$transaction([
+      prisma.medecin.update({
+        where: { id: medecinId },
+        data: { passwordHash: newPasswordHash },
+      }),
+      prisma.authSession.updateMany({
+        where: { medecinId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
 
     return { message: 'Mot de passe modifié avec succès' };
   }
