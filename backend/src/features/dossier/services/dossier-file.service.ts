@@ -3,7 +3,7 @@ import fs from 'fs';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { UPLOADS_ROOT } from '../../../middlewares/upload';
-import { assertPatientOwnsRdv, verifyRdvOwnership } from './dossier.shared';
+import { assertDossierAccess, assertPatientOwnsRdv } from './dossier.shared';
 
 export interface DossierFileResponse {
   id: number;
@@ -52,7 +52,7 @@ class DossierFileService {
     medecinId: number,
     files: Express.Multer.File[]
   ): Promise<DossierFileResponse[]> {
-    await verifyRdvOwnership(rdvId, medecinId);
+    await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
     const created = await Promise.all(
@@ -78,7 +78,7 @@ class DossierFileService {
     fileId: number,
     medecinId: number
   ): Promise<void> {
-    await verifyRdvOwnership(rdvId, medecinId);
+    await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
     const file = await prisma.dossierFile.findFirst({
@@ -104,7 +104,7 @@ class DossierFileService {
     fileId: number,
     medecinId: number
   ): Promise<{ absolutePath: string; originalName: string; mimeType: string }> {
-    await verifyRdvOwnership(rdvId, medecinId);
+    await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
     const file = await prisma.dossierFile.findFirst({

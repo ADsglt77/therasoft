@@ -1,11 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
-import {
-  assertPatientOwnsRdv,
-  verifyRdvOwnership,
-  dossierSelect,
-} from './dossier.shared';
+import { assertDossierAccess, dossierSelect } from './dossier.shared';
 
 export interface DossierFileInfo {
   id: number;
@@ -55,17 +51,13 @@ function mapDossier(dossier: DossierRow): DossierResponse {
   };
 }
 
-/**
- * Service de gestion des patients et dossiers
- */
-export class PatientService {
+export class DossierService {
   async getDossierByPatientAndRdv(
     patientId: number,
     rdvId: number,
     medecinId: number
   ): Promise<DossierResponse> {
-    await assertPatientOwnsRdv(patientId, rdvId);
-    await verifyRdvOwnership(rdvId, medecinId);
+    await assertDossierAccess(patientId, rdvId, medecinId);
 
     const dossier = await prisma.dossier.findUnique({
       where: { rdvId },
@@ -85,19 +77,14 @@ export class PatientService {
     observations: string | null,
     medecinId: number
   ): Promise<DossierResponse> {
-    await assertPatientOwnsRdv(patientId, rdvId);
-    await verifyRdvOwnership(rdvId, medecinId);
+    await assertDossierAccess(patientId, rdvId, medecinId);
 
     const existingDossier = await prisma.dossier.findUnique({
       where: { rdvId },
     });
 
     if (!existingDossier) {
-      throw new ApiError(
-        'Dossier médical non trouvé pour ce rendez-vous',
-        'NOT_FOUND',
-        404
-      );
+      throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
     }
 
     const updatedDossier = await prisma.dossier.update({
@@ -110,4 +97,4 @@ export class PatientService {
   }
 }
 
-export const patientService = new PatientService();
+export const dossierService = new DossierService();

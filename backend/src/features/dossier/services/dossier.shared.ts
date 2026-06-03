@@ -2,9 +2,6 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 
-/**
- * Vérifie que le RDV appartient au patient indiqué dans l'URL.
- */
 export async function assertPatientOwnsRdv(patientId: number, rdvId: number): Promise<void> {
   const rdv = await prisma.rdv.findUnique({
     where: { id: rdvId },
@@ -16,9 +13,6 @@ export async function assertPatientOwnsRdv(patientId: number, rdvId: number): Pr
   }
 }
 
-/**
- * Vérifie que le RDV est planifiable par le médecin (liaison RDV ↔ vacation même modalité).
- */
 export async function verifyRdvOwnership(rdvId: number, medecinId: number): Promise<void> {
   const link = await prisma.rdvVacation.findFirst({
     where: { rdvId, vacation: { medecinId } },
@@ -27,6 +21,15 @@ export async function verifyRdvOwnership(rdvId: number, medecinId: number): Prom
   if (!link) {
     throw new ApiError('Accès refusé : ce rendez-vous ne vous appartient pas', 'FORBIDDEN', 403);
   }
+}
+
+export async function assertDossierAccess(
+  patientId: number,
+  rdvId: number,
+  medecinId: number
+): Promise<void> {
+  await assertPatientOwnsRdv(patientId, rdvId);
+  await verifyRdvOwnership(rdvId, medecinId);
 }
 
 export const dossierSelect = {
