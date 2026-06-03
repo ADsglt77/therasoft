@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { ApiError } from './errorHandler';
 
 /**
  * Rate limiter pour les routes d'authentification.
@@ -9,8 +10,13 @@ export const authRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    error: 'RATE_LIMIT_EXCEEDED',
-    message: 'Trop de tentatives. Réessayez dans 15 minutes.',
+  handler: (_req, _res, next) => {
+    next(
+      new ApiError(
+        'Trop de tentatives. Réessayez dans 15 minutes.',
+        'RATE_LIMIT_EXCEEDED',
+        429
+      )
+    );
   },
 });
