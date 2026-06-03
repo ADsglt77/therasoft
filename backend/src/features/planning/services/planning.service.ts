@@ -1,8 +1,6 @@
 import { prisma } from '../../../lib/prisma';
+import { getDefaultMonthRange } from '../../../lib/dates';
 
-/**
- * Interface pour les vacations retournées
- */
 export interface VacationResponse {
   id: number;
   date: Date;
@@ -12,27 +10,48 @@ export interface VacationResponse {
   modalite: string;
 }
 
-/**
- * Service de planning
- */
+export interface RdvResponse {
+  id: number;
+  date: Date;
+  heureDebut: Date;
+  heureFin: Date;
+  modalite: string;
+  patient: {
+    id: number;
+    nom: string;
+    prenom: string;
+  };
+}
+
+const rdvSelect = {
+  id: true,
+  date: true,
+  heureDebut: true,
+  heureFin: true,
+  modalite: true,
+  patient: {
+    select: {
+      id: true,
+      nom: true,
+      prenom: true,
+    },
+  },
+} as const;
+
 export class PlanningService {
-  /**
-   * Récupère les vacations d'un médecin pour une période donnée
-   */
   async getVacationsByMedecin(
     medecinId: number,
     startDate?: Date,
     endDate?: Date
   ): Promise<VacationResponse[]> {
-    // Dates par défaut (mois courant)
-    const now = new Date();
-    const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const { start, end } = getDefaultMonthRange();
+    const rangeStart = startDate ?? start;
+    const rangeEnd = endDate ?? end;
 
     return prisma.vacation.findMany({
       where: {
         medecinId,
-        date: { gte: start, lte: end },
+        date: { gte: rangeStart, lte: rangeEnd },
       },
       select: {
         id: true,
@@ -45,7 +64,41 @@ export class PlanningService {
       orderBy: { date: 'asc' },
     });
   }
+
+  async getRdvsByDateRange(
+    medecinId: number,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<RdvResponse[]> {
+    const { start, end } = getDefaultMonthRange();
+    const rangeStart = startDate ?? start;
+    const rangeEnd = endDate ?? end;
+
+    return prisma.rdv.findMany({
+      where: {
+        date: { gte: rangeStart, lte: rangeEnd },
+        vacationLinks: { some: { vacation: { medecinId } } },
+      },
+      select: rdvSelect,
+      orderBy: [{ date: 'asc' }, { heureDebut: 'asc' }],
+    });
+  }
+
+  async getRdvsByMedecinAndDate(medecinId: number, date: Date): Promise<RdvResponse[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return prisma.rdv.findMany({
+      where: {
+        date: { gte: startOfDay, lte: endOfDay },
+        vacationLinks: { some: { vacation: { medecinId } } },
+      },
+      select: rdvSelect,
+      orderBy: { heureDebut: 'asc' },
+    });
+  }
 }
 
 export const planningService = new PlanningService();
-
