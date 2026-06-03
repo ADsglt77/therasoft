@@ -1,0 +1,12 @@
+# Déploiement Dokploy : ne pas binder le port 80 sur l'hôte.
+# Le proxy Dokploy route vers le service nginx sur le réseau Docker interne.
+#
+# Dans Dokploy, compose files :
+#   docker-compose.yml
+#   docker-compose.dokploy.yml
+#
+# Domaine : cible = service "nginx", port container = 80
+
+services:
+  nginx:
+    ports: []
