@@ -40,16 +40,17 @@
   </button>
 </div>
 
-<!-- Mobile : bouton hamburger -->
-<button
-  type="button"
-  class="hamburger-trigger"
-  (click)="toggleMobileMenu()"
-  [attr.aria-expanded]="mobileMenuOpen"
-  aria-controls="mobile-nav-drawer"
-  aria-label="Ouvrir le menu">
-  <app-icon [name]="mobileMenuOpen ? 'x' : 'menu'" [size]="24"></app-icon>
-</button>
+<!-- Mobile : ouvrir le menu (fermeture via la croix du tiroir uniquement) -->
+@if (!mobileMenuOpen) {
+  <button
+    type="button"
+    class="hamburger-trigger"
+    (click)="toggleMobileMenu()"
+    aria-controls="mobile-nav-drawer"
+    aria-label="Ouvrir le menu">
+    <app-icon name="menu" [size]="24"></app-icon>
+  </button>
+}
 
 @if (mobileMenuOpen) {
   <button
@@ -61,8 +62,11 @@
   <nav id="mobile-nav-drawer" class="mobile-drawer" aria-label="Menu principal">
     <div class="mobile-drawer__header">
       <span class="mobile-drawer__brand">Menu</span>
-      <button type="button" class="mobile-drawer__close" (click)="closeMobileMenu()" aria-label="Fermer">
-        <app-icon name="x" [size]="22"></app-icon>
+      <button type="button" class="mobile-drawer__close" (click)="closeMobileMenu()" aria-label="Fermer le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
       </button>
     </div>
     <div class="mobile-drawer__body">

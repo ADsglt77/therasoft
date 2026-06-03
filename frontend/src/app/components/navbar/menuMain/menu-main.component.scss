@@ -131,8 +131,24 @@
       }
 
       &__close {
-        @include icon-button-circle;
+        @include button-reset;
+        @include tap-target;
+        flex-shrink: 0;
+        border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+        border-radius: $radius-full;
         color: var(--text-muted);
+        @include transition(border-color color background-color, $duration-base);
+        @include focus-visible;
+
+        svg {
+          display: block;
+        }
+
+        &:hover {
+          border-color: var(--text);
+          color: var(--text);
+          @include glass-hover;
+        }
       }
 
       &__body {
@@ -163,6 +179,10 @@
       }
     }
 
+    &.menu-main--mobile-open .hamburger-trigger {
+      display: none !important;
+    }
+
     .mobile-theme-toggle {
       @include button-reset;
       display: flex;
@@ -181,12 +201,6 @@
       }
     }
 
-    &.menu-main--mobile-open {
-      .hamburger-trigger {
-        position: relative;
-        z-index: #{$z-modal + 1};
-      }
-    }
   }
 }
 
