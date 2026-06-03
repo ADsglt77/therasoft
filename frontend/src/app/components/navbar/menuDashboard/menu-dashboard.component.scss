@@ -212,9 +212,8 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     max-width: none;
     height: auto;
-    min-height: $bottom-nav-height;
+    min-height: 0;
     padding: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     margin: 0;
     border-radius: $radius-16 $radius-16 0 0;
     border: none;
@@ -235,33 +234,30 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
 
     .nav-bottom {
       display: flex;
-      align-items: stretch;
+      align-items: center;
       justify-content: space-around;
       width: 100%;
-      min-height: $bottom-nav-height;
-      padding: $spacing-4 $spacing-8;
-      gap: $spacing-4;
+      min-height: $tap-target-min;
+      padding: $spacing-8 $spacing-4;
+      padding-bottom: calc(#{$spacing-8} + env(safe-area-inset-bottom, 0px));
+      gap: 0;
 
       app-navbar-links {
         flex: 1;
         min-width: 0;
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
         ::ng-deep .link {
-          flex-direction: column;
+          flex-direction: row;
           justify-content: center;
-          gap: $spacing-4;
-          width: 100%;
+          align-items: center;
+          gap: 0;
+          width: auto;
           min-height: $tap-target-min;
-          padding: $spacing-8 $spacing-4;
+          padding: $spacing-8;
           border-radius: $radius-8;
-          text-align: center;
-
-          .label {
-            max-width: 100%;
-            font-size: $font-size-span;
-            line-height: 1.2;
-          }
         }
       }
     }
