@@ -16,8 +16,6 @@ export interface DossierFile {
 export interface Dossier {
   id: number;
   observations: string | null;
-  resultats: string | null;
-  documents: string | null;
   createdAt: string;
   updatedAt: string;
   files: DossierFile[];
