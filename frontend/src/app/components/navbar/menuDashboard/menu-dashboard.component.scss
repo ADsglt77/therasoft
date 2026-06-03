@@ -258,13 +258,9 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
           text-align: center;
 
           .label {
-            max-width: none;
-            opacity: 1;
+            max-width: 100%;
             font-size: $font-size-span;
             line-height: 1.2;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
           }
         }
       }

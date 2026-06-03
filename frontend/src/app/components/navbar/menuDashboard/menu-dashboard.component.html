@@ -38,6 +38,7 @@
 <nav class="nav-bottom" aria-label="Navigation principale">
   <app-navbar-links icon="globe" text="Site" route="/site" [exact]="true"></app-navbar-links>
   <app-navbar-links icon="calendar" text="Calendrier" route="/calendar"></app-navbar-links>
+  <app-navbar-links icon="home" text="Accueil" route="/" [exact]="true"></app-navbar-links>
   <app-navbar-links icon="settings" text="Paramètres" route="/settings" [exact]="true"></app-navbar-links>
   <app-navbar-links icon="logout" text="Déconnexion" (click)="onLogout()"></app-navbar-links>
 </nav>
