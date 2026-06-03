@@ -32,6 +32,9 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       NODE_ENV: ${NODE_ENV:-production}
       RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-true}
+      ALLOW_PUBLIC_REGISTER: ${ALLOW_PUBLIC_REGISTER:-false}
+    volumes:
+      - uploads_data:/app/uploads
 
   frontend:
     build: ./frontend
@@ -62,3 +65,4 @@ services:
 
 volumes:
   postgres_data_therasoft_v1:
+  uploads_data:

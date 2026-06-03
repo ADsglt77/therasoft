@@ -2,17 +2,22 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import pinoHttp from 'pino-http';
+import { randomUUID } from 'crypto';
 import { requestIdMiddleware } from './middlewares/requestId';
 import { errorHandler } from './middlewares/errorHandler';
-import { verifyAccessToken } from './features/auth/middlewares/jwt.middleware';
 import apiRoutes from './routes';
 import { env } from './config/env';
+import { logger } from './lib/logger';
 
 /**
  * Configuration de l'application Express
  */
 export const createApp = (): Express => {
   const app = express();
+
+  // Derrière le reverse proxy nginx : req.ip reflète X-Forwarded-For
+  app.set('trust proxy', 1);
 
   // Sécurité: Helmet (headers sécurisés)
   app.use(helmet());
@@ -31,9 +36,17 @@ export const createApp = (): Express => {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
   app.use(requestIdMiddleware);
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: (req) => (req.headers['x-request-id'] as string) || randomUUID(),
+      customProps: (req) => ({ requestId: req.headers['x-request-id'] }),
+    })
+  );
 
-  // Uploads protégés : seuls les utilisateurs authentifiés y accèdent
-  app.use('/uploads', verifyAccessToken, express.static('uploads'));
+  // Les fichiers de dossier ne sont jamais servis en statique :
+  // l'accès passe uniquement par /api/.../dossier/files/:fileId/download
+  // qui vérifie que le RDV appartient au médecin connecté.
 
   // Routes API
   app.use('/api', apiRoutes);

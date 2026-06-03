@@ -3,6 +3,7 @@ import fs from 'fs';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { UPLOADS_ROOT } from '../../../middlewares/upload';
+import { verifyRdvOwnership } from './dossier.shared';
 
 export interface DossierFileResponse {
   id: number;
@@ -14,30 +15,25 @@ export interface DossierFileResponse {
   url: string;
 }
 
-function toFileResponse(file: {
-  id: number;
-  originalName: string;
-  storedName: string;
-  mimeType: string;
-  size: number;
-  createdAt: Date;
-}): DossierFileResponse {
+function toFileResponse(
+  file: {
+    id: number;
+    originalName: string;
+    storedName: string;
+    mimeType: string;
+    size: number;
+    createdAt: Date;
+  },
+  patientId: number,
+  rdvId: number
+): DossierFileResponse {
   return {
     ...file,
-    url: `/uploads/dossiers/${file.storedName}`,
+    url: `/api/patients/${patientId}/rdv/${rdvId}/dossier/files/${file.id}/download`,
   };
 }
 
 class DossierFileService {
-  private async verifyRdvOwnership(rdvId: number, medecinId: number): Promise<void> {
-    const link = await prisma.modalite.findFirst({
-      where: { rdvId, vacation: { medecinId } },
-    });
-    if (!link) {
-      throw new ApiError('Accès refusé : ce rendez-vous ne vous appartient pas', 'FORBIDDEN', 403);
-    }
-  }
-
   private async getDossierId(patientId: number, rdvId: number): Promise<number> {
     const dossier = await prisma.dossier.findUnique({
       where: { patientId_rdvId: { patientId, rdvId } },
@@ -55,7 +51,7 @@ class DossierFileService {
     medecinId: number,
     files: Express.Multer.File[]
   ): Promise<DossierFileResponse[]> {
-    await this.verifyRdvOwnership(rdvId, medecinId);
+    await verifyRdvOwnership(rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
     const created = await Promise.all(
@@ -72,7 +68,7 @@ class DossierFileService {
       )
     );
 
-    return created.map(toFileResponse);
+    return created.map((f) => toFileResponse(f, patientId, rdvId));
   }
 
   async deleteFile(
@@ -81,7 +77,7 @@ class DossierFileService {
     fileId: number,
     medecinId: number
   ): Promise<void> {
-    await this.verifyRdvOwnership(rdvId, medecinId);
+    await verifyRdvOwnership(rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
     const file = await prisma.dossierFile.findFirst({
@@ -107,7 +103,7 @@ class DossierFileService {
     fileId: number,
     medecinId: number
   ): Promise<{ absolutePath: string; originalName: string; mimeType: string }> {
-    await this.verifyRdvOwnership(rdvId, medecinId);
+    await verifyRdvOwnership(rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
     const file = await prisma.dossierFile.findFirst({
