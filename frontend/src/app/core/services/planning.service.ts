@@ -24,8 +24,6 @@ export interface Rdv {
   heureDebut: string; // Format ISO time
   heureFin: string; // Format ISO time
   modalite: string;
-  typeIcon: string | null;
-  typeDescription: string | null;
   patient: {
     id: number;
     nom: string;
