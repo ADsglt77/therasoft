@@ -60,14 +60,6 @@ $nav-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
     gap: 0;
     padding: $spacing-8;
     width: 100%;
-
-    .label {
-      max-width: 0;
-      opacity: 0;
-      transition:
-        opacity $nav-duration $nav-ease-in,
-        max-width $nav-duration $nav-ease-in;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
