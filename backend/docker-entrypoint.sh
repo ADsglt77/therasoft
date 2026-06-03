@@ -7,12 +7,8 @@ until pg_isready -h db -p 5432 -U "$DB_USER"; do
   sleep 2
 done
 
-echo "Applying Prisma migrations..."
-if ! npx prisma migrate deploy; then
-  echo "Existing database (P3005): baseline + schema sync"
-  npx prisma migrate resolve --applied 0_init
-  npx prisma db push
-fi
+echo "Syncing database schema (prisma db push)..."
+npx prisma db push
 
 export RESET_DB_ON_SEED="${RESET_DB_ON_SEED:-true}"
 echo "Running Prisma seed (RESET_DB_ON_SEED=${RESET_DB_ON_SEED})..."
