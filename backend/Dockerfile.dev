@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache openssl libc6-compat postgresql-client
+
+ARG DATABASE_URL=postgresql://postgres:postgres@db:5432/portail_medecin?schema=public
+ENV DATABASE_URL=${DATABASE_URL}
+
+COPY package*.json ./
+RUN npm install
+
+COPY prisma ./prisma
+COPY prisma.config.ts tsconfig.json ./
+COPY docker-entrypoint.dev.sh /app/docker-entrypoint.dev.sh
+RUN sed -i 's/\r$//' /app/docker-entrypoint.dev.sh && chmod +x /app/docker-entrypoint.dev.sh
+
+RUN npx prisma generate
+
+# Le code src est monté en volume ; tsx watch recompile à la volée
+COPY src ./src
+
+EXPOSE 3000
+
+ENTRYPOINT ["sh", "/app/docker-entrypoint.dev.sh"]
