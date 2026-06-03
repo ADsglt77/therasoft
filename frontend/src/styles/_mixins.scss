@@ -103,6 +103,9 @@
 @mixin icon-button-circle {
   @include button-reset;
   @include tap-target;
+  @include icon-center;
+  line-height: 0;
+  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   border-radius: $radius-full;
   color: var(--text-muted);
@@ -134,12 +137,25 @@
   width: 100%;
 }
 
-// Pattern d'icône centrée (répété dans plusieurs composants)
+// Pattern d'icône centrée (Lucide : supprime l'espace "descender" sous le SVG)
 @mixin icon-center {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 0;
+
+  lucide-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
 }
 
 // Pattern de lien avec transition de couleur
