@@ -21,10 +21,31 @@ docker compose up --build
 ## Commandes
 
 ```bash
-docker compose up -d --build   # démarrer
+docker compose up -d --build   # démarrer (prod)
 docker compose down            # arrêter
 docker compose logs -f backend # logs
 docker compose down -v         # reset total (base incluse)
+```
+
+## Développement (hot-reload)
+
+Même URL **http://localhost** : nginx proxy vers `ng serve` (frontend) et `tsx watch` (backend). Les changements dans `frontend/src` et `backend/src` sont pris en compte sans rebuild complet.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Arrêter Prisma Studio avant un `down` complet si le profil studio est actif :
+
+```bash
+docker compose --profile studio down
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+```
+
+Revenir à la stack prod :
+
+```bash
+docker compose up -d --build
 ```
 
 ## Prisma Studio
