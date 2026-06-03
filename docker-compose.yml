@@ -43,8 +43,8 @@ services:
 
   nginx:
     build: ./nginx
-    ports:
-      - "${HTTP_PORT:-80}:80"
+    # Pas de ports ici : Dokploy (et autres reverse proxy) route vers nginx:80 en interne.
+    # En local, docker-compose.override.yml publie HTTP_PORT sur l'hôte.
     depends_on:
       - backend
       - frontend
