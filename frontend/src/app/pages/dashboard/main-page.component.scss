@@ -97,7 +97,7 @@ $nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
       .content {
         flex: 1 1 0;
         min-height: 0;
-        padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(#{$tap-target-min} + #{$spacing-16} + env(safe-area-inset-bottom, 0px));
       }
     }
   }
