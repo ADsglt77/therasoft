@@ -1,16 +1,11 @@
 import { prisma } from '../../../lib/prisma';
 
-/**
- * Interface pour les rendez-vous retournés
- */
 export interface RdvResponse {
   id: number;
   date: Date;
   heureDebut: Date;
   heureFin: Date;
   modalite: string;
-  typeIcon: string | null;
-  typeDescription: string | null;
   patient: {
     id: number;
     nom: string;
@@ -18,13 +13,25 @@ export interface RdvResponse {
   };
 }
 
+const rdvSelect = {
+  id: true,
+  date: true,
+  heureDebut: true,
+  heureFin: true,
+  modalite: true,
+  patient: {
+    select: {
+      id: true,
+      nom: true,
+      prenom: true,
+    },
+  },
+} as const;
+
 /**
  * Service de gestion des rendez-vous
  */
 export class RdvService {
-  /**
-   * Récupère les rendez-vous pour une période donnée
-   */
   async getRdvsByDateRange(
     medecinId: number,
     startDate?: Date,
@@ -37,40 +44,17 @@ export class RdvService {
     return prisma.rdv.findMany({
       where: {
         date: { gte: start, lte: end },
-        links: { some: { vacation: { medecinId } } },
+        vacationLinks: { some: { vacation: { medecinId } } },
       },
-      select: {
-        id: true,
-        date: true,
-        heureDebut: true,
-        heureFin: true,
-        modalite: true,
-        typeIcon: true,
-        typeDescription: true,
-        patient: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-          },
-        },
-      },
-      orderBy: [
-        { date: 'asc' },
-        { heureDebut: 'asc' },
-      ],
+      select: rdvSelect,
+      orderBy: [{ date: 'asc' }, { heureDebut: 'asc' }],
     });
   }
 
   /**
-   * Récupère les rendez-vous d'un médecin pour une date spécifique
-   * Les rendez-vous sont liés au médecin via Modalite -> Vacation -> Medecin
+   * RDV du médecin pour une date (via liaison RDV ↔ vacation, même modalité).
    */
-  async getRdvsByMedecinAndDate(
-    medecinId: number,
-    date: Date
-  ): Promise<RdvResponse[]> {
-    // Normaliser la date (début et fin de journée)
+  async getRdvsByMedecinAndDate(medecinId: number, date: Date): Promise<RdvResponse[]> {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -78,40 +62,13 @@ export class RdvService {
 
     return prisma.rdv.findMany({
       where: {
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        links: {
-          some: {
-            vacation: {
-              medecinId: medecinId,
-            },
-          },
-        },
+        date: { gte: startOfDay, lte: endOfDay },
+        vacationLinks: { some: { vacation: { medecinId } } },
       },
-      select: {
-        id: true,
-        date: true,
-        heureDebut: true,
-        heureFin: true,
-        modalite: true,
-        typeIcon: true,
-        typeDescription: true,
-        patient: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true,
-          },
-        },
-      },
-      orderBy: {
-        heureDebut: 'asc',
-      },
+      select: rdvSelect,
+      orderBy: { heureDebut: 'asc' },
     });
   }
 }
 
 export const rdvService = new RdvService();
-
