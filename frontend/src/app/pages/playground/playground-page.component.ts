@@ -4,6 +4,7 @@ import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent
 import { NotificationService } from '../../core/services/notification.service';
 import { PlanningService, Rdv } from '../../core/services/planning.service';
 import { formatTime } from '../../core/utils/date.utils';
+import { getModaliteUi } from '../../core/constants/modalite.constants';
 
 /**
  * Interface pour les slots du timetable
@@ -62,17 +63,16 @@ export class PlaygroundPageComponent implements OnInit {
         const rdvsToShow = response.rdvs.slice(0, 3);
         
         this.timetableSlots = rdvsToShow.map((rdv: Rdv) => {
-          // Les heures viennent comme strings ISO depuis l'API
-          // Exemple: "2000-01-01T08:30:00.000Z" ou "08:30:00"
+          const ui = getModaliteUi(rdv.modalite);
           const startTime = formatTime(rdv.heureDebut);
           const endTime = formatTime(rdv.heureFin);
-          
+
           return {
             id: rdv.id.toString(),
-            iconName: rdv.typeIcon || 'info',
+            iconName: ui.icon,
             startTime,
             endTime,
-            title: `${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+            title: `${ui.label} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
             disabled: false,
           };
         });
