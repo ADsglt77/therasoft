@@ -11,6 +11,19 @@ docker compose up --build
 
 → http://localhost
 
+## Déploiement Dokploy
+
+Si le déploiement échoue avec `Bind for 0.0.0.0:80 failed: port is already allocated`, le port 80 est déjà utilisé (proxy Dokploy, ancien stack, etc.).
+
+**Solution recommandée** — ajouter le fichier compose Dokploy (pas de port publié sur l'hôte) :
+
+- Fichiers compose : `docker-compose.yml` + `docker-compose.dokploy.yml`
+- Dans Dokploy, domaine → service **nginx**, port **80** (réseau interne Docker)
+
+Variables prod importantes : `RESET_DB_ON_SEED=false`, `FRONTEND_ORIGIN=https://ton-domaine.fr`, secrets JWT ≥ 32 caractères.
+
+**Alternative** — libérer le port 80 sur le serveur ou changer `HTTP_PORT` (ex. `8080`) si tu n'utilises pas le proxy Dokploy.
+
 ## Connexion
 
 | Email | Mot de passe |
