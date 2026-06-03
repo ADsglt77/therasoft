@@ -2,11 +2,17 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
-import { TokenStorageService } from '../../core/services/token-storage.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ApiErrorHandler } from '../../core/utils/api-error-handler';
 import { TokenRefreshService } from '../../core/services/token-refresh.service';
-import { AUTH_NO_REFRESH_ROUTES, AUTH_COMPONENT_HANDLED_ROUTES, matchesRoute, isApiRequest } from '../../core/constants/api-routes';
+import {
+  AUTH_NO_REFRESH_ROUTES,
+  AUTH_COMPONENT_HANDLED_ROUTES,
+  AUTH_RETRY_HEADER,
+  matchesRoute,
+  isApiRequest,
+} from '../../core/constants/api-routes';
+import { AuthService } from '../../core/services/auth.service';
 
 /**
  * Interceptor qui gère les erreurs HTTP, notamment les 401 (non autorisé)
@@ -14,14 +20,29 @@ import { AUTH_NO_REFRESH_ROUTES, AUTH_COMPONENT_HANDLED_ROUTES, matchesRoute, is
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
-  const tokenStorage = inject(TokenStorageService);
   const notificationService = inject(NotificationService);
   const tokenRefreshService = inject(TokenRefreshService);
+  const authService = inject(AuthService);
+
+  const forceReLogin = (message?: string) => {
+    authService.clearSession();
+    notificationService.show(
+      'danger',
+      message || 'Session expirée. Veuillez vous reconnecter.',
+      5000
+    );
+    void router.navigate(['/login']);
+  };
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       // Si l'erreur est 401 (non autorisé) et qu'on est sur une route API
       if (error.status === 401 && isApiRequest(req.url)) {
+        // Déjà retenté après refresh : ne pas boucler
+        if (req.headers.has(AUTH_RETRY_HEADER)) {
+          forceReLogin();
+          return throwError(() => error);
+        }
         // Ne pas tenter de refresh pour les routes d'authentification
         if (matchesRoute(req.url, AUTH_NO_REFRESH_ROUTES)) {
           return throwError(() => error);
@@ -44,29 +65,22 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             const clonedReq = req.clone({
               setHeaders: {
                 Authorization: `Bearer ${newToken}`,
+                [AUTH_RETRY_HEADER]: 'true',
               },
             });
             return next(clonedReq).pipe(
-              catchError((retryError) => {
+              catchError((retryError: HttpErrorResponse) => {
+                if (retryError.status === 401) {
+                  const extracted = ApiErrorHandler.extractError(retryError);
+                  forceReLogin(extracted.message);
+                }
                 return throwError(() => retryError);
               })
             );
           }),
           catchError((refreshError) => {
-            // Refresh échoué : nettoyer et rediriger vers login
-            tokenStorage.clear();
-
-            // Afficher une notification d'erreur
             const extracted = ApiErrorHandler.extractError(error);
-            notificationService.show(
-              'danger',
-              extracted.message || 'Session expirée. Veuillez vous reconnecter.',
-              5000
-            );
-
-            // Rediriger vers la page de connexion
-            router.navigate(['/login']);
-
+            forceReLogin(extracted.message);
             return throwError(() => refreshError);
           })
         );

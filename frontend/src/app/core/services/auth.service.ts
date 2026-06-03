@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, BehaviorSubject, shareReplay } from 'rxjs';
+import { Observable, tap, BehaviorSubject, shareReplay, catchError, finalize, of } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
 import { TokenStorageService } from './token-storage.service';
 import { Router } from '@angular/router';
@@ -134,7 +134,15 @@ export class AuthService extends ApiClientService {
   }
 
   /**
-   * Déconnexion
+   * Supprime le token et l'état utilisateur côté client (sans appel API).
+   */
+  clearSession(): void {
+    this.tokenStorage.clear();
+    this.setCurrentUser(null);
+  }
+
+  /**
+   * Déconnexion : nettoie toujours la session locale, même si l'API échoue.
    */
   logout(): Observable<void> {
     return this.http
@@ -146,10 +154,10 @@ export class AuthService extends ApiClientService {
         }
       )
       .pipe(
-        tap(() => {
-          this.tokenStorage.clear();
-          this.setCurrentUser(null); // Réinitialiser l'utilisateur actuel
-          this.router.navigate(['/']);
+        catchError(() => of(undefined)),
+        finalize(() => {
+          this.clearSession();
+          void this.router.navigate(['/login']);
         })
       );
   }

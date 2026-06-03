@@ -6,7 +6,15 @@ export const AUTH_PUBLIC_ROUTES = ['/auth/login', '/auth/register'] as const;
 /**
  * Routes API pour lesquelles un 401 ne doit PAS déclencher un token refresh
  */
-export const AUTH_NO_REFRESH_ROUTES = ['/auth/login', '/auth/register', '/auth/refresh'] as const;
+export const AUTH_NO_REFRESH_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/logout',
+] as const;
+
+/** En-tête posé après un refresh pour éviter une boucle de refresh */
+export const AUTH_RETRY_HEADER = 'X-Auth-Retry';
 
 /**
  * Routes API dont les erreurs 401 sont gérées dans le composant (pas de redirect)
