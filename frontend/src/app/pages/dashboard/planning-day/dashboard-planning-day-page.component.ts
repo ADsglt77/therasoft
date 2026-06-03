@@ -16,6 +16,7 @@ import {
   resolveDayStatus,
 } from '../../../core/utils/calendar-day-status.utils';
 import { BadgeVariant } from '../../../components/badge/ui-badge.component';
+import { getModaliteUi } from '../../../core/constants/modalite.constants';
 
 /**
  * Interface pour les slots du timetable
@@ -117,16 +118,19 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: ({ rdvs, vacations }) => {
         this.vacationSite = vacations.vacations?.[0]?.site ?? null;
-        this.timetableSlots = (rdvs.rdvs || []).map((rdv: Rdv) => ({
-          id: rdv.id.toString(),
-          rdvId: rdv.id,
-          patientId: rdv.patient.id,
-          iconName: rdv.typeIcon || 'info',
-          startTime: formatTime(rdv.heureDebut),
-          endTime: formatTime(rdv.heureFin),
-          title: `${rdv.typeDescription || rdv.modalite} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
-          disabled: false,
-        }));
+        this.timetableSlots = (rdvs.rdvs || []).map((rdv: Rdv) => {
+          const ui = getModaliteUi(rdv.modalite);
+          return {
+            id: rdv.id.toString(),
+            rdvId: rdv.id,
+            patientId: rdv.patient.id,
+            iconName: ui.icon,
+            startTime: formatTime(rdv.heureDebut),
+            endTime: formatTime(rdv.heureFin),
+            title: `${ui.label} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
+            disabled: false,
+          };
+        });
         this.isLoadingRdvs = false;
       },
       error: (error) => {
