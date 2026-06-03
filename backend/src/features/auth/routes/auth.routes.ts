@@ -105,20 +105,22 @@ router.post('/logout', async (req: Request, res: Response, next: NextFunction) =
       await authService.logout(refreshToken);
     }
 
-    // Supprimer le cookie
-    res.clearCookie('refresh_token', {
-      path: '/api',
-    });
+    clearRefreshTokenCookie(res);
 
     res.status(204).send();
   } catch (error) {
     // Même en cas d'erreur, on supprime le cookie
-    res.clearCookie('refresh_token', {
-      path: '/api',
-    });
+    clearRefreshTokenCookie(res);
     res.status(204).send();
   }
 });
+
+function clearRefreshTokenCookie(res: Response): void {
+  const isProduction = env.nodeEnv === 'production';
+  const base = { httpOnly: true, secure: isProduction, sameSite: 'lax' as const };
+  res.clearCookie('refresh_token', { ...base, path: '/api' });
+  res.clearCookie('refresh_token', { ...base, path: '/api/auth' });
+}
 
 /**
  * GET /api/auth/me
