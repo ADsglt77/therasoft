@@ -1,198 +1,114 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { authService } from '../services/auth.service';
-import { registerSchema, loginSchema, changePasswordSchema, updateProfileSchema, updateAvatarSchema } from '../schemas/auth.schemas';
-import { verifyAccessToken } from '../middlewares/jwt.middleware';
+import {
+  registerSchema,
+  loginSchema,
+  changePasswordSchema,
+  updateProfileSchema,
+  updateAvatarSchema,
+} from '../schemas/auth.schemas';
+import { verifyAccessToken } from '../../../middlewares/jwt.middleware';
+import { requireMedecinId } from '../../../middlewares/requireMedecin';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { validateBody } from '../../../middlewares/validate';
 import { authRateLimiter } from '../../../middlewares/rateLimiter';
+import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { env } from '../../../config/env';
+import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../auth.cookies';
 
 const router = Router();
 
-/**
- * POST /api/auth/register
- * Inscription d'un nouveau médecin
- */
-router.post('/register', authRateLimiter, validateBody(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
+router.post(
+  '/register',
+  authRateLimiter,
+  validateBody(registerSchema),
+  asyncHandler(async (req: Request, res: Response) => {
     if (!env.allowPublicRegister) {
       throw new ApiError('Inscription désactivée', 'AUTH_REGISTER_DISABLED', 403);
     }
-
     const medecin = await authService.register(req.body);
+    res.status(201).json({ message: 'Inscription réussie', medecin });
+  })
+);
 
-    res.status(201).json({
-      message: 'Inscription réussie',
-      medecin,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/auth/login
- * Connexion d'un médecin
- */
-router.post('/login', authRateLimiter, validateBody(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
+router.post(
+  '/login',
+  authRateLimiter,
+  validateBody(loginSchema),
+  asyncHandler(async (req: Request, res: Response) => {
     const { accessToken, refreshToken, medecin } = await authService.login(req.body);
+    setRefreshTokenCookie(res, refreshToken);
+    res.status(200).json({ accessToken, medecin });
+  })
+);
 
-    // Supprimer l'ancien cookie s'il existe (avec l'ancien path)
-    res.clearCookie('refresh_token', { path: '/api/auth' });
-    
-    // Définir le cookie refresh token avec le nouveau path
-    const isProduction = env.nodeEnv === 'production';
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/api', // Accessible depuis toutes les routes API
-      maxAge: env.refreshTokenTtlDays * 24 * 60 * 60 * 1000, // en millisecondes
-    });
-
-    res.status(200).json({
-      accessToken,
-      medecin,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/auth/refresh
- * Rafraîchir l'access token avec le refresh token
- */
-router.post('/refresh', authRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
-  try {
+router.post(
+  '/refresh',
+  authRateLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
     const refreshToken = req.cookies?.refresh_token;
-
     if (!refreshToken) {
       throw new ApiError('Refresh token manquant', 'AUTH_REFRESH_TOKEN_MISSING', 401);
     }
-
-    // Rafraîchir les tokens
     const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(refreshToken);
+    setRefreshTokenCookie(res, newRefreshToken);
+    res.status(200).json({ accessToken });
+  })
+);
 
-    // Définir le nouveau cookie refresh token
-    const isProduction = env.nodeEnv === 'production';
-    res.cookie('refresh_token', newRefreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/api', // Accessible depuis toutes les routes API
-      maxAge: env.refreshTokenTtlDays * 24 * 60 * 60 * 1000,
-    });
-
-    res.status(200).json({
-      accessToken,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * POST /api/auth/logout
- * Déconnexion (révoque la session)
- */
-router.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
-  try {
+router.post(
+  '/logout',
+  asyncHandler(async (req: Request, res: Response) => {
     const refreshToken = req.cookies?.refresh_token;
-
     if (refreshToken) {
-      await authService.logout(refreshToken);
+      try {
+        await authService.logout(refreshToken);
+      } catch {
+        // Toujours effacer le cookie côté client
+      }
     }
-
-    clearRefreshTokenCookie(res);
-
-    res.status(204).send();
-  } catch (error) {
-    // Même en cas d'erreur, on supprime le cookie
     clearRefreshTokenCookie(res);
     res.status(204).send();
-  }
-});
+  })
+);
 
-function clearRefreshTokenCookie(res: Response): void {
-  const isProduction = env.nodeEnv === 'production';
-  const base = { httpOnly: true, secure: isProduction, sameSite: 'lax' as const };
-  res.clearCookie('refresh_token', { ...base, path: '/api' });
-  res.clearCookie('refresh_token', { ...base, path: '/api/auth' });
-}
-
-/**
- * GET /api/auth/me
- * Récupère les informations du médecin connecté (protégé)
- */
-router.get('/me', verifyAccessToken, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
-    }
-
-    const medecin = await authService.getMe(req.user.medecinId);
-
+router.get(
+  '/me',
+  verifyAccessToken,
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecin = await authService.getMe(requireMedecinId(req));
     res.status(200).json(medecin);
-  } catch (error) {
-    next(error);
-  }
-});
+  })
+);
 
-/**
- * PATCH /api/auth/password
- * Change le mot de passe du médecin connecté (protégé)
- */
-router.patch('/password', verifyAccessToken, validateBody(changePasswordSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
-    }
-
-    const result = await authService.changePassword(req.user.medecinId, req.body);
-
+router.patch(
+  '/password',
+  verifyAccessToken,
+  validateBody(changePasswordSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await authService.changePassword(requireMedecinId(req), req.body);
     res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
+  })
+);
 
-/**
- * PATCH /api/auth/me
- * Modifie le profil du médecin connecté (protégé)
- */
-router.patch('/me', verifyAccessToken, validateBody(updateProfileSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
-    }
-
-    const medecin = await authService.updateProfile(req.user.medecinId, req.body);
-
+router.patch(
+  '/me',
+  verifyAccessToken,
+  validateBody(updateProfileSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecin = await authService.updateProfile(requireMedecinId(req), req.body);
     res.status(200).json(medecin);
-  } catch (error) {
-    next(error);
-  }
-});
+  })
+);
 
-/**
- * PATCH /api/auth/avatar
- * Met à jour l'avatar du médecin connecté (protégé)
- */
-router.patch('/avatar', verifyAccessToken, validateBody(updateAvatarSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (!req.user) {
-      throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
-    }
-
-    const medecin = await authService.updateAvatar(req.user.medecinId, req.body);
-
+router.patch(
+  '/avatar',
+  verifyAccessToken,
+  validateBody(updateAvatarSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecin = await authService.updateAvatar(requireMedecinId(req), req.body);
     res.status(200).json(medecin);
-  } catch (error) {
-    next(error);
-  }
-});
+  })
+);
 
 export default router;
-
