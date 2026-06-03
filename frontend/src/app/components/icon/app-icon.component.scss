@@ -1,7 +1,8 @@
 @use '../../../styles/mixins' as *;
 
 :host {
-  display: inline-flex;
+  @include icon-center;
+  vertical-align: middle;
 
   .icon-wrapper {
     @include icon-center;
@@ -9,9 +10,8 @@
     height: var(--icon-size, 20px);
 
     lucide-icon {
-      @include icon-center;
-      width: 100%;
-      height: 100%;
+      width: var(--icon-size, 20px);
+      height: var(--icon-size, 20px);
 
       svg {
         width: 100%;

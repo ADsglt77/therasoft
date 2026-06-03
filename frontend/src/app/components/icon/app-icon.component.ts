@@ -20,7 +20,13 @@ export class AppIconComponent {
   @Input() size: number = 20;
   @Input() strokeWidth: number = 2;
   @Input() color?: string;
+  /** Classes sur le host (ex. nav-arrow) — pas sur lucide-icon interne */
   @Input() class: string = '';
+
+  @HostBinding('class')
+  get hostClass(): string {
+    return this.class;
+  }
 
   @HostBinding('style.--icon-size')
   get iconSize(): string {
