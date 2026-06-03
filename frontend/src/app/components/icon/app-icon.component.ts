@@ -1,6 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy, ViewEncapsulation, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, Menu, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, ArrowRight, Upload, Download, FileText, Image, User, Edit2, Save, XCircle, Mars, Venus, VenusAndMars, ClipboardCheck, Clock, Sun, Mic, Play, Pause, Square, Trash2, PersonStanding, Globe } from 'lucide-angular';
+import { LucideAngularModule, Sparkles, Check, Circle, Star, Heart, Info, LayoutDashboard, Settings, LogOut, Moon, CalendarHeart, Calendar, Folder, MessageCircle, Bell, Eye, EyeOff, X, Menu, ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, ArrowRight, Upload, Download, FileText, Image, User, Edit2, Save, XCircle, Mars, Venus, VenusAndMars, ClipboardCheck, Clock, Sun, Mic, Play, Pause, Square, Trash2, PersonStanding, Globe, Home } from 'lucide-angular';
 
 /**
  * Composant wrapper pour utiliser les icônes Lucide
@@ -105,6 +105,8 @@ export class AppIconComponent {
     'person-standing': PersonStanding,
     globe: Globe,
     site: Globe,
+    home: Home,
+    accueil: Home,
     menu: Menu,
     hamburger: Menu,
   };
