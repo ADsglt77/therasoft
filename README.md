@@ -40,8 +40,10 @@ Modifier `backend/prisma/schema.prisma`, puis :
 ```bash
 docker compose up -d --build
 # ou, conteneur déjà lancé :
-docker compose exec backend npx prisma db push
+docker compose exec backend npx prisma db push --accept-data-loss
 ```
+
+Au démarrage, l’entrypoint exécute `prisma db push --accept-data-loss` (colonnes legacy supprimées, rôle `ADMIN` → `SECRETAIRE` sur les bases existantes). En prod Dokploy, garder `RESET_DB_ON_SEED=false` pour ne pas effacer les données.
 
 Reset complet (volume PostgreSQL) : `docker compose down -v` puis `docker compose up --build`.
 
