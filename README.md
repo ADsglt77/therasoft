@@ -25,10 +25,25 @@ Si l’erreur `port is already allocated` revient, un autre service occupe encor
 
 ## Connexion
 
-| Email | Mot de passe |
-|-------|--------------|
-| `user@user.user` | `Azertyuiop1!` |
-| `user2@user.user` | `Azertyuiop1!` |
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| Médecin | `user@user.user` | `Azertyuiop1!` |
+| Médecin | `user2@user.user` | `Azertyuiop1!` |
+| Secrétaire (démo) | `secretaire@demo.demo` | `Azertyuiop1!` |
+
+## Base de données (Prisma)
+
+Le schéma est synchronisé avec **`prisma db push`** au démarrage du backend (pas de fichiers SQL dans le dépôt).
+
+Modifier `backend/prisma/schema.prisma`, puis :
+
+```bash
+docker compose up -d --build
+# ou, conteneur déjà lancé :
+docker compose exec backend npx prisma db push
+```
+
+Reset complet (volume PostgreSQL) : `docker compose down -v` puis `docker compose up --build`.
 
 ## Commandes
 
