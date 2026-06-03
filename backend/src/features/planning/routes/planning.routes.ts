@@ -1,12 +1,25 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { planningService } from '../services/planning.service';
 import { rdvService } from '../services/rdv.service';
-import { getPlanningQuerySchema, getRdvsMeQuerySchema } from '../schemas/planning.schemas';
+import {
+  getPlanningQuerySchema,
+  getRdvsMeQuerySchema,
+  GetPlanningQuery,
+  GetRdvsMeQuery,
+} from '../schemas/planning.schemas';
 import { verifyAccessToken } from '../../auth/middlewares/jwt.middleware';
 import { ApiError } from '../../../middlewares/errorHandler';
-import { z } from 'zod';
+import { validateQuery } from '../../../middlewares/validate';
+import { asyncHandler } from '../../../middlewares/asyncHandler';
 
 const router = Router();
+
+function requireMedecinId(req: Request): number {
+  if (!req.user?.medecinId) {
+    throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
+  }
+  return req.user.medecinId;
+}
 
 /**
  * GET /api/planning
@@ -17,24 +30,13 @@ const router = Router();
 router.get(
   '/',
   verifyAccessToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user?.medecinId) {
-        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
-      }
-
-      const query = getPlanningQuerySchema.parse(req.query);
-      const vacations = await planningService.getVacationsByMedecin(
-        req.user.medecinId,
-        query.startDate,
-        query.endDate
-      );
-
-      res.json({ vacations, count: vacations.length });
-    } catch (error) {
-      next(error);
-    }
-  }
+  validateQuery(getPlanningQuerySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecinId = requireMedecinId(req);
+    const { startDate, endDate } = req.query as unknown as GetPlanningQuery;
+    const vacations = await planningService.getVacationsByMedecin(medecinId, startDate, endDate);
+    res.json({ vacations, count: vacations.length });
+  })
 );
 
 /**
@@ -46,26 +48,13 @@ router.get(
 router.get(
   '/rdvs/me',
   verifyAccessToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user?.medecinId) {
-        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
-      }
-
-      const { date: targetDate } = getRdvsMeQuerySchema.parse(req.query);
-      const rdvs = await rdvService.getRdvsByMedecinAndDate(
-        req.user.medecinId,
-        targetDate
-      );
-
-      res.json({ rdvs, count: rdvs.length });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return next(new ApiError('Le paramètre date est requis (format YYYY-MM-DD)', 'BAD_REQUEST', 400));
-      }
-      next(error);
-    }
-  }
+  validateQuery(getRdvsMeQuerySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecinId = requireMedecinId(req);
+    const { date } = req.query as unknown as GetRdvsMeQuery;
+    const rdvs = await rdvService.getRdvsByMedecinAndDate(medecinId, date);
+    res.json({ rdvs, count: rdvs.length });
+  })
 );
 
 /**
@@ -77,25 +66,13 @@ router.get(
 router.get(
   '/rdvs',
   verifyAccessToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!req.user?.medecinId) {
-        throw new ApiError('Utilisateur non authentifié', 'UNAUTHORIZED', 401);
-      }
-
-      const query = getPlanningQuerySchema.parse(req.query);
-      const rdvs = await rdvService.getRdvsByDateRange(
-        req.user.medecinId,
-        query.startDate,
-        query.endDate
-      );
-
-      res.json({ rdvs, count: rdvs.length });
-    } catch (error) {
-      next(error);
-    }
-  }
+  validateQuery(getPlanningQuerySchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecinId = requireMedecinId(req);
+    const { startDate, endDate } = req.query as unknown as GetPlanningQuery;
+    const rdvs = await rdvService.getRdvsByDateRange(medecinId, startDate, endDate);
+    res.json({ rdvs, count: rdvs.length });
+  })
 );
 
 export default router;
-
