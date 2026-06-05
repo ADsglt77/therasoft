@@ -1,5 +1,4 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -15,7 +14,7 @@ import { PasswordValidator } from '../../../core/validators/password.validator';
 @Component({
   selector: 'app-dashboard-settings-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
+  imports: [ReactiveFormsModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
   templateUrl: './dashboard-settings-page.component.html',
   styleUrl: './dashboard-settings-page.component.scss',
 })

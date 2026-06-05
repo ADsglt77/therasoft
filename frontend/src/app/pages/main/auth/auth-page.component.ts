@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthComponent } from '../../../components/auth/auth.component';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
@@ -11,7 +10,7 @@ import { AppIconComponent } from '../../../components/icon/app-icon.component';
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [CommonModule, AuthComponent, AppIconComponent],
+  imports: [AuthComponent, AppIconComponent],
   templateUrl: './auth-page.component.html',
   styleUrl: './auth-page.component.scss',
 })

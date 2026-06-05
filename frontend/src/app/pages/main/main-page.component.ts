@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MenuMainComponent } from '../../components/navbar/menuMain/menu-main.component';
 import { AppIconComponent } from '../../components/icon/app-icon.component';
 import { UiCardComponent, CardPoint } from '../../components/card/ui-card.component';
@@ -10,7 +9,7 @@ import { UiCardComponent, CardPoint } from '../../components/card/ui-card.compon
 @Component({
   selector: 'app-main-page',
   standalone: true,
-  imports: [CommonModule, MenuMainComponent, AppIconComponent, UiCardComponent],
+  imports: [MenuMainComponent, AppIconComponent, UiCardComponent],
   templateUrl: './main-page.component.html',
   styleUrl: './main-page.component.scss',
 })

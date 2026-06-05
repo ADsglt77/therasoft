@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, CardPoint, NotificationVariant, SelectOption, DayCardComponent, NavCalendarComponent, TimetableComponent } from '../../components';
 import { NotificationService } from '../../core/services/notification.service';
 import { PlanningService, Rdv } from '../../core/services/planning.service';
@@ -24,7 +23,7 @@ interface TimetableSlot {
 @Component({
   selector: 'app-playground-page',
   standalone: true,
-  imports: [CommonModule, UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarComponent, TimetableComponent],
+  imports: [UiButtonComponent, UiCardComponent, UiBadgeComponent, UiAvatarComponent, MenuHamburgerComponent, MenuMainComponent, MenuDashboardComponent, UiInputComponent, DayCardComponent, NavCalendarComponent, TimetableComponent],
   templateUrl: './playground-page.component.html',
   styleUrl: './playground-page.component.scss',
 })
