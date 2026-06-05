@@ -1,213 +1,216 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-}
-
-// Enums
-// - Role: MEDECIN (portail actuel), SECRETAIRE (évolution future)
-// - Sexe: optionnel mais propre
-// - ModaliteType: type d'examen / machine (Vacation et Rdv)
-enum Role {
-  MEDECIN
-  SECRETAIRE
-}
-
-enum Sexe {
-  M
-  F
-  X
-  UNKNOWN
-}
-
-enum ModaliteType {
-  XRAY
-  CT
-  MRI
-  US
-  MAMMO
-  PET
-  OTHER
-}
-
-model Medecin {
-  id         Int     @id @default(autoincrement())
-  nom        String
-  prenom     String
-  specialite String?
-  email      String  @unique
-
-  passwordHash   String    @map("password_hash")
-  role           Role      @default(MEDECIN)
-  isActive       Boolean   @default(true) @map("is_active")
-  lastLoginAt    DateTime? @map("last_login_at")
-  avatarUrl      String?   @map("avatar_url")
-  avatarFileName String?   @map("avatar_file_name")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  vacations  Vacation[]
-  sessions   AuthSession[]
-  auditLogs  AuditLog[]
-
-  @@map("medecin")
-}
-
-model Vacation {
-  id Int @id @default(autoincrement())
-
-  date    DateTime @db.Date
-  horaire DateTime @db.Time(0)
-
-  site     String
-  ville    String
-  modalite ModaliteType
-
-  medecinId Int     @map("id_medecin")
-  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  rdvLinks RdvVacation[]
-
-  @@index([medecinId])
-  @@index([date])
-  @@index([medecinId, date])
-  @@map("vacation")
-}
-
-model Patient {
-  id            Int      @id @default(autoincrement())
-  nom           String
-  prenom        String
-  dateNaissance DateTime @map("date_naissance") @db.Date
-  sexe          Sexe?    @default(UNKNOWN)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  rdvs Rdv[]
-
-  @@index([nom, prenom])
-  @@index([dateNaissance])
-  @@map("patient")
-}
-
-model Rdv {
-  id Int @id @default(autoincrement())
-
-  date       DateTime @db.Date
-  heureDebut DateTime @map("heure_debut") @db.Time(0)
-  heureFin   DateTime @map("heure_fin") @db.Time(0)
-
-  modalite ModaliteType
-
-  patientId Int     @map("id_patient")
-  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  vacationLinks RdvVacation[]
-  dossier       Dossier?
-
-  @@index([patientId])
-  @@index([date])
-  @@index([patientId, date])
-  @@map("rdv")
-}
-
-// Liaison RDV ↔ Vacation : le RDV n'est visible/planifiable que si la vacation
-// expose la même modalité (machine / type d'examen) ce jour-là.
-model RdvVacation {
-  id Int @id @default(autoincrement())
-
-  rdvId Int @map("id_rdv")
-  rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
-
-  vacationId Int      @map("id_vacation")
-  vacation   Vacation @relation(fields: [vacationId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([rdvId, vacationId])
-  @@index([rdvId])
-  @@index([vacationId])
-  @@map("modalite")
-}
-
-// Un dossier par RDV (patient dérivé via rdv.patient)
-model Dossier {
-  id Int @id @default(autoincrement())
-
-  rdvId Int @unique @map("id_rdv")
-  rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
-
-  observations String?
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  files DossierFile[]
-
-  @@map("dossier")
-}
-
-model DossierFile {
-  id Int @id @default(autoincrement())
-
-  dossierId Int     @map("id_dossier")
-  dossier   Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
-
-  originalName String @map("original_name")
-  storedName   String @map("stored_name")
-  mimeType     String @map("mime_type")
-  size         Int
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([dossierId])
-  @@map("dossier_file")
-}
-
-model AuditLog {
-  id Int @id @default(autoincrement())
-
-  medecinId Int?    @map("id_medecin")
-  medecin   Medecin? @relation(fields: [medecinId], references: [id], onDelete: SetNull)
-
-  action     String
-  resource   String
-  resourceId String? @map("resource_id")
-  ip         String?
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([medecinId])
-  @@index([createdAt])
-  @@map("audit_log")
-}
-
-model AuthSession {
-  id Int @id @default(autoincrement())
-
-  medecinId Int     @map("id_medecin")
-  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
-
-  refreshTokenHash String    @map("refresh_token_hash")
-  expiresAt        DateTime  @map("expires_at")
-  revokedAt        DateTime? @map("revoked_at")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([medecinId])
-  @@index([expiresAt])
-  @@map("auth_session")
-}
-
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+// - Role: MEDECIN (portail actuel), SECRETAIRE (évolution future)
+// - Sexe: optionnel mais propre
+// - ModaliteType: type d'examen / machine (Vacation et Rdv)
+enum Role {
+  MEDECIN
+  SECRETAIRE
+}
+
+enum Sexe {
+  M
+  F
+  X
+  UNKNOWN
+}
+
+enum ModaliteType {
+  XRAY
+  CT
+  MRI
+  US
+  MAMMO
+  PET
+  OTHER
+}
+
+model Medecin {
+  id         Int     @id @default(autoincrement())
+  nom        String
+  prenom     String
+  specialite String?
+  email      String  @unique
+
+  passwordHash   String    @map("password_hash")
+  role           Role      @default(MEDECIN)
+  isActive       Boolean   @default(true) @map("is_active")
+  lastLoginAt    DateTime? @map("last_login_at")
+  avatarUrl      String?   @map("avatar_url")
+  avatarFileName String?   @map("avatar_file_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vacations  Vacation[]
+  sessions   AuthSession[]
+  auditLogs  AuditLog[]
+
+  @@map("medecin")
+}
+
+model Vacation {
+  id Int @id @default(autoincrement())
+
+  date    DateTime @db.Date
+  horaire DateTime @db.Time(0)
+
+  site     String
+  ville    String
+  modalite ModaliteType
+
+  medecinId Int     @map("id_medecin")
+  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rdvLinks RdvVacation[]
+
+  @@index([medecinId])
+  @@index([date])
+  @@index([medecinId, date])
+  @@map("vacation")
+}
+
+model Patient {
+  id            Int      @id @default(autoincrement())
+  nom           String
+  prenom        String
+  dateNaissance DateTime @map("date_naissance") @db.Date
+  sexe          Sexe?    @default(UNKNOWN)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rdvs Rdv[]
+
+  @@index([nom, prenom])
+  @@index([dateNaissance])
+  @@map("patient")
+}
+
+model Rdv {
+  id Int @id @default(autoincrement())
+
+  date       DateTime @db.Date
+  heureDebut DateTime @map("heure_debut") @db.Time(0)
+  heureFin   DateTime @map("heure_fin") @db.Time(0)
+
+  modalite ModaliteType
+
+  patientId Int     @map("id_patient")
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vacationLinks RdvVacation[]
+  dossier       Dossier?
+
+  @@index([patientId])
+  @@index([date])
+  @@index([patientId, date])
+  @@map("rdv")
+}
+
+// Liaison RDV ↔ Vacation : le RDV n'est visible/planifiable que si la vacation
+// expose la même modalité (machine / type d'examen) ce jour-là.
+model RdvVacation {
+  id Int @id @default(autoincrement())
+
+  rdvId Int @map("id_rdv")
+  rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
+
+  vacationId Int      @map("id_vacation")
+  vacation   Vacation @relation(fields: [vacationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([rdvId, vacationId])
+  @@index([rdvId])
+  @@index([vacationId])
+  @@map("modalite")
+}
+
+// Un dossier par RDV (patient dérivé via rdv.patient)
+model Dossier {
+  id Int @id @default(autoincrement())
+
+  rdvId Int @unique @map("id_rdv")
+  rdv   Rdv @relation(fields: [rdvId], references: [id], onDelete: Cascade)
+
+  observations String?
+
+  /// Date à laquelle observations + au moins un fichier sont renseignés (prêt opération)
+  operationReadyAt DateTime? @map("operation_ready_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  files DossierFile[]
+
+  @@map("dossier")
+}
+
+model DossierFile {
+  id Int @id @default(autoincrement())
+
+  dossierId Int     @map("id_dossier")
+  dossier   Dossier @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+
+  originalName String @map("original_name")
+  storedName   String @map("stored_name")
+  mimeType     String @map("mime_type")
+  size         Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([dossierId])
+  @@map("dossier_file")
+}
+
+model AuditLog {
+  id Int @id @default(autoincrement())
+
+  medecinId Int?    @map("id_medecin")
+  medecin   Medecin? @relation(fields: [medecinId], references: [id], onDelete: SetNull)
+
+  action     String
+  resource   String
+  resourceId String? @map("resource_id")
+  ip         String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([medecinId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model AuthSession {
+  id Int @id @default(autoincrement())
+
+  medecinId Int     @map("id_medecin")
+  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+
+  refreshTokenHash String    @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([medecinId])
+  @@index([expiresAt])
+  @@map("auth_session")
+}
+
