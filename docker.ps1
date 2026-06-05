@@ -51,8 +51,10 @@ if ($Action -eq 'up') {
 }
 
 if ($Action -eq 'down') {
-  $downArgs = @('down')
-  Write-Host ("Running: docker compose {0} {1}" -f ($composeFiles -join ' '), ($downArgs -join ' ')) -ForegroundColor Cyan
+  # Supprime conteneurs, réseau, volumes (PostgreSQL + uploads) et orphelins.
+  $downArgs = @('--profile', 'studio', 'down', '-v', '--remove-orphans')
+  Write-Host ("Running: docker compose {0} {1}" -f ($composeFiles -join ' '), ($downArgs -join ' ')) -ForegroundColor Yellow
+  Write-Host 'Volumes supprimés : base PostgreSQL et fichiers uploadés seront recréés au prochain up.' -ForegroundColor Yellow
   docker compose @composeArgs @downArgs
   exit $LASTEXITCODE
 }
