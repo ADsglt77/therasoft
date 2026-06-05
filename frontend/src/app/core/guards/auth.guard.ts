@@ -7,7 +7,7 @@ import { NotificationService } from '../services/notification.service';
  * Guard pour protéger les routes nécessitant une authentification
  * Redirige vers /login si l'utilisateur n'est pas connecté
  */
-export const authGuard: CanActivateFn = (route, state) => {
+export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const notificationService = inject(NotificationService);
