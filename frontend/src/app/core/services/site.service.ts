@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { ApiClientService } from '../../api/api-client.service';
 
 /** Créneau d'ouverture (jour 1 = lundi … 7 = dimanche). */
@@ -46,8 +46,16 @@ export class SiteService extends ApiClientService {
     super(http);
   }
 
-  /** Récupère les sites du médecin connecté avec leurs statistiques. */
-  getSites(): Observable<SitesResponse> {
-    return this.http.get<SitesResponse>(`${this.baseUrl}/sites`);
+  /**
+   * Récupère les sites du médecin connecté avec leurs statistiques.
+   * @param q recherche optionnelle (nom de site, ville, ou nom de patient).
+   */
+  getSites(q?: string): Observable<SitesResponse> {
+    let params = new HttpParams();
+    const term = q?.trim();
+    if (term) {
+      params = params.set('q', term);
+    }
+    return this.http.get<SitesResponse>(`${this.baseUrl}/sites`, { params });
   }
 }
