@@ -36,6 +36,7 @@ export const dossierSelect = {
   id: true,
   observations: true,
   operationReadyAt: true,
+  verified: true,
   createdAt: true,
   updatedAt: true,
   files: {

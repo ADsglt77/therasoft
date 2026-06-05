@@ -9,7 +9,7 @@ import {
   PatientRdvParams,
   PatientRdvFileParams,
 } from '../schemas/dossier-params.schemas';
-import { updateObservationsSchema } from '../schemas/dossier.schemas';
+import { updateObservationsSchema, setVerifiedSchema } from '../schemas/dossier.schemas';
 import { validateBody, validateParams } from '../../../middlewares/validate';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { uploadDossierFiles, verifyUploadedMagicBytes } from '../../../middlewares/upload';
@@ -48,6 +48,26 @@ router.patch(
     recordAudit({
       medecinId,
       action: 'DOSSIER_OBSERVATIONS_UPDATE',
+      resource: 'dossier',
+      resourceId: dossier.id,
+      ip: clientIp(req),
+    });
+    res.json(dossier);
+  })
+);
+
+router.patch(
+  '/:patientId/rdv/:rdvId/dossier/verified',
+  verifyAccessToken,
+  validateParams(patientRdvParamsSchema),
+  validateBody(setVerifiedSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const medecinId = requireMedecinId(req);
+    const { patientId, rdvId } = req.params as unknown as PatientRdvParams;
+    const dossier = await dossierService.setVerified(patientId, rdvId, req.body.verified, medecinId);
+    recordAudit({
+      medecinId,
+      action: 'DOSSIER_VERIFIED_UPDATE',
       resource: 'dossier',
       resourceId: dossier.id,
       ip: clientIp(req),

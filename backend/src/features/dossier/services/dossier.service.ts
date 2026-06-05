@@ -18,6 +18,7 @@ export interface DossierResponse {
   observations: string | null;
   operationReady: boolean;
   operationReadyAt: Date | null;
+  verified: boolean;
   createdAt: Date;
   updatedAt: Date;
   files: DossierFileInfo[];
@@ -104,6 +105,33 @@ export class DossierService {
     });
 
     await syncDossierOperationReady(existingDossier.id);
+
+    const updatedDossier = await prisma.dossier.findUnique({
+      where: { id: existingDossier.id },
+      select: dossierSelect,
+    });
+
+    return mapDossier(updatedDossier!);
+  }
+
+  async setVerified(
+    patientId: number,
+    rdvId: number,
+    verified: boolean,
+    medecinId: number
+  ): Promise<DossierResponse> {
+    await assertDossierAccess(patientId, rdvId, medecinId);
+
+    const existingDossier = await prisma.dossier.findUnique({ where: { rdvId } });
+
+    if (!existingDossier) {
+      throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
+    }
+
+    await prisma.dossier.update({
+      where: { id: existingDossier.id },
+      data: { verified },
+    });
 
     const updatedDossier = await prisma.dossier.findUnique({
       where: { id: existingDossier.id },

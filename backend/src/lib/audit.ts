@@ -8,6 +8,7 @@ import { logger } from './logger';
 export type AuditAction =
   | 'DOSSIER_READ'
   | 'DOSSIER_OBSERVATIONS_UPDATE'
+  | 'DOSSIER_VERIFIED_UPDATE'
   | 'DOSSIER_FILE_UPLOAD'
   | 'DOSSIER_FILE_DOWNLOAD'
   | 'DOSSIER_FILE_DELETE';

@@ -8,3 +8,9 @@ export const updateObservationsSchema = z.object({
 });
 
 export type UpdateObservations = z.infer<typeof updateObservationsSchema>;
+
+export const setVerifiedSchema = z.object({
+  verified: z.boolean(),
+});
+
+export type SetVerified = z.infer<typeof setVerifiedSchema>;
