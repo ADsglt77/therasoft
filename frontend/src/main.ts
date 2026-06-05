@@ -6,7 +6,6 @@ import { appRoutes } from './app/app.routes';
 import { requestIdInterceptor } from './app/api/interceptors/request-id.interceptor';
 import { authInterceptor } from './app/api/interceptors/auth.interceptor';
 import { errorInterceptor } from './app/api/interceptors/error.interceptor';
-import { ThemeService } from './app/shared/theme/theme.service';
 
 /**
  * Initialise le thème de manière synchrone avant le bootstrap pour éviter le flash
