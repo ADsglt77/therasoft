@@ -13,6 +13,16 @@
   @if (dossier.operationReady) {
     <ui-badge variant="success" text="Prêt pour l'opération" class="header__ready-badge"></ui-badge>
   }
+  <ui-button
+    class="header__verify"
+    [color]="dossier.verified ? 'primary500' : 'connect'"
+    [disabled]="isSavingVerified"
+    (click)="toggleVerified()"
+    [attr.aria-pressed]="dossier.verified"
+    [title]="dossier.verified ? 'Retirer la vérification du dossier' : 'Marquer ce dossier comme vérifié / complet'">
+    <app-icon [name]="dossier.verified ? 'check' : 'clipboard-check'" [size]="18"></app-icon>
+    <span class="header__verify-text">{{ dossier.verified ? 'Dossier vérifié' : 'Marquer comme vérifié' }}</span>
+  </ui-button>
 </header>
 
 

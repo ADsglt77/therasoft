@@ -44,6 +44,10 @@
 
     &__ready-badge {
       flex-shrink: 0;
+    }
+
+    &__verify {
+      flex-shrink: 0;
       margin-left: auto;
     }
   }
@@ -262,6 +266,10 @@
       &__title {
         font-size: $font-size-h5;
         white-space: normal;
+      }
+
+      &__verify-text {
+        display: none;
       }
     }
 
