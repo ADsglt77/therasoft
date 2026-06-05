@@ -41,6 +41,11 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
+    &__ready-badge {
+      flex-shrink: 0;
+      margin-left: auto;
+    }
   }
 
   .info-patient,

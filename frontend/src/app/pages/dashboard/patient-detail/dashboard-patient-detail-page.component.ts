@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
+import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PatientService, Dossier, DossierFile } from '../../../core/services/patient.service';
 import { ExistingFile } from '../../../components/input/ui-input.component';
@@ -24,7 +25,7 @@ import { formatModalite as formatModaliteUtil } from '../../../core/constants/mo
 @Component({
   selector: 'app-dashboard-patient-detail-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiInputComponent, UiButtonComponent],
+  imports: [CommonModule, AppIconComponent, UiInputComponent, UiButtonComponent, UiBadgeComponent],
   templateUrl: './dashboard-patient-detail-page.component.html',
   styleUrl: './dashboard-patient-detail-page.component.scss',
 })
@@ -177,10 +178,18 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       .updateObservations(this.patientId, this.rdvId, this.observationsValue)
       .subscribe({
         next: (updatedDossier) => {
+          const wasReady = this.dossier?.operationReady ?? false;
           this.dossier = updatedDossier;
           this.observationsValue = updatedDossier.observations || '';
           this.isSavingObservations = false;
-          this.notificationService.show('success', 'Observations mises à jour avec succès');
+          if (updatedDossier.operationReady && !wasReady) {
+            this.notificationService.show(
+              'success',
+              'Dossier complet : prêt pour l\'opération'
+            );
+          } else {
+            this.notificationService.show('success', 'Observations mises à jour avec succès');
+          }
         },
         error: (error) => {
           this.isSavingObservations = false;
@@ -228,6 +237,22 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.location.back();
   }
 
+  private applyOperationStatus(status: {
+    operationReady: boolean;
+    operationReadyAt: string | null;
+  }): boolean {
+    if (!this.dossier) {
+      return false;
+    }
+    const wasReady = this.dossier.operationReady;
+    this.dossier = {
+      ...this.dossier,
+      operationReady: status.operationReady,
+      operationReadyAt: status.operationReadyAt,
+    };
+    return status.operationReady && !wasReady;
+  }
+
   // ========== Gestion des fichiers ==========
 
   get existingFilesForInput(): ExistingFile[] {
@@ -246,14 +271,28 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     const sub = this.patientService
       .uploadDossierFiles(this.patientId, this.rdvId, files)
       .subscribe({
-        next: (uploaded) => {
-          this.dossierFiles = [...uploaded, ...this.dossierFiles];
+        next: (response) => {
+          this.dossierFiles = [
+            ...response.files.map((f) => ({
+              ...f,
+              url: `/uploads/dossiers/${f.storedName}`,
+            })),
+            ...this.dossierFiles,
+          ];
+          const becameReady = this.applyOperationStatus(response);
           this.clearSelectedTrigger++;
           this.isUploadingFiles = false;
-          this.notificationService.show(
-            'success',
-            `${uploaded.length} fichier(s) ajouté(s) avec succès`
-          );
+          if (becameReady) {
+            this.notificationService.show(
+              'success',
+              'Dossier complet : prêt pour l\'opération'
+            );
+          } else {
+            this.notificationService.show(
+              'success',
+              `${response.files.length} fichier(s) ajouté(s) avec succès`
+            );
+          }
         },
         error: (error) => {
           this.isUploadingFiles = false;
@@ -320,8 +359,9 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     const sub = this.patientService
       .deleteDossierFile(this.patientId, this.rdvId, fileId)
       .subscribe({
-        next: () => {
+        next: (status) => {
           this.dossierFiles = this.dossierFiles.filter((f) => f.id !== fileId);
+          this.applyOperationStatus(status);
           this.isDeletingFileId = null;
           this.notificationService.show('success', `${file.name} supprimé`);
         },

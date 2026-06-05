@@ -10,6 +10,9 @@
   </button>
   <app-icon name="calendar" [size]="28" class="header__icon"></app-icon>
   <h3 class="header__title">Dossier médical</h3>
+  @if (dossier.operationReady) {
+    <ui-badge variant="success" text="Prêt pour l'opération" class="header__ready-badge"></ui-badge>
+  }
 </header>
 
 
@@ -111,11 +114,11 @@
   </section>
 
 
-  <!-- Résultats d'examen (upload fichiers) -->
+  <!-- Documents pour l'opération (imagerie, PDF, etc.) -->
   <section>
     <div class="title">
-      <app-icon name="clipboard-check" [size]="20"></app-icon>
-      <h4>Résultats d'examen</h4>
+      <app-icon name="image" [size]="20"></app-icon>
+      <h4>Documents pour l'opération</h4>
     </div>
     <div class="content content--editor">
       <div class="files-section">
@@ -126,7 +129,7 @@
           [maxSize]="52428800"
           [existingFiles]="existingFilesForInput"
           [clearSelectedTrigger]="clearSelectedTrigger"
-          placeholder="Glissez-déposez vos fichiers ici ou cliquez pour sélectionner"
+          placeholder="Images, PDF ou documents utiles pour l'opération"
           (filesSelected)="onFilesSelected($event)"
           (fileError)="onFileError($event)"
           (existingFileDownload)="onExistingFileDownload($event)"
