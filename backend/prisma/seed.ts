@@ -2,6 +2,7 @@ import { PrismaClient, Role, Sexe, ModaliteType, Vacation, Rdv } from '@prisma/c
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import argon2 from 'argon2';
+import { SEED_SITES_BY_CITY, toVillesAvecSites } from './seed-sites.data';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -292,81 +293,29 @@ async function main() {
   console.log(`✅ ${createdPatients.length} patients créés\n`);
 
   console.log('📅 Création des vacations...');
-  const villesAvecSites = [
-    {
-      ville: 'Paris',
-      sites: ['Hôpital Pitié-Salpêtrière', 'Hôpital Necker', 'Clinique de la Porte de Saint-Cloud'],
-    },
-    {
-      ville: 'Lyon',
-      sites: ['Hôpital Édouard Herriot', 'Centre Hospitalier Lyon Sud', 'Clinique du Val d\'Ouest'],
-    },
-    {
-      ville: 'Marseille',
-      sites: ['Hôpital de la Timone', 'Hôpital Nord', 'Clinique Clairval'],
-    },
-    {
-      ville: 'Toulouse',
-      sites: ['CHU Toulouse - Purpan', 'CHU Toulouse - Rangueil', 'Clinique Pasteur'],
-    },
-    {
-      ville: 'Nice',
-      sites: ['CHU Nice - Hôpital Pasteur', 'Hôpital Lenval', 'Clinique Saint-Georges'],
-    },
-    {
-      ville: 'Nantes',
-      sites: ['CHU Nantes - Hôtel-Dieu', 'CHU Nantes - Hôpital Nord', 'Clinique Jules Verne'],
-    },
-    {
-      ville: 'Strasbourg',
-      sites: ['Hôpitaux Universitaires de Strasbourg', 'Clinique Sainte-Anne', 'Centre Paul Strauss'],
-    },
-    {
-      ville: 'Montpellier',
-      sites: ['CHU Montpellier - Hôpital Lapeyronie', 'CHU Montpellier - Hôpital Gui de Chauliac', 'Clinique Clémentville'],
-    },
-    {
-      ville: 'Bordeaux',
-      sites: ['CHU Bordeaux - Hôpital Pellegrin', 'CHU Bordeaux - Hôpital Haut-Lévêque', 'Clinique Tivoli'],
-    },
-    {
-      ville: 'Lille',
-      sites: ['CHU Lille - Hôpital Claude Huriez', 'CHU Lille - Hôpital Roger Salengro', 'Clinique de la Louvière'],
-    },
-  ];
+  const villesAvecSites = toVillesAvecSites();
 
-  console.log('🏥 Création des sites...');
+  console.log('🏥 Création des sites (établissements réels)...');
   const siteIdByKey = new Map<string, number>();
-  // Horaires d'ouverture de démonstration (éditables ensuite en base / via une V2).
-  const heuresOuverture = (index: number) => {
-    const base = [
-      { day: 1, open: '08:00', close: '18:00' },
-      { day: 2, open: '08:00', close: '18:00' },
-      { day: 3, open: '08:00', close: '18:00' },
-      { day: 4, open: '08:00', close: '18:00' },
-      { day: 5, open: '08:00', close: '17:00' },
-    ];
-    if (index % 2 === 0) {
-      base.push({ day: 6, open: '09:00', close: '13:00' });
-    }
-    return base;
-  };
-
   let siteIndex = 0;
-  for (const { ville, sites } of villesAvecSites) {
-    for (const nom of sites) {
+  for (const { ville, sites } of SEED_SITES_BY_CITY) {
+    for (const siteData of sites) {
       const site = await prisma.site.create({
         data: {
-          nom,
+          nom: siteData.nom,
           ville,
-          openingHours: heuresOuverture(siteIndex),
+          adresse: siteData.adresse,
+          latitude: siteData.latitude,
+          longitude: siteData.longitude,
+          websiteUrl: siteData.websiteUrl,
+          openingHours: siteData.openingHours,
         },
       });
-      siteIdByKey.set(`${ville}||${nom}`, site.id);
+      siteIdByKey.set(`${ville}||${siteData.nom}`, site.id);
       siteIndex++;
     }
   }
-  console.log(`✅ ${siteIndex} sites créés\n`);
+  console.log(`✅ ${siteIndex} sites créés (${SEED_SITES_BY_CITY.length} villes)\n`);
   
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
   // Seulement les médecins (pas admin)
