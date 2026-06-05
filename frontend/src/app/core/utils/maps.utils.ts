@@ -5,8 +5,13 @@ import { Site } from '../services/site.service';
  * par leur nom + adresse/ville, qui correspondent à de vrais établissements.
  */
 
-/** Construit la requête de localisation (nom + adresse|ville). */
-export function siteQuery(site: Pick<Site, 'nom' | 'ville' | 'adresse'>): string {
+/** Construit la requête de localisation (GPS si dispo, sinon nom + adresse + ville). */
+export function siteQuery(
+  site: Pick<Site, 'nom' | 'ville' | 'adresse' | 'latitude' | 'longitude'>
+): string {
+  if (site.latitude != null && site.longitude != null) {
+    return `${site.latitude},${site.longitude}`;
+  }
   return [site.nom, site.adresse, site.ville].filter(Boolean).join(', ');
 }
 
