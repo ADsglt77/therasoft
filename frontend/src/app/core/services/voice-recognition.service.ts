@@ -1,171 +1,128 @@
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
-export interface TranscriptionResult {
+// Typage minimal de la Web Speech API (absente des types standard de TypeScript).
+interface SpeechAlternative {
   transcript: string;
-  isFinal: boolean;
-  confidence?: number;
 }
+interface SpeechResult extends ArrayLike<SpeechAlternative> {
+  isFinal: boolean;
+}
+interface SpeechResultEvent {
+  resultIndex: number;
+  results: ArrayLike<SpeechResult>;
+}
+interface SpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognition;
+
+/** Messages lisibles pour les codes d'erreur de la Web Speech API. */
+const ERROR_MESSAGES: Record<string, string> = {
+  'no-speech': 'Aucune parole détectée',
+  'audio-capture': "Impossible d'accéder au microphone",
+  'not-allowed': 'Permission microphone refusée',
+  network: 'Erreur réseau lors de la transcription',
+};
 
 /**
- * Service pour gérer la transcription vocale via Web Speech API
- * Transcription optionnelle (peut être désactivée)
+ * Transcription vocale via la Web Speech API (texte uniquement, aucun enregistrement audio).
+ * Optionnelle : `isSupported()` indique si le navigateur la propose.
  */
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class VoiceRecognitionService {
-  private recognition: any = null;
-  private transcriptSubject = new Subject<TranscriptionResult>();
-  public transcript$ = this.transcriptSubject.asObservable();
-  private errorSubject = new Subject<Error>();
-  public error$ = this.errorSubject.asObservable();
+  private readonly transcriptSubject = new Subject<string>();
+  private readonly errorSubject = new Subject<Error>();
+
+  /** Émet le texte transcrit (finalisé + intermédiaire) à chaque mise à jour. */
+  readonly transcript$: Observable<string> = this.transcriptSubject.asObservable();
+  /** Émet une erreur lisible (micro refusé, réseau, etc.). */
+  readonly error$: Observable<Error> = this.errorSubject.asObservable();
+
   private isRecognizing = false;
   private finalTranscript = '';
+  private readonly recognition: SpeechRecognition | null = this.createRecognition();
 
-  constructor() {
-    this.initializeRecognition();
-  }
-
-  /**
-   * Initialise l'API de reconnaissance vocale
-   */
-  private initializeRecognition(): void {
-    // Vérifier le support du navigateur
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (!SpeechRecognition) {
-      console.warn('Web Speech API non supportée par ce navigateur');
-      return;
-    }
-
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = true; // Transcription continue
-      this.recognition.interimResults = true; // Résultats intermédiaires
-      this.recognition.lang = 'fr-FR'; // Langue française
-
-      // Événement : résultats de transcription
-      this.recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          const isFinal = event.results[i].isFinal;
-          const confidence = event.results[i][0].confidence;
-
-          if (isFinal) {
-            this.finalTranscript += transcript + ' ';
-            this.transcriptSubject.next({
-              transcript: this.finalTranscript.trim(),
-              isFinal: true,
-              confidence,
-            });
-          } else {
-            interimTranscript += transcript;
-            this.transcriptSubject.next({
-              transcript: this.finalTranscript.trim() + ' ' + interimTranscript,
-              isFinal: false,
-              confidence,
-            });
-          }
-        }
-      };
-
-      // Événement : erreur
-      this.recognition.onerror = (event: any) => {
-        console.error('Erreur de reconnaissance vocale:', event.error);
-        
-        let errorMessage = 'Erreur de transcription vocale';
-        switch (event.error) {
-          case 'no-speech':
-            errorMessage = 'Aucune parole détectée';
-            break;
-          case 'audio-capture':
-            errorMessage = 'Impossible d\'accéder au microphone';
-            break;
-          case 'not-allowed':
-            errorMessage = 'Permission microphone refusée';
-            break;
-          case 'network':
-            errorMessage = 'Erreur réseau lors de la transcription';
-            break;
-        }
-
-        this.isRecognizing = false;
-        this.errorSubject.next(new Error(errorMessage));
-      };
-
-      // Événement : fin de reconnaissance
-      this.recognition.onend = () => {
-        this.isRecognizing = false;
-      };
-    } catch (error) {
-      console.error('Erreur lors de l\'initialisation de la reconnaissance vocale:', error);
-    }
-  }
-
-  /**
-   * Vérifie si l'API de reconnaissance vocale est supportée
-   */
+  /** Indique si la transcription vocale est disponible dans ce navigateur. */
   isSupported(): boolean {
-    return !!(this.recognition || 
-             (window as any).SpeechRecognition || 
-             (window as any).webkitSpeechRecognition);
+    return this.recognition !== null;
   }
 
-  /**
-   * Démarre la transcription vocale
-   */
   startTranscription(): void {
-    if (!this.isSupported()) {
-      console.warn('Reconnaissance vocale non supportée');
+    if (!this.recognition || this.isRecognizing) {
       return;
     }
-
-    if (!this.recognition) {
-      console.warn('Reconnaissance vocale non initialisée');
-      return;
-    }
-
-    if (this.isRecognizing) {
-      console.warn('Une transcription est déjà en cours');
-      return;
-    }
-
     try {
       this.finalTranscript = '';
       this.isRecognizing = true;
       this.recognition.start();
-    } catch (error: any) {
-      console.error('Erreur lors du démarrage de la transcription:', error);
+    } catch (error) {
       this.isRecognizing = false;
+      console.error('Démarrage de la transcription impossible :', error);
     }
   }
 
-  /**
-   * Arrête la transcription vocale
-   */
   stopTranscription(): void {
     if (!this.recognition || !this.isRecognizing) {
       return;
     }
-
+    this.isRecognizing = false;
     try {
       this.recognition.stop();
-      this.isRecognizing = false;
     } catch (error) {
-      console.error('Erreur lors de l\'arrêt de la transcription:', error);
+      console.error('Arrêt de la transcription impossible :', error);
     }
   }
 
-  /**
-   * Retourne la transcription finale actuelle
-   */
+  /** Texte finalisé (sans les résultats intermédiaires). */
   getFinalTranscript(): string {
     return this.finalTranscript.trim();
   }
+
+  private createRecognition(): SpeechRecognition | null {
+    const speechWindow = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const Implementation = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Implementation) {
+      return null;
+    }
+
+    const recognition = new Implementation();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'fr-FR';
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          this.finalTranscript += `${result[0].transcript} `;
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      this.transcriptSubject.next(`${this.finalTranscript}${interim}`.trim());
+    };
+
+    recognition.onerror = (event) => {
+      this.isRecognizing = false;
+      this.errorSubject.next(new Error(ERROR_MESSAGES[event.error] ?? 'Erreur de transcription vocale'));
+    };
+
+    recognition.onend = () => {
+      this.isRecognizing = false;
+    };
+
+    return recognition;
+  }
 }
-
-
-
