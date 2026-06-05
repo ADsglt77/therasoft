@@ -34,8 +34,31 @@ export class TimetableComponent {
   @Input() iconName: string = 'info';
   @Input() disabled: boolean = false;
   @Input() compact: boolean = false;
+  @Input() dossierFileCount = 0;
+  @Input() dossierHasObservations = false;
+  @Input() dossierOperationReady = false;
 
   @Output() actionClick = new EventEmitter<void>();
+
+  get filesTooltip(): string {
+    const n = this.dossierFileCount;
+    if (n === 0) {
+      return 'Aucun document';
+    }
+    return n === 1 ? '1 fichier' : `${n} fichiers`;
+  }
+
+  get observationsTooltip(): string {
+    return this.dossierHasObservations
+      ? 'Observations renseignées'
+      : 'Observations manquantes';
+  }
+
+  get validateTooltip(): string {
+    return this.dossierOperationReady
+      ? 'Dossier complet pour l\'opération'
+      : 'Dossier incomplet';
+  }
 
   @HostBinding('class.compact')
   get isCompact(): boolean {

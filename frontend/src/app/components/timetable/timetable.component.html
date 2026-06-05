@@ -5,20 +5,55 @@
 </div>
 
 <div class="card">
-  <div class="title-row">
-    <app-icon [name]="iconName" [size]="16"></app-icon>
-    <h6 class="title">{{ title }}</h6>
+  <div class="card-main">
+    <div class="card-left">
+      <div class="title-row">
+        <app-icon [name]="iconName" [size]="16"></app-icon>
+        <h6 class="title">{{ title }}</h6>
+      </div>
+
+      <ui-badge
+        variant="repos"
+        text="VOIR LE DOSSIER"
+        [class.disabled]="disabled"
+        role="button"
+        [attr.tabindex]="disabled ? null : 0"
+        [attr.aria-disabled]="disabled"
+        (click)="onActionClick()"
+        (keydown.enter)="onActionClick()"
+        (keydown.space)="$event.preventDefault(); onActionClick()"
+        class="badge">
+      </ui-badge>
+    </div>
+
+    <div class="dossier-status" role="group" aria-label="État du dossier">
+      <button
+        type="button"
+        class="status-icon"
+        [class.status-icon--active]="dossierFileCount > 0"
+        [attr.data-tooltip]="filesTooltip"
+        [attr.aria-label]="filesTooltip"
+        tabindex="0">
+        <app-icon name="file" [size]="18"></app-icon>
+      </button>
+      <button
+        type="button"
+        class="status-icon"
+        [class.status-icon--active]="dossierHasObservations"
+        [attr.data-tooltip]="observationsTooltip"
+        [attr.aria-label]="observationsTooltip"
+        tabindex="0">
+        <app-icon name="edit" [size]="18"></app-icon>
+      </button>
+      <button
+        type="button"
+        class="status-icon status-icon--validate"
+        [class.status-icon--active]="dossierOperationReady"
+        [attr.data-tooltip]="validateTooltip"
+        [attr.aria-label]="validateTooltip"
+        tabindex="0">
+        <app-icon name="check" [size]="18"></app-icon>
+      </button>
+    </div>
   </div>
-  <ui-badge
-    variant="repos"
-    text="VOIR LE DOSSIER"
-    [class.disabled]="disabled"
-    role="button"
-    [attr.tabindex]="disabled ? null : 0"
-    [attr.aria-disabled]="disabled"
-    (click)="onActionClick()"
-    (keydown.enter)="onActionClick()"
-    (keydown.space)="$event.preventDefault(); onActionClick()"
-    class="badge">
-  </ui-badge>
 </div>
