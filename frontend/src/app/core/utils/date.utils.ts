@@ -15,15 +15,11 @@ export function formatDateLong(dateString: string): string {
 }
 
 /**
- * Formate une date au format français court (ex: "15/03/2025")
+ * Construit une clé de date "YYYY-MM-DD" à partir de composantes locales.
+ * @param month Mois indexé à partir de 0 (comme Date.getMonth()).
  */
-export function formatDateShort(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+export function formatDateKey(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 /**

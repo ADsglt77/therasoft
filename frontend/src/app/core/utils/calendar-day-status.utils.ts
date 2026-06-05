@@ -1,4 +1,5 @@
 import { BadgeVariant } from '../../components/badge/ui-badge.component';
+import { formatDateKey } from './date.utils';
 
 /** Aligné sur les données seed (année de démo) */
 export const PLANNING_YEAR = 2026;
@@ -24,10 +25,6 @@ export const DAY_STATUS_LABELS: Record<Exclude<CalendarDayStatus, 'travail'>, st
   vacances: 'Vacances',
   ferie: 'Férié',
 };
-
-export function formatDateKey(year: number, month: number, day: number): string {
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
 
 export function isWeekendLocal(year: number, month: number, day: number): boolean {
   const dow = new Date(year, month, day).getDay();
