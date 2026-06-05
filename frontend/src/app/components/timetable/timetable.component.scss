@@ -84,6 +84,18 @@
     white-space: nowrap;
   }
 
+  .verified-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: $spacing-2;
+    border-radius: $radius-full;
+    color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 18%, transparent);
+    line-height: 0;
+  }
+
   .dossier-status {
     display: flex;
     align-items: center;
@@ -158,10 +170,10 @@
 
       &[data-tooltip]::after {
         position: fixed;
-        bottom: anchor(top);
-        left: anchor(center);
+        position-area: top;
         margin-bottom: $spacing-4;
-        translate: -50% 0;
+        // Reste centré ; se décale tout seul s'il toucherait le bord de l'écran.
+        position-try-fallbacks: top span-left, top span-right;
       }
     }
 

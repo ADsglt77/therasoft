@@ -36,6 +36,7 @@ export class TimetableComponent {
   @Input() dossierFileCount = 0;
   @Input() dossierHasObservations = false;
   @Input() dossierOperationReady = false;
+  @Input() dossierVerified = false;
 
   @Output() actionClick = new EventEmitter<void>();
 

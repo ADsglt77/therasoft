@@ -10,6 +10,11 @@
       <div class="title-row">
         <app-icon [name]="iconName" [size]="16"></app-icon>
         <h6 class="title">{{ title }}</h6>
+        @if (dossierVerified) {
+          <span class="verified-icon" title="Dossier vérifié" aria-label="Dossier vérifié">
+            <app-icon name="clipboard-check" [size]="16"></app-icon>
+          </span>
+        }
       </div>
 
       <ui-badge
