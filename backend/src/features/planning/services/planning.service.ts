@@ -14,6 +14,7 @@ export interface DossierPlanningStatus {
   hasObservations: boolean;
   fileCount: number;
   operationReady: boolean;
+  verified: boolean;
 }
 
 export interface RdvResponse {
@@ -39,6 +40,7 @@ const rdvSelect = {
   dossier: {
     select: {
       operationReadyAt: true,
+      verified: true,
       observations: true,
       _count: { select: { files: true } },
     },
@@ -60,6 +62,7 @@ type RdvRow = {
   modalite: string;
   dossier: {
     operationReadyAt: Date | null;
+    verified: boolean;
     observations: string | null;
     _count: { files: number };
   } | null;
@@ -75,6 +78,7 @@ function mapDossierStatus(
     hasObservations,
     fileCount,
     operationReady: dossier?.operationReadyAt != null,
+    verified: dossier?.verified ?? false,
   };
 }
 
