@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { formatDateKey } from '../utils/date.utils';
 
 /**
  * Interface pour une vacation retournée par l'API
@@ -117,7 +118,7 @@ export class PlanningService extends ApiClientService {
   }
 
   private formatDate(date: Date): string {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
   }
 }
 
