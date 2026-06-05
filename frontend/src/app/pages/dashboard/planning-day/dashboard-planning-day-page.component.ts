@@ -1,13 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { TimetableComponent } from '../../../components/timetable/timetable.component';
 import { PlanningService, Rdv } from '../../../core/services/planning.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { formatTime } from '../../../core/utils/date.utils';
+import { formatTime, formatDateKey } from '../../../core/utils/date.utils';
 import { forkJoin, Subscription } from 'rxjs';
 import {
   CalendarDayStatus,
@@ -46,7 +45,7 @@ type TimelineItem =
 @Component({
   selector: 'app-dashboard-planning-day-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiBadgeComponent, NavCalendarComponent, TimetableComponent],
+  imports: [AppIconComponent, UiBadgeComponent, NavCalendarComponent, TimetableComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
 })
@@ -310,10 +309,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
   }
 
   private navigateToDate(date: Date): void {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
+    const dateStr = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
     this.router.navigate(['/calendar', dateStr]);
     // Le chargement des rendez-vous sera déclenché automatiquement via paramMap
   }
