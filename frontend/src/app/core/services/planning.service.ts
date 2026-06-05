@@ -15,6 +15,13 @@ export interface Vacation {
   modalite: string;
 }
 
+/** État du dossier affiché sur le planning jour */
+export interface DossierPlanningStatus {
+  hasObservations: boolean;
+  fileCount: number;
+  operationReady: boolean;
+}
+
 /**
  * Interface pour un rendez-vous retourné par l'API
  */
@@ -24,6 +31,7 @@ export interface Rdv {
   heureDebut: string; // Format ISO time
   heureFin: string; // Format ISO time
   modalite: string;
+  dossierStatus: DossierPlanningStatus;
   patient: {
     id: number;
     nom: string;
