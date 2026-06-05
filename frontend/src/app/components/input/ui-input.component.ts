@@ -389,6 +389,15 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   /**
+   * Id du champ interne, distinct de l'hôte <ui-input> (qui reçoit déjà `id`
+   * du parent). Évite les id dupliqués dans le DOM et associe correctement le
+   * <label for> au véritable champ de saisie.
+   */
+  get controlId(): string {
+    return `${this.displayId}-field`;
+  }
+
+  /**
    * Toggle l'affichage du mot de passe
    */
   togglePasswordVisibility(): void {

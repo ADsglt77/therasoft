@@ -1,5 +1,5 @@
 @if (label && type !== 'file') {
-  <label [for]="displayId" class="label">{{ label }}</label>
+  <label [for]="controlId" class="label">{{ label }}</label>
 }
 @if (type === 'file') {
 <div #dropZone class="file-drop-zone" [class.file-drop-zone--dragging]="isDragging"
@@ -87,7 +87,7 @@
       [placeholder]="displayPlaceholder"
       [value]="value"
       [name]="displayName"
-      [id]="displayId"
+      [id]="controlId"
       [required]="required"
       [disabled]="disabled"
       [rows]="fullHeight ? 1 : rows"
@@ -103,7 +103,7 @@
       [placeholder]="displayPlaceholder"
       [value]="value"
       [name]="displayName"
-      [id]="displayId"
+      [id]="controlId"
       [required]="required"
       [disabled]="disabled"
       class="input"
