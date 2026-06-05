@@ -62,9 +62,10 @@ model Vacation {
   date    DateTime @db.Date
   horaire DateTime @db.Time(0)
 
-  site     String
-  ville    String
   modalite ModaliteType
+
+  siteId Int  @map("id_site")
+  site   Site @relation(fields: [siteId], references: [id])
 
   medecinId Int     @map("id_medecin")
   medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
@@ -77,7 +78,32 @@ model Vacation {
   @@index([medecinId])
   @@index([date])
   @@index([medecinId, date])
+  @@index([siteId])
   @@map("vacation")
+}
+
+// Site = établissement (hôpital / clinique) dans une ville.
+// Métadonnées affichées dans l'onglet Site : localisation, horaires, liens.
+model Site {
+  id    Int    @id @default(autoincrement())
+  nom   String
+  ville String
+
+  adresse   String?
+  latitude  Float?
+  longitude Float?
+
+  websiteUrl String? @map("website_url")
+  /// Horaires d'ouverture : tableau JSON [{ day: 1-7 (lun→dim), open: "HH:mm", close: "HH:mm" }]
+  openingHours Json? @map("opening_hours")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vacations Vacation[]
+
+  @@unique([nom, ville])
+  @@map("site")
 }
 
 model Patient {

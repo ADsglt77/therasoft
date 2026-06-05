@@ -201,6 +201,7 @@ async function main() {
     await prisma.rdvVacation.deleteMany();
     await prisma.rdv.deleteMany();
     await prisma.vacation.deleteMany();
+    await prisma.site.deleteMany();
     await prisma.patient.deleteMany();
     await prisma.authSession.deleteMany();
     await prisma.auditLog.deleteMany();
@@ -333,6 +334,39 @@ async function main() {
       sites: ['CHU Lille - Hôpital Claude Huriez', 'CHU Lille - Hôpital Roger Salengro', 'Clinique de la Louvière'],
     },
   ];
+
+  console.log('🏥 Création des sites...');
+  const siteIdByKey = new Map<string, number>();
+  // Horaires d'ouverture de démonstration (éditables ensuite en base / via une V2).
+  const heuresOuverture = (index: number) => {
+    const base = [
+      { day: 1, open: '08:00', close: '18:00' },
+      { day: 2, open: '08:00', close: '18:00' },
+      { day: 3, open: '08:00', close: '18:00' },
+      { day: 4, open: '08:00', close: '18:00' },
+      { day: 5, open: '08:00', close: '17:00' },
+    ];
+    if (index % 2 === 0) {
+      base.push({ day: 6, open: '09:00', close: '13:00' });
+    }
+    return base;
+  };
+
+  let siteIndex = 0;
+  for (const { ville, sites } of villesAvecSites) {
+    for (const nom of sites) {
+      const site = await prisma.site.create({
+        data: {
+          nom,
+          ville,
+          openingHours: heuresOuverture(siteIndex),
+        },
+      });
+      siteIdByKey.set(`${ville}||${nom}`, site.id);
+      siteIndex++;
+    }
+  }
+  console.log(`✅ ${siteIndex} sites créés\n`);
   
   const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
   // Seulement les médecins (pas admin)
@@ -380,12 +414,12 @@ async function main() {
         const [hours, minutes] = shuffledHoraires[i].split(':');
         const horaire = withUtcTime(currentDate, parseInt(hours), parseInt(minutes));
 
+        const siteId = siteIdByKey.get(`${assignment.ville}||${assignment.site}`)!;
         const vacation = await prisma.vacation.create({
           data: {
             date: currentDate,
             horaire,
-            ville: assignment.ville,
-            site: assignment.site,
+            siteId,
             modalite: modalites[Math.floor(Math.random() * modalites.length)],
             medecinId: medecin.id,
           },
