@@ -1,54 +1,37 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { switchMap, finalize, catchError, shareReplay } from 'rxjs/operators';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map, finalize, shareReplay } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 /**
- * Service pour gérer le refresh du token de manière centralisée
- * Évite les refresh multiples simultanés
+ * Centralise le refresh du token : si un refresh est déjà en cours,
+ * les appels suivants attendent le même Observable (évite les refresh simultanés).
  */
 @Injectable({
   providedIn: 'root',
 })
 export class TokenRefreshService {
-  private refreshInProgress$: BehaviorSubject<Observable<string> | null> = new BehaviorSubject<Observable<string> | null>(null);
+  private readonly refreshInProgress$ = new BehaviorSubject<Observable<string> | null>(null);
 
   constructor(private authService: AuthService) {}
 
   /**
-   * Rafraîchit le token si nécessaire
-   * Si un refresh est déjà en cours, attend qu'il se termine
-   * @returns Observable qui émet le nouveau token ou une erreur
+   * Rafraîchit le token, ou renvoie le refresh déjà en cours le cas échéant.
+   * @returns Observable émettant le nouveau token (ou propageant l'erreur).
    */
   refreshToken(): Observable<string> {
     const currentRefresh = this.refreshInProgress$.value;
-
-    // Si un refresh est déjà en cours, on attend qu'il se termine
     if (currentRefresh) {
       return currentRefresh;
     }
 
-    // Sinon, on lance un nouveau refresh
-    const refreshObservable = this.authService.refresh().pipe(
-      switchMap((response) => {
-        // Succès : on émet le nouveau token
-        return of(response.accessToken);
-      }),
-      finalize(() => {
-        // Une fois terminé (succès ou erreur), on réinitialise
-        this.refreshInProgress$.next(null);
-      }),
-      catchError((error) => {
-        // En cas d'erreur, on propage l'erreur (finalize s'occupera de réinitialiser)
-        return throwError(() => error);
-      }),
-      shareReplay(1) // Partager le résultat entre tous les abonnés
+    const refresh$ = this.authService.refresh().pipe(
+      map((response) => response.accessToken),
+      finalize(() => this.refreshInProgress$.next(null)),
+      shareReplay(1)
     );
 
-    // Enregistrer le refresh en cours
-    this.refreshInProgress$.next(refreshObservable);
-
-    return refreshObservable;
+    this.refreshInProgress$.next(refresh$);
+    return refresh$;
   }
 }
-
