@@ -3,10 +3,35 @@
   <h5>Vos établissements : localisation, accès, horaires et vos rendez-vous sur place.</h5>
 </div>
 
+<div class="search">
+  <app-icon name="search" [size]="18" class="search__icon"></app-icon>
+  <input
+    type="text"
+    class="search__input"
+    placeholder="Rechercher une ville, un site ou un patient…"
+    [value]="searchTerm"
+    (input)="onSearchInput($any($event.target).value)"
+    aria-label="Rechercher un site"
+  />
+  @if (searchTerm) {
+    <button
+      type="button"
+      class="search__clear"
+      (click)="clearSearch()"
+      aria-label="Effacer la recherche">
+      <app-icon name="x" [size]="16"></app-icon>
+    </button>
+  }
+</div>
+
 @if (isLoading) {
   <p class="state">Chargement des sites…</p>
 } @else if (sites.length === 0) {
-  <p class="state">Aucun site associé à vos vacations pour le moment.</p>
+  @if (searchTerm) {
+    <p class="state">Aucun site ne correspond à « {{ searchTerm }} ».</p>
+  } @else {
+    <p class="state">Aucun site associé à vos vacations pour le moment.</p>
+  }
 } @else {
   <div class="cards">
     @for (s of sites; track s.data.id) {
@@ -71,17 +96,17 @@
         }
 
         <footer class="site-card__actions">
-          <a class="action" [href]="s.directionsUrl" target="_blank" rel="noopener noreferrer">
-            <ui-button color="primary700" [block]="true">
-              <app-icon name="arrow-right" [size]="16"></app-icon>
-              S'y rendre
-            </ui-button>
+          <a
+            class="site-action site-action--primary"
+            [href]="s.directionsUrl"
+            target="_blank"
+            rel="noopener noreferrer">
+            <app-icon name="arrow-right" [size]="16"></app-icon>
+            S'y rendre
           </a>
-          <a class="action" [href]="s.infoUrl" target="_blank" rel="noopener noreferrer">
-            <ui-button color="connect" [block]="true">
-              <app-icon name="globe" [size]="16"></app-icon>
-              {{ s.infoLabel }}
-            </ui-button>
+          <a class="site-action" [href]="s.infoUrl" target="_blank" rel="noopener noreferrer">
+            <app-icon name="globe" [size]="16"></app-icon>
+            {{ s.infoLabel }}
           </a>
         </footer>
       </article>

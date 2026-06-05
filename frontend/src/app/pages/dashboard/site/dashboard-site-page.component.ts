@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Subject, Subscription, merge, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
-import { UiButtonComponent } from '../../../components/button/ui-button.component';
-import { Site, SiteService } from '../../../core/services/site.service';
+import { Site, SiteService, SitesResponse } from '../../../core/services/site.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { getModaliteUi } from '../../../core/constants/modalite.constants';
 import { formatDateLong } from '../../../core/utils/date.utils';
@@ -46,13 +47,17 @@ const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 
 @Component({
   selector: 'app-dashboard-site-page',
   standalone: true,
-  imports: [AppIconComponent, UiBadgeComponent, UiButtonComponent],
+  imports: [AppIconComponent, UiBadgeComponent],
   templateUrl: './dashboard-site-page.component.html',
   styleUrl: './dashboard-site-page.component.scss',
 })
-export class DashboardSitePageComponent implements OnInit {
+export class DashboardSitePageComponent implements OnInit, OnDestroy {
   sites: SiteView[] = [];
   isLoading = true;
+  searchTerm = '';
+
+  private readonly search$ = new Subject<string>();
+  private sub?: Subscription;
 
   constructor(
     private siteService: SiteService,
@@ -61,16 +66,40 @@ export class DashboardSitePageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.siteService.getSites().subscribe({
-      next: (res) => {
+    // Chargement initial immédiat (of('')) puis recherches utilisateur debouncées.
+    this.sub = merge(of(''), this.search$.pipe(debounceTime(250), distinctUntilChanged()))
+      .pipe(
+        switchMap((q) => {
+          this.isLoading = true;
+          return this.siteService.getSites(q).pipe(
+            catchError(() => {
+              this.notificationService.show('danger', 'Impossible de charger les sites');
+              return of({ sites: [], count: 0 } as SitesResponse);
+            })
+          );
+        })
+      )
+      .subscribe((res) => {
         this.sites = res.sites.map((site) => this.toView(site));
         this.isLoading = false;
-      },
-      error: () => {
-        this.isLoading = false;
-        this.notificationService.show('danger', 'Impossible de charger les sites');
-      },
-    });
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
+  onSearchInput(value: string): void {
+    this.searchTerm = value;
+    this.search$.next(value);
+  }
+
+  clearSearch(): void {
+    if (this.searchTerm === '') {
+      return;
+    }
+    this.searchTerm = '';
+    this.search$.next('');
   }
 
   private toView(site: Site): SiteView {
