@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 
 /** Créneau horaire d'ouverture (jour 1 = lundi … 7 = dimanche). */
@@ -40,11 +41,41 @@ export class SitesService {
    * Liste les sites où le médecin a des vacations, avec stats agrégées
    * (RDV distincts, vacations, modalités, prochaine vacation) + métadonnées.
    */
-  async getSitesByMedecin(medecinId: number): Promise<SiteResponse[]> {
+  async getSitesByMedecin(medecinId: number, q?: string): Promise<SiteResponse[]> {
     const todayKey = toDateKey(new Date());
+    const term = q?.trim();
+
+    // Filtre : sites du médecin, éventuellement restreints à la recherche
+    // (nom de site, nom de ville, ou nom/prénom d'un patient ayant un RDV sur place).
+    const where: Prisma.SiteWhereInput = { vacations: { some: { medecinId } } };
+    if (term) {
+      where.OR = [
+        { nom: { contains: term, mode: 'insensitive' } },
+        { ville: { contains: term, mode: 'insensitive' } },
+        {
+          vacations: {
+            some: {
+              medecinId,
+              rdvLinks: {
+                some: {
+                  rdv: {
+                    patient: {
+                      OR: [
+                        { nom: { contains: term, mode: 'insensitive' } },
+                        { prenom: { contains: term, mode: 'insensitive' } },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ];
+    }
 
     const sites = await prisma.site.findMany({
-      where: { vacations: { some: { medecinId } } },
+      where,
       select: {
         id: true,
         nom: true,

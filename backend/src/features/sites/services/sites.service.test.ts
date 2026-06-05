@@ -65,4 +65,30 @@ describe('SitesService.getSitesByMedecin', () => {
     expect(result[1].id).toBe(2);
     expect(result[1].rdvCount).toBe(1);
   });
+
+  it('avec q, filtre par nom de site, ville et nom de patient (where.OR)', async () => {
+    vi.mocked(prisma.site.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.rdvVacation.findMany).mockResolvedValueOnce([] as never);
+
+    await sitesService.getSitesByMedecin(2, 'Lefebvre');
+
+    const arg = vi.mocked(prisma.site.findMany).mock.calls[0][0] as any;
+    expect(arg.where.OR).toHaveLength(3);
+    expect(arg.where.OR[0]).toEqual({ nom: { contains: 'Lefebvre', mode: 'insensitive' } });
+    expect(arg.where.OR[1]).toEqual({ ville: { contains: 'Lefebvre', mode: 'insensitive' } });
+    expect(arg.where.OR[2].vacations.some.rdvLinks.some.rdv.patient.OR).toEqual([
+      { nom: { contains: 'Lefebvre', mode: 'insensitive' } },
+      { prenom: { contains: 'Lefebvre', mode: 'insensitive' } },
+    ]);
+  });
+
+  it('sans q, ne pose pas de filtre OR', async () => {
+    vi.mocked(prisma.site.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.rdvVacation.findMany).mockResolvedValueOnce([] as never);
+
+    await sitesService.getSitesByMedecin(2);
+
+    const arg = vi.mocked(prisma.site.findMany).mock.calls[0][0] as any;
+    expect(arg.where.OR).toBeUndefined();
+  });
 });
