@@ -21,6 +21,7 @@ export interface DossierPlanningStatus {
   hasObservations: boolean;
   fileCount: number;
   operationReady: boolean;
+  verified: boolean;
 }
 
 /**
