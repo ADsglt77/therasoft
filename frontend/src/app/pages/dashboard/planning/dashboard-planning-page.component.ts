@@ -1,11 +1,11 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DayCardComponent, DayType } from '../../../components/calendar/month/day-card/day-card.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { SelectOption } from '../../../components/input/ui-input.component';
 import { PlanningService, Vacation, Rdv } from '../../../core/services/planning.service';
 import { resolveDayStatus } from '../../../core/utils/calendar-day-status.utils';
+import { formatDateKey } from '../../../core/utils/date.utils';
 
 interface DayData {
   dayNumber: number;
@@ -30,7 +30,7 @@ const YEAR_RANGE = 5; // Années avant/après l'année actuelle
 @Component({
   selector: 'app-dashboard-planning-page',
   standalone: true,
-  imports: [CommonModule, DayCardComponent, NavCalendarComponent],
+  imports: [DayCardComponent, NavCalendarComponent],
   templateUrl: './dashboard-planning-page.component.html',
   styleUrl: './dashboard-planning-page.component.scss',
 })
@@ -200,13 +200,13 @@ export class DashboardPlanningPageComponent implements OnInit {
    * Récupère la ville pour une date donnée
    */
   private getVilleForDate(year: number, month: number, day: number): string | undefined {
-    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateKey = formatDateKey(year, month, day);
     const vacations = this.vacationsByDate.get(dateKey);
     return vacations?.[0]?.ville;
   }
 
   private getRdvCountForDate(year: number, month: number, day: number): number {
-    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateKey = formatDateKey(year, month, day);
     return this.rdvsByDate.get(dateKey)?.length ?? 0;
   }
 
@@ -354,7 +354,7 @@ export class DashboardPlanningPageComponent implements OnInit {
   /**
    * Fonction de tracking pour optimiser le rendu de la liste des jours
    */
-  trackByDay(index: number, day: DayData): string {
+  trackByDay(_index: number, day: DayData): string {
     // Utiliser une combinaison unique pour chaque jour
     return `${day.year}-${day.month}-${day.dayNumber}-${day.disabled ? 'disabled' : 'enabled'}-${day.isToday ? 'today' : 'normal'}`;
   }
@@ -364,10 +364,8 @@ export class DashboardPlanningPageComponent implements OnInit {
    */
   onDayClick(event: { year: number; month: number; day: number }): void {
     // Formater la date au format YYYY-MM-DD pour la route
-    const month = String(event.month + 1).padStart(2, '0');
-    const day = String(event.day).padStart(2, '0');
-    const dateStr = `${event.year}-${month}-${day}`;
-    
+    const dateStr = formatDateKey(event.year, event.month, event.day);
+
     // Naviguer vers la page planning-day
     this.router.navigate(['/calendar', dateStr]);
   }
