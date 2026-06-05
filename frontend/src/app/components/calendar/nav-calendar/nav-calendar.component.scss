@@ -42,9 +42,8 @@
     }
   }
 
-  app-icon.nav-arrow {
+  .nav-arrow {
     @include icon-button-circle;
-    cursor: pointer;
   }
 
   @media (max-width: $breakpoint-desktop) {
