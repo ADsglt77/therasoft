@@ -30,6 +30,9 @@ interface TimetableSlot {
   endTime: string;
   title: string;
   disabled: boolean;
+  dossierFileCount: number;
+  dossierHasObservations: boolean;
+  dossierOperationReady: boolean;
 }
 
 type TimelineItem =
@@ -129,6 +132,9 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
             endTime: formatTime(rdv.heureFin),
             title: `${ui.label} - ${rdv.patient.prenom} ${rdv.patient.nom}`,
             disabled: false,
+            dossierFileCount: rdv.dossierStatus?.fileCount ?? 0,
+            dossierHasObservations: rdv.dossierStatus?.hasObservations ?? false,
+            dossierOperationReady: rdv.dossierStatus?.operationReady ?? false,
           };
         });
         this.isLoadingRdvs = false;

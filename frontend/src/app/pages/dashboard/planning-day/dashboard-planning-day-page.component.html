@@ -34,6 +34,9 @@
       } @else {
       <app-timetable [startTime]="item.slot.startTime" [endTime]="item.slot.endTime" [title]="item.slot.title"
         [iconName]="item.slot.iconName"
+        [dossierFileCount]="item.slot.dossierFileCount"
+        [dossierHasObservations]="item.slot.dossierHasObservations"
+        [dossierOperationReady]="item.slot.dossierOperationReady"
         [disabled]="item.slot.disabled" [compact]="true" (actionClick)="onTimetableActionClick(item.slot.id)">
       </app-timetable>
       }
