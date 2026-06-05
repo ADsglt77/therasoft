@@ -1,13 +1,37 @@
 <button type="button" class="day" (click)="onDayClick()" [disabled]="disabled">
   <div class="header">
     <div class="day-number">{{ dayNumber }}</div>
-    @if (!disabled) {
-    <div class="day-rdv-count">
-      <app-icon name="person-standing" [size]="16" class="day-rdv-count__icon"></app-icon>
-      <span class="day-rdv-count__value">{{ rdvCount }}</span>
+    <div class="header__right">
+      @if (allVerified) {
+        <span class="day-verified" title="Tous les dossiers vérifiés" aria-label="Tous les dossiers vérifiés">
+          <app-icon name="clipboard-check" [size]="14"></app-icon>
+        </span>
+      }
+      @if (!disabled) {
+        <div class="day-rdv-count">
+          <app-icon name="person-standing" [size]="16" class="day-rdv-count__icon"></app-icon>
+          <span class="day-rdv-count__value">{{ rdvCount }}</span>
+        </div>
+      }
     </div>
-    }
   </div>
+  @if (!disabled && modalites.length) {
+    <div class="day-info">
+      <div class="day-info__modalites">
+        @for (m of displayModalites; track m) {
+          <app-icon [name]="modaliteIcon(m)" [size]="13" class="day-info__icon" [attr.title]="modaliteLabel(m)"></app-icon>
+        }
+        @if (extraModalites > 0) {
+          <span class="day-info__more">+{{ extraModalites }}</span>
+        }
+      </div>
+      @if (readyCount > 0) {
+        <span class="day-info__ready" [attr.title]="readyCount + ' dossier(s) prêt(s) pour l’opération'">
+          <app-icon name="check" [size]="12"></app-icon>{{ readyCount }}
+        </span>
+      }
+    </div>
+  }
   @if (!disabled) {
     <ui-badge [variant]="badgeVariant" [text]="badgeText"></ui-badge>
   }

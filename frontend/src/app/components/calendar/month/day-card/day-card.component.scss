@@ -51,6 +51,57 @@
         gap: $spacing-2;
         flex-shrink: 0;
       }
+
+      .header__right {
+        display: flex;
+        align-items: center;
+        gap: $spacing-4;
+        flex-shrink: 0;
+      }
+
+      .day-verified {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: $radius-full;
+        background: color-mix(in srgb, var(--color-success) 20%, transparent);
+        color: var(--color-success);
+        line-height: 0;
+      }
+    }
+
+    .day-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $spacing-4;
+      min-width: 0;
+      color: var(--text-muted);
+
+      &__modalites {
+        display: flex;
+        align-items: center;
+        gap: $spacing-4;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      &__more {
+        font-weight: $font-weight-600;
+        flex-shrink: 0;
+      }
+
+      &__ready {
+        display: inline-flex;
+        align-items: center;
+        gap: $spacing-2;
+        flex-shrink: 0;
+        color: var(--color-success);
+        font-weight: $font-weight-600;
+      }
     }
 
     ui-badge {
@@ -66,6 +117,13 @@
     .day {
       padding: $spacing-6 $spacing-8;
       gap: $spacing-2;
+    }
+  }
+
+  // Téléphones : cartes trop étroites pour la ligne d'infos -> on garde l'essentiel
+  @media (max-width: $breakpoint-tablet) {
+    .day .day-info {
+      display: none;
     }
   }
 
