@@ -15,7 +15,11 @@
           <app-icon name="globe" [size]="20"></app-icon>
           <div class="site-card__title">
             <h3>{{ s.data.nom }}</h3>
-            <span class="site-card__ville">{{ s.data.ville }}</span>
+            @if (s.data.adresse) {
+              <span class="site-card__adresse">{{ s.data.adresse }}</span>
+            } @else {
+              <span class="site-card__ville">{{ s.data.ville }}</span>
+            }
           </div>
         </header>
 
