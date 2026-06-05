@@ -1,3 +1,86 @@
 <div class="hero">
-  <h1>Sites</h1>
+  <h1>Mes sites</h1>
+  <h5>Vos établissements : localisation, accès, horaires et vos rendez-vous sur place.</h5>
 </div>
+
+@if (isLoading) {
+  <p class="state">Chargement des sites…</p>
+} @else if (sites.length === 0) {
+  <p class="state">Aucun site associé à vos vacations pour le moment.</p>
+} @else {
+  <div class="cards">
+    @for (s of sites; track s.data.id) {
+      <article class="site-card">
+        <header class="site-card__header">
+          <app-icon name="globe" [size]="20"></app-icon>
+          <div class="site-card__title">
+            <h3>{{ s.data.nom }}</h3>
+            <span class="site-card__ville">{{ s.data.ville }}</span>
+          </div>
+        </header>
+
+        <div class="site-card__map">
+          <iframe
+            [src]="s.embedUrl"
+            [title]="'Carte - ' + s.data.nom"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+          ></iframe>
+        </div>
+
+        <div class="site-card__stats">
+          <ui-badge variant="success" [text]="s.data.rdvCount + ' RDV'"></ui-badge>
+          <ui-badge variant="warning" [text]="s.data.rdvUpcomingCount + ' à venir'"></ui-badge>
+          <span class="stat">
+            <app-icon name="calendar" [size]="15"></app-icon>
+            {{ s.data.vacationCount }} vacations
+          </span>
+        </div>
+
+        @if (s.modalites.length) {
+          <div class="site-card__modalites">
+            @for (m of s.modalites; track m.label) {
+              <span class="chip">
+                <app-icon [name]="m.icon" [size]="14"></app-icon>
+                {{ m.label }}
+              </span>
+            }
+          </div>
+        }
+
+        @if (s.nextVacationLabel) {
+          <p class="site-card__next">
+            <app-icon name="calendar-heart" [size]="15"></app-icon>
+            Prochaine vacation : {{ s.nextVacationLabel }}
+          </p>
+        }
+
+        @if (s.openingHours.length) {
+          <div class="site-card__hours">
+            <h4><app-icon name="clock" [size]="15"></app-icon> Horaires d'ouverture</h4>
+            <ul>
+              @for (h of s.openingHours; track h.label) {
+                <li><span>{{ h.label }}</span><span>{{ h.hours }}</span></li>
+              }
+            </ul>
+          </div>
+        }
+
+        <footer class="site-card__actions">
+          <a class="action" [href]="s.directionsUrl" target="_blank" rel="noopener noreferrer">
+            <ui-button color="primary700" [block]="true">
+              <app-icon name="arrow-right" [size]="16"></app-icon>
+              S'y rendre
+            </ui-button>
+          </a>
+          <a class="action" [href]="s.infoUrl" target="_blank" rel="noopener noreferrer">
+            <ui-button color="connect" [block]="true">
+              <app-icon name="globe" [size]="16"></app-icon>
+              {{ s.infoLabel }}
+            </ui-button>
+          </a>
+        </footer>
+      </article>
+    }
+  </div>
+}
