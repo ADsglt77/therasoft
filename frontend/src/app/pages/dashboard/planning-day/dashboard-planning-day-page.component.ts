@@ -32,6 +32,7 @@ interface TimetableSlot {
   dossierFileCount: number;
   dossierHasObservations: boolean;
   dossierOperationReady: boolean;
+  dossierVerified: boolean;
 }
 
 type TimelineItem =
@@ -134,6 +135,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
             dossierFileCount: rdv.dossierStatus?.fileCount ?? 0,
             dossierHasObservations: rdv.dossierStatus?.hasObservations ?? false,
             dossierOperationReady: rdv.dossierStatus?.operationReady ?? false,
+            dossierVerified: rdv.dossierStatus?.verified ?? false,
           };
         });
         this.isLoadingRdvs = false;
