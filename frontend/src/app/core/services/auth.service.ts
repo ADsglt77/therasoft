@@ -44,15 +44,12 @@ export interface MeResponse {
   providedIn: 'root',
 })
 export class AuthService extends ApiClientService {
-  private tokenStorage: TokenStorageService;
-
   constructor(
     http: HttpClient,
-    tokenStorage: TokenStorageService,
+    private tokenStorage: TokenStorageService,
     private router: Router
   ) {
     super(http);
-    this.tokenStorage = tokenStorage;
   }
   
   /**
@@ -108,6 +105,7 @@ export class AuthService extends ApiClientService {
               prenom: response.medecin.prenom,
               role: response.medecin.role,
               avatarUrl: response.medecin.avatarUrl,
+              avatarFileName: response.medecin.avatarFileName,
             });
           }
         })
