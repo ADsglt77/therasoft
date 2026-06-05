@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, HostBinding, Input, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UiAvatarComponent } from '../../avatar/ui-avatar.component';
 import { AppIconComponent } from '../../icon/app-icon.component';
@@ -11,7 +10,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-menu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, UiAvatarComponent, AppIconComponent, NavbarLinksComponent],
+  imports: [RouterModule, UiAvatarComponent, AppIconComponent, NavbarLinksComponent],
   templateUrl: './menu-dashboard.component.html',
   styleUrl: './menu-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,7 +59,7 @@ export class MenuDashboardComponent implements OnInit, OnDestroy {
   loadUserInfo(): void {
     // Charger les informations utilisateur si elles ne sont pas déjà chargées
     this.authService.getMe().subscribe({
-      next: (user) => {
+      next: () => {
         // L'utilisateur sera automatiquement mis à jour via le BehaviorSubject
         this.cdr.markForCheck();
       },

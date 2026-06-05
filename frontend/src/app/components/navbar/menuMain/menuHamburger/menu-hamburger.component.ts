@@ -1,6 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { ChangeDetectionStrategy, Component, EventEmitter, Output } from '@angular/core';
 import { NavbarLinksComponent } from '../../navbar-links/navbar-links.component';
 import { AuthService } from '../../../../core/services/auth.service';
 import { NotificationService } from '../../../../core/services/notification.service';
@@ -8,7 +6,7 @@ import { NotificationService } from '../../../../core/services/notification.serv
 @Component({
   selector: 'app-menu-hamburger',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavbarLinksComponent],
+  imports: [NavbarLinksComponent],
   templateUrl: './menu-hamburger.component.html',
   styleUrl: './menu-hamburger.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

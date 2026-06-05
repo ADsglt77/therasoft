@@ -1,6 +1,5 @@
 import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { AppIconComponent } from '../icon/app-icon.component';
 
 export type InputType = 'text' | 'email' | 'password' | 'select' | 'file' | 'textarea';
@@ -31,7 +30,7 @@ interface DisplayFile {
 @Component({
   selector: 'ui-input',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppIconComponent],
+  imports: [CommonModule, AppIconComponent],
   templateUrl: './ui-input.component.html',
   styleUrl: './ui-input.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

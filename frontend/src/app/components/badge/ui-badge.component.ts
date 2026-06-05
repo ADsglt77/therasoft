@@ -1,12 +1,11 @@
 import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export type BadgeVariant = 'warning' | 'success' | 'danger' | 'repos' | 'vacances' | 'ferie';
 
 @Component({
   selector: 'ui-badge',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './ui-badge.component.html',
   styleUrl: './ui-badge.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

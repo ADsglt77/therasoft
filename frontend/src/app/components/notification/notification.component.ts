@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { NotificationService, Notification } from '../../core/services/notification.service';
 import { AppIconComponent } from '../icon/app-icon.component';
 import { Subscription } from 'rxjs';
@@ -9,7 +8,7 @@ export type NotificationVariant = 'warning' | 'success' | 'danger' | 'informatio
 @Component({
   selector: 'app-notification',
   standalone: true,
-  imports: [CommonModule, AppIconComponent],
+  imports: [AppIconComponent],
   templateUrl: './notification.component.html',
   styleUrl: './notification.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

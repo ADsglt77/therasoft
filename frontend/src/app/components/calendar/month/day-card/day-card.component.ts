@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../icon/app-icon.component';
 import { UiBadgeComponent, BadgeVariant } from '../../../badge/ui-badge.component';
 import {
@@ -13,7 +12,7 @@ export type DayType = CalendarDayStatus;
 @Component({
   selector: 'app-day-card',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiBadgeComponent],
+  imports: [AppIconComponent, UiBadgeComponent],
   templateUrl: './day-card.component.html',
   styleUrl: './day-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

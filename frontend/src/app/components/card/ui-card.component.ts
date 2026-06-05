@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, HostBinding, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../icon/app-icon.component';
 
 export interface CardPoint {
@@ -10,7 +9,7 @@ export interface CardPoint {
 @Component({
   selector: 'ui-card',
   standalone: true,
-  imports: [CommonModule, AppIconComponent],
+  imports: [AppIconComponent],
   templateUrl: './ui-card.component.html',
   styleUrl: './ui-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

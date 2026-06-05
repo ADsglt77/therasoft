@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { UiBadgeComponent } from '../badge/ui-badge.component';
 import { AppIconComponent } from '../icon/app-icon.component';
 
@@ -22,7 +21,7 @@ import { AppIconComponent } from '../icon/app-icon.component';
 @Component({
   selector: 'app-timetable',
   standalone: true,
-  imports: [CommonModule, UiBadgeComponent, AppIconComponent],
+  imports: [UiBadgeComponent, AppIconComponent],
   templateUrl: './timetable.component.html',
   styleUrl: './timetable.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

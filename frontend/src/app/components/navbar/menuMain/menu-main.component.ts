@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, HostListener, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { UiButtonComponent } from '../../button/ui-button.component';
@@ -14,7 +13,6 @@ import { ThemeService } from '../../../shared/theme/theme.service';
   selector: 'app-menu-main',
   standalone: true,
   imports: [
-    CommonModule,
     UiButtonComponent,
     UiAvatarComponent,
     AppIconComponent,

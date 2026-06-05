@@ -10,7 +10,6 @@ import {
   Output,
   EventEmitter,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AppIconComponent } from '../../icon/app-icon.component';
 
@@ -20,7 +19,7 @@ const LABEL_HIDE_WIDTH_PX = 72;
 @Component({
   selector: 'app-navbar-links',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppIconComponent],
+  imports: [RouterModule, AppIconComponent],
   templateUrl: './navbar-links.component.html',
   styleUrl: './navbar-links.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

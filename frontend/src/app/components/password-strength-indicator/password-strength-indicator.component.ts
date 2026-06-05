@@ -1,5 +1,4 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface PasswordRule {
   label: string;
@@ -13,7 +12,7 @@ export interface PasswordRule {
 @Component({
   selector: 'app-password-strength-indicator',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './password-strength-indicator.component.html',
   styleUrl: './password-strength-indicator.component.scss',
 })

@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, HostBinding, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { UiButtonComponent } from '../button/ui-button.component';
@@ -16,7 +15,7 @@ import { PasswordValidator } from '../../core/validators/password.validator';
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
+  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,

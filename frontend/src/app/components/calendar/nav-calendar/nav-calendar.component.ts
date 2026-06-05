@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../icon/app-icon.component';
 import { UiInputComponent, SelectOption } from '../../input/ui-input.component';
 
@@ -8,7 +7,7 @@ export type CalendarMode = 'day' | 'month';
 @Component({
   selector: 'app-nav-calendar',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiInputComponent],
+  imports: [AppIconComponent, UiInputComponent],
   templateUrl: './nav-calendar.component.html',
   styleUrl: './nav-calendar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
