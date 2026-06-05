@@ -13,9 +13,20 @@ export interface DossierFile {
   url: string;
 }
 
+export interface DossierOperationStatus {
+  operationReady: boolean;
+  operationReadyAt: string | null;
+}
+
+export interface DossierFileUploadResponse extends DossierOperationStatus {
+  files: DossierFile[];
+}
+
 export interface Dossier {
   id: number;
   observations: string | null;
+  operationReady: boolean;
+  operationReadyAt: string | null;
   createdAt: string;
   updatedAt: string;
   files: DossierFile[];
@@ -61,17 +72,25 @@ export class PatientService extends ApiClientService {
     );
   }
 
-  uploadDossierFiles(patientId: number, rdvId: number, files: File[]): Observable<DossierFile[]> {
+  uploadDossierFiles(
+    patientId: number,
+    rdvId: number,
+    files: File[]
+  ): Observable<DossierFileUploadResponse> {
     const formData = new FormData();
     files.forEach((f) => formData.append('files', f));
-    return this.http.post<DossierFile[]>(
+    return this.http.post<DossierFileUploadResponse>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files`,
       formData
     );
   }
 
-  deleteDossierFile(patientId: number, rdvId: number, fileId: number): Observable<void> {
-    return this.http.delete<void>(
+  deleteDossierFile(
+    patientId: number,
+    rdvId: number,
+    fileId: number
+  ): Observable<DossierOperationStatus> {
+    return this.http.delete<DossierOperationStatus>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files/${fileId}`
     );
   }
