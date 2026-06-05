@@ -49,33 +49,23 @@ Reset complet (volume PostgreSQL) : `docker compose down -v` puis `docker compos
 
 ## Commandes
 
-```bash
-docker compose up -d --build   # démarrer (prod)
-docker compose down            # arrêter
-docker compose logs -f backend # logs
-docker compose down -v         # reset total (base incluse)
+```powershell
+.\docker.ps1 up prod          # démarrer (prod)
+.\docker.ps1 down prod        # arrêter
+.\docker.ps1 up dev           # démarrer (hot-reload)
+.\docker.ps1 down dev        # arrêter
 ```
 
-## Développement (hot-reload)
-
-Même URL **http://localhost** : nginx proxy vers `ng serve` (frontend) et `tsx watch` (backend). Les changements dans `frontend/src` et `backend/src` sont pris en compte sans rebuild complet.
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-```
+En mode `dev`, les changements dans `frontend/src` et `backend/src` sont pris en compte sans rebuild complet (hot-reload).
 
 Arrêter Prisma Studio avant un `down` complet si le profil studio est actif :
 
 ```bash
 docker compose --profile studio down
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+./docker.ps1 down dev
 ```
 
-Revenir à la stack prod :
-
-```bash
-docker compose up -d --build
-```
+URL locale : `http://localhost`.
 
 ## Prisma Studio
 
