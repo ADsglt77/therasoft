@@ -28,7 +28,7 @@ Dans Dokploy :
 À chaque push / redémarrage du conteneur **backend**, l’entrypoint exécute automatiquement :
 
 ```text
-prisma generate → prisma db push --accept-data-loss → prisma db seed (reset complet)
+prisma generate → prisma db push --force-reset → prisma db seed (données démo)
 ```
 
 Les comptes démo (voir tableau ci-dessous) sont recréés à chaque fois.

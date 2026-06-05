@@ -6,14 +6,19 @@ until pg_isready -h db -p 5432 -U "$DB_USER"; do
   sleep 2
 done
 
-printf '%s\n' 'ALTER TYPE "Role" RENAME VALUE '"'"'ADMIN'"'"' TO '"'"'SECRETAIRE'"'"';' \
-  | npx prisma db execute --stdin 2>/dev/null || true
+export RESET_DB_ON_SEED="${RESET_DB_ON_SEED:-true}"
 
 echo "Syncing database schema (prisma db push)..."
 npx prisma generate
-npx prisma db push --accept-data-loss
 
-export RESET_DB_ON_SEED="${RESET_DB_ON_SEED:-true}"
+if [ "$RESET_DB_ON_SEED" = "true" ]; then
+  echo "Demo mode: force-reset database schema (all tables dropped)..."
+  npx prisma db push --force-reset
+else
+  printf '%s\n' 'ALTER TYPE "Role" RENAME VALUE '"'"'ADMIN'"'"' TO '"'"'SECRETAIRE'"'"';' \
+    | npx prisma db execute --stdin 2>/dev/null || true
+  npx prisma db push --accept-data-loss
+fi
 echo "Running Prisma seed (RESET_DB_ON_SEED=${RESET_DB_ON_SEED})..."
 
 if [ "$RESET_DB_ON_SEED" = "true" ]; then
