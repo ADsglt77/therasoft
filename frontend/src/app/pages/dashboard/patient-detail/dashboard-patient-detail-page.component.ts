@@ -1,7 +1,6 @@
 import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
@@ -25,7 +24,7 @@ import { formatModalite as formatModaliteUtil } from '../../../core/constants/mo
 @Component({
   selector: 'app-dashboard-patient-detail-page',
   standalone: true,
-  imports: [CommonModule, AppIconComponent, UiInputComponent, UiButtonComponent, UiBadgeComponent],
+  imports: [AppIconComponent, UiInputComponent, UiButtonComponent, UiBadgeComponent],
   templateUrl: './dashboard-patient-detail-page.component.html',
   styleUrl: './dashboard-patient-detail-page.component.scss',
 })
@@ -132,10 +131,9 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
         }));
         this.isLoading = false;
       },
-      error: (error) => {
+      error: () => {
         this.isLoading = false;
         this.dossier = null;
-        const extracted = ApiErrorHandler.extractError(error);
         this.notificationService.show('danger', 'Impossible de charger le dossier médical');
       },
     });
