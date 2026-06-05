@@ -35,6 +35,7 @@ export async function assertDossierAccess(
 export const dossierSelect = {
   id: true,
   observations: true,
+  operationReadyAt: true,
   createdAt: true,
   updatedAt: true,
   files: {

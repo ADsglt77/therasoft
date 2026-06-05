@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { assertDossierAccess, dossierSelect } from './dossier.shared';
+import { syncDossierOperationReady } from './dossier-completion';
 
 export interface DossierFileInfo {
   id: number;
@@ -15,6 +16,8 @@ export interface DossierFileInfo {
 export interface DossierResponse {
   id: number;
   observations: string | null;
+  operationReady: boolean;
+  operationReadyAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   files: DossierFileInfo[];
@@ -37,9 +40,11 @@ export interface DossierResponse {
 type DossierRow = Prisma.DossierGetPayload<{ select: typeof dossierSelect }>;
 
 function mapDossier(dossier: DossierRow): DossierResponse {
-  const { rdv, ...rest } = dossier;
+  const { rdv, operationReadyAt, ...rest } = dossier;
   return {
     ...rest,
+    operationReady: operationReadyAt != null,
+    operationReadyAt,
     patient: rdv.patient,
     rdv: {
       id: rdv.id,
@@ -68,7 +73,13 @@ export class DossierService {
       throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
     }
 
-    return mapDossier(dossier);
+    await syncDossierOperationReady(dossier.id);
+    const refreshed = await prisma.dossier.findUnique({
+      where: { id: dossier.id },
+      select: dossierSelect,
+    });
+
+    return mapDossier(refreshed!);
   }
 
   async updateObservations(
@@ -87,13 +98,19 @@ export class DossierService {
       throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
     }
 
-    const updatedDossier = await prisma.dossier.update({
+    await prisma.dossier.update({
       where: { id: existingDossier.id },
       data: { observations },
+    });
+
+    await syncDossierOperationReady(existingDossier.id);
+
+    const updatedDossier = await prisma.dossier.findUnique({
+      where: { id: existingDossier.id },
       select: dossierSelect,
     });
 
-    return mapDossier(updatedDossier);
+    return mapDossier(updatedDossier!);
   }
 }
 

@@ -82,7 +82,7 @@ router.post(
       medecinId,
       action: 'DOSSIER_FILE_UPLOAD',
       resource: 'dossier_file',
-      resourceId: result.map((f) => f.id).join(','),
+      resourceId: result.files.map((f) => f.id).join(','),
       ip: clientIp(req),
     });
     res.status(201).json(result);
@@ -96,7 +96,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
     const { patientId, rdvId, fileId } = req.params as unknown as PatientRdvFileParams;
-    await dossierFileService.deleteFile(patientId, rdvId, fileId, medecinId);
+    const status = await dossierFileService.deleteFile(patientId, rdvId, fileId, medecinId);
     recordAudit({
       medecinId,
       action: 'DOSSIER_FILE_DELETE',
@@ -104,7 +104,7 @@ router.delete(
       resourceId: fileId,
       ip: clientIp(req),
     });
-    res.status(204).end();
+    res.json(status);
   })
 );
 

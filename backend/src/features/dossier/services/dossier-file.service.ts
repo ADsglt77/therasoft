@@ -4,6 +4,18 @@ import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { UPLOADS_ROOT } from '../../../middlewares/upload';
 import { assertDossierAccess, assertPatientOwnsRdv } from './dossier.shared';
+import { syncDossierOperationReady } from './dossier-completion';
+
+export interface DossierFileUploadResponse {
+  files: DossierFileResponse[];
+  operationReady: boolean;
+  operationReadyAt: Date | null;
+}
+
+export interface DossierOperationStatus {
+  operationReady: boolean;
+  operationReadyAt: Date | null;
+}
 
 export interface DossierFileResponse {
   id: number;
@@ -34,6 +46,17 @@ function toFileResponse(
 }
 
 class DossierFileService {
+  private async getDossierOperationStatus(dossierId: number): Promise<DossierOperationStatus> {
+    const dossier = await prisma.dossier.findUnique({
+      where: { id: dossierId },
+      select: { operationReadyAt: true },
+    });
+    return {
+      operationReady: dossier?.operationReadyAt != null,
+      operationReadyAt: dossier?.operationReadyAt ?? null,
+    };
+  }
+
   private async getDossierId(patientId: number, rdvId: number): Promise<number> {
     await assertPatientOwnsRdv(patientId, rdvId);
     const dossier = await prisma.dossier.findUnique({
@@ -51,7 +74,7 @@ class DossierFileService {
     rdvId: number,
     medecinId: number,
     files: Express.Multer.File[]
-  ): Promise<DossierFileResponse[]> {
+  ): Promise<DossierFileUploadResponse> {
     await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
@@ -69,7 +92,13 @@ class DossierFileService {
       )
     );
 
-    return created.map((f) => toFileResponse(f, patientId, rdvId));
+    await syncDossierOperationReady(dossierId);
+    const status = await this.getDossierOperationStatus(dossierId);
+
+    return {
+      files: created.map((f) => toFileResponse(f, patientId, rdvId)),
+      ...status,
+    };
   }
 
   async deleteFile(
@@ -77,7 +106,7 @@ class DossierFileService {
     rdvId: number,
     fileId: number,
     medecinId: number
-  ): Promise<void> {
+  ): Promise<DossierOperationStatus> {
     await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(patientId, rdvId);
 
@@ -96,6 +125,8 @@ class DossierFileService {
     }
 
     await prisma.dossierFile.delete({ where: { id: fileId } });
+    await syncDossierOperationReady(dossierId);
+    return this.getDossierOperationStatus(dossierId);
   }
 
   async getFilePath(
