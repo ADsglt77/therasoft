@@ -19,7 +19,21 @@ Dans Dokploy :
 
 1. **Compose file** : `docker-compose.yml` seulement
 2. **Domaine** → service **nginx**, port conteneur **80**
-3. Variables : `RESET_DB_ON_SEED=false`, `FRONTEND_ORIGIN=https://ton-domaine.fr`, JWT ≥ 32 caractères
+3. Variables obligatoires :
+   - `RESET_DB_ON_SEED=true` — à chaque déploiement, le backend refait `db push` + reset + seed (données démo fraîches)
+   - `FRONTEND_ORIGIN=https://ton-domaine.fr`
+   - `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` ≥ 32 caractères
+   - `DB_PASSWORD`, `DB_NAME`, `DB_USER`
+
+À chaque push / redémarrage du conteneur **backend**, l’entrypoint exécute automatiquement :
+
+```text
+prisma generate → prisma db push --accept-data-loss → prisma db seed (reset complet)
+```
+
+Les comptes démo (voir tableau ci-dessous) sont recréés à chaque fois.
+
+> Pour une vraie prod avec données persistantes : `RESET_DB_ON_SEED=false` (le seed est alors ignoré si des médecins existent déjà).
 
 Si l’erreur `port is already allocated` revient, un autre service occupe encore le port 80 sur le serveur (ancien déploiement) — le retirer dans Dokploy ou arrêter l’ancien conteneur.
 
@@ -43,7 +57,7 @@ docker compose up -d --build
 docker compose exec backend npx prisma db push --accept-data-loss
 ```
 
-Au démarrage, l’entrypoint exécute `prisma db push --accept-data-loss` (colonnes legacy supprimées, rôle `ADMIN` → `SECRETAIRE` sur les bases existantes). En prod Dokploy, garder `RESET_DB_ON_SEED=false` pour ne pas effacer les données.
+Au démarrage, l’entrypoint exécute `prisma db push --accept-data-loss` (colonnes legacy supprimées, rôle `ADMIN` → `SECRETAIRE` sur les bases existantes). Avec `RESET_DB_ON_SEED=true` (défaut), la base et les uploads sont vidés puis reseedés.
 
 ## Commandes
 
@@ -73,4 +87,4 @@ docker compose --profile studio up studio
 - `DB_PASSWORD` — mot de passe PostgreSQL
 - `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` — secrets aléatoires
 - `HTTP_PORT` — port app (défaut `80`)
-- `RESET_DB_ON_SEED=false` en prod
+- `RESET_DB_ON_SEED=true` sur Dokploy démo (reset à chaque deploy) · `false` si prod réelle
