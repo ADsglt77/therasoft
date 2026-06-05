@@ -546,6 +546,8 @@ async function main() {
         data: {
           rdvId: rdv.id,
           observations: observation,
+          // Démo : dossiers des RDV passés marqués « vérifiés » par le médecin.
+          verified: rdv.date.getTime() < Date.now(),
         },
       });
       dossierCount++;

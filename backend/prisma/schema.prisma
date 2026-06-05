@@ -179,6 +179,9 @@ model Dossier {
   /// Date à laquelle observations + au moins un fichier sont renseignés (prêt opération)
   operationReadyAt DateTime? @map("operation_ready_at")
 
+  /// Marqué manuellement « vérifié / complet » par le médecin (badge « Vérif »)
+  verified Boolean @default(false)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
