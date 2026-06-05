@@ -27,6 +27,7 @@ export interface Dossier {
   observations: string | null;
   operationReady: boolean;
   operationReadyAt: string | null;
+  verified: boolean;
   createdAt: string;
   updatedAt: string;
   files: DossierFile[];
@@ -69,6 +70,13 @@ export class PatientService extends ApiClientService {
     return this.http.patch<Dossier>(
       `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/observations`,
       { observations: observationsValue }
+    );
+  }
+
+  setVerified(patientId: number, rdvId: number, verified: boolean): Observable<Dossier> {
+    return this.http.patch<Dossier>(
+      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/verified`,
+      { verified }
     );
   }
 
