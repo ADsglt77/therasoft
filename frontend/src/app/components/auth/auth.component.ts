@@ -130,10 +130,9 @@ export class AuthComponent implements OnInit {
       return;
     }
 
+    const fields = ['email', 'password'];
     this.isLoading = true;
-    // Réinitialiser les erreurs serveur
-    this.loginForm.get('email')?.setErrors(null);
-    this.loginForm.get('password')?.setErrors(null);
+    this.clearServerErrors(this.loginForm, fields);
 
     const { email, password } = this.loginForm.value;
 
@@ -141,58 +140,14 @@ export class AuthComponent implements OnInit {
       next: () => {
         this.isLoading = false;
         this.notificationService.show('success', NotificationMessages.AUTH_LOGIN_SUCCESS);
-        
-        // Rediriger vers le dashboard
         this.router.navigate(['/calendar']);
       },
       error: (error) => {
         this.isLoading = false;
-
-        // Extraire les informations d'erreur
-        const extracted = ApiErrorHandler.extractError(error);
-
-        // Gérer les erreurs réseau en premier
-        if (ApiErrorHandler.isNetworkError(error)) {
-          this.notificationService.show('danger', extracted.message, 5000);
-          return;
-        }
-
-        // Réinitialiser les erreurs serveur précédentes
-        this.loginForm.get('email')?.setErrors(null);
-        this.loginForm.get('password')?.setErrors(null);
-
-        // Gérer les erreurs de validation Zod
-        if (ApiErrorHandler.isValidationError(error)) {
-          const validationDetails = ApiErrorHandler.getValidationDetails(error);
-          validationDetails.forEach((detail) => {
-            const fieldPath = detail.path?.[0];
-            const fieldControl = this.loginForm.get(fieldPath);
-            if (fieldControl) {
-              const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
-              fieldControl.setErrors({ serverError: errorMessage });
-              fieldControl.markAsTouched();
-            }
-          });
-          return;
-        }
-
-        // Gérer les erreurs métier spécifiques aux champs
-        if (extracted.code === 'AUTH_EMAIL_NOT_FOUND') {
-          const emailControl = this.loginForm.get('email');
-          if (emailControl) {
-            emailControl.setErrors({ serverError: InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message });
-            emailControl.markAsTouched();
-          }
-        } else if (extracted.code === 'AUTH_INVALID_PASSWORD') {
-          const passwordControl = this.loginForm.get('password');
-          if (passwordControl) {
-            passwordControl.setErrors({ serverError: InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message });
-            passwordControl.markAsTouched();
-          }
-        } else {
-          // Erreurs générales (compte désactivé, erreurs système) → Notification uniquement
-          this.notificationService.show('danger', extracted.message);
-        }
+        this.handleAuthError(this.loginForm, error, fields, {
+          AUTH_EMAIL_NOT_FOUND: 'email',
+          AUTH_INVALID_PASSWORD: 'password',
+        });
       },
     });
   }
@@ -203,12 +158,9 @@ export class AuthComponent implements OnInit {
       return;
     }
 
+    const fields = ['email', 'password', 'nom', 'prenom'];
     this.isLoading = true;
-    // Réinitialiser les erreurs serveur
-    this.registerForm.get('email')?.setErrors(null);
-    this.registerForm.get('password')?.setErrors(null);
-    this.registerForm.get('nom')?.setErrors(null);
-    this.registerForm.get('prenom')?.setErrors(null);
+    this.clearServerErrors(this.registerForm, fields);
 
     const { nom, prenom, email, password } = this.registerForm.value;
 
@@ -216,58 +168,73 @@ export class AuthComponent implements OnInit {
       next: () => {
         this.isLoading = false;
         this.notificationService.show('success', NotificationMessages.AUTH_REGISTER_SUCCESS, 5000);
-        
-        // Après inscription, naviguer vers /login avec l'email pré-rempli
-        this.router.navigate(['/login'], {
-          queryParams: { email }
-        });
+        this.router.navigate(['/login'], { queryParams: { email } });
       },
       error: (error) => {
         this.isLoading = false;
-
-        // Extraire les informations d'erreur
-        const extracted = ApiErrorHandler.extractError(error);
-
-        // Gérer les erreurs réseau en premier
-        if (ApiErrorHandler.isNetworkError(error)) {
-          this.notificationService.show('danger', extracted.message, 5000);
-          return;
-        }
-
-        // Réinitialiser les erreurs serveur précédentes
-        this.registerForm.get('email')?.setErrors(null);
-        this.registerForm.get('password')?.setErrors(null);
-        this.registerForm.get('nom')?.setErrors(null);
-        this.registerForm.get('prenom')?.setErrors(null);
-
-        // Gérer les erreurs de validation Zod
-        if (ApiErrorHandler.isValidationError(error)) {
-          const validationDetails = ApiErrorHandler.getValidationDetails(error);
-          validationDetails.forEach((detail) => {
-            const fieldPath = detail.path?.[0];
-            const fieldControl = this.registerForm.get(fieldPath);
-            if (fieldControl) {
-              const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
-              fieldControl.setErrors({ serverError: errorMessage });
-              fieldControl.markAsTouched();
-            }
-          });
-          return;
-        }
-
-        // Gérer les erreurs métier spécifiques aux champs
-        if (extracted.code === 'AUTH_EMAIL_EXISTS') {
-          const emailControl = this.registerForm.get('email');
-          if (emailControl) {
-            emailControl.setErrors({ serverError: InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message });
-            emailControl.markAsTouched();
-          }
-        } else {
-          // Erreurs générales → Notification uniquement
-          this.notificationService.show('danger', extracted.message);
-        }
+        this.handleAuthError(this.registerForm, error, fields, {
+          AUTH_EMAIL_EXISTS: 'email',
+        });
       },
     });
+  }
+
+  /** Réinitialise les erreurs des champs donnés (avant un nouvel envoi). */
+  private clearServerErrors(form: FormGroup, fields: string[]): void {
+    fields.forEach((field) => form.get(field)?.setErrors(null));
+  }
+
+  /** Applique une erreur serveur à un champ et le marque comme touché. */
+  private setFieldServerError(form: FormGroup, fieldName: string, message: string): void {
+    const control = form.get(fieldName);
+    if (control) {
+      control.setErrors({ serverError: message });
+      control.markAsTouched();
+    }
+  }
+
+  /**
+   * Gère une erreur d'authentification : réseau, validation Zod (par champ),
+   * erreur métier rattachée à un champ, ou notification générale.
+   * @param businessErrorFields code d'erreur → nom du champ à marquer en erreur.
+   */
+  private handleAuthError(
+    form: FormGroup,
+    error: unknown,
+    fields: string[],
+    businessErrorFields: Record<string, string>
+  ): void {
+    const extracted = ApiErrorHandler.extractError(error);
+
+    if (ApiErrorHandler.isNetworkError(error)) {
+      this.notificationService.show('danger', extracted.message, 5000);
+      return;
+    }
+
+    this.clearServerErrors(form, fields);
+
+    if (ApiErrorHandler.isValidationError(error)) {
+      ApiErrorHandler.getValidationDetails(error).forEach((detail) => {
+        const fieldPath = detail.path?.[0];
+        const control = fieldPath ? form.get(fieldPath) : null;
+        if (control) {
+          control.setErrors({
+            serverError: InputErrorMessages.getServerValidationMessage(fieldPath, detail.message),
+          });
+          control.markAsTouched();
+        }
+      });
+      return;
+    }
+
+    const code = extracted.code;
+    const businessField = code ? businessErrorFields[code] : undefined;
+    if (code && businessField) {
+      const message = InputErrorMessages.getBusinessErrorMessage(code) || extracted.message;
+      this.setFieldServerError(form, businessField, message);
+    } else {
+      this.notificationService.show('danger', extracted.message);
+    }
   }
 
 
@@ -344,25 +311,17 @@ export class AuthComponent implements OnInit {
     return this.registerForm.get('password')?.value || '';
   }
 
-  /**
-   * Obtient le message pour le champ de confirmation de mot de passe
-   */
-  getConfirmPasswordMessage(): string {
+  /** True si la confirmation diffère du mot de passe (et le champ a été touché). */
+  private get hasConfirmPasswordMismatch(): boolean {
     const field = this.registerForm.get('confirmPassword');
-    if (field?.hasError('passwordMismatch') && (field.touched || field.dirty)) {
-      return 'Les mots de passe ne correspondent pas';
-    }
-    return '';
+    return !!(field?.hasError('passwordMismatch') && (field.touched || field.dirty));
   }
 
-  /**
-   * Obtient le type de message pour le champ de confirmation de mot de passe
-   */
+  getConfirmPasswordMessage(): string {
+    return this.hasConfirmPasswordMismatch ? 'Les mots de passe ne correspondent pas' : '';
+  }
+
   getConfirmPasswordMessageType(): InputMessageType | '' {
-    const field = this.registerForm.get('confirmPassword');
-    if (field?.hasError('passwordMismatch') && (field.touched || field.dirty)) {
-      return 'error';
-    }
-    return '';
+    return this.hasConfirmPasswordMismatch ? 'error' : '';
   }
 }
