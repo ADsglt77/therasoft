@@ -45,25 +45,18 @@ docker compose exec backend npx prisma db push --accept-data-loss
 
 Au démarrage, l’entrypoint exécute `prisma db push --accept-data-loss` (colonnes legacy supprimées, rôle `ADMIN` → `SECRETAIRE` sur les bases existantes). En prod Dokploy, garder `RESET_DB_ON_SEED=false` pour ne pas effacer les données.
 
-Reset complet (volume PostgreSQL) : `docker compose down -v` puis `docker compose up --build`.
-
 ## Commandes
 
 ```powershell
 .\docker.ps1 up prod          # démarrer (prod)
-.\docker.ps1 down prod        # arrêter
+.\docker.ps1 down prod        # arrêter + supprimer volumes (BDD incluse)
 .\docker.ps1 up dev           # démarrer (hot-reload)
-.\docker.ps1 down dev        # arrêter
+.\docker.ps1 down dev         # arrêter + supprimer volumes (BDD incluse)
 ```
+
+`down` supprime **tout** (conteneurs, volumes PostgreSQL, uploads). Au prochain `up`, la base est recréée et seedée automatiquement (`RESET_DB_ON_SEED=true` par défaut en local).
 
 En mode `dev`, les changements dans `frontend/src` et `backend/src` sont pris en compte sans rebuild complet (hot-reload).
-
-Arrêter Prisma Studio avant un `down` complet si le profil studio est actif :
-
-```bash
-docker compose --profile studio down
-./docker.ps1 down dev
-```
 
 URL locale : `http://localhost`.
 
