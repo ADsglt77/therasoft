@@ -1,6 +1,9 @@
 @use '../../../styles/mixins' as *;
 
-:host {
+// ViewEncapsulation.None : on cible `app-icon` (le `:host` ne s'applique pas
+// sans shadow DOM). `icon-center` supprime l'espace "descender" du SVG inline,
+// qui causait une marge sous chaque icône Lucide.
+app-icon {
   @include icon-center;
   vertical-align: middle;
 
