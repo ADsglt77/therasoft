@@ -12,6 +12,9 @@ interface DayData {
   type: DayType;
   location?: string;
   rdvCount: number;
+  modalites: string[];
+  readyCount: number;
+  allVerified: boolean;
   disabled?: boolean;
   isToday?: boolean;
   year: number;
@@ -210,6 +213,30 @@ export class DashboardPlanningPageComponent implements OnInit {
     return this.rdvsByDate.get(dateKey)?.length ?? 0;
   }
 
+  /** Modalités distinctes des RDV du jour (pour les icônes de la carte). */
+  private getDayModalites(year: number, month: number, day: number): string[] {
+    const dateKey = formatDateKey(year, month, day);
+    const rdvs = this.rdvsByDate.get(dateKey);
+    if (!rdvs) return [];
+    return [...new Set(rdvs.map((rdv) => rdv.modalite))];
+  }
+
+  /** Nombre de dossiers prêts pour l'opération ce jour-là. */
+  private getReadyCountForDate(year: number, month: number, day: number): number {
+    const dateKey = formatDateKey(year, month, day);
+    const rdvs = this.rdvsByDate.get(dateKey);
+    if (!rdvs) return 0;
+    return rdvs.filter((rdv) => rdv.dossierStatus?.operationReady).length;
+  }
+
+  /** True si le jour a au moins un RDV et que tous leurs dossiers sont vérifiés. */
+  private getDayAllVerified(year: number, month: number, day: number): boolean {
+    const dateKey = formatDateKey(year, month, day);
+    const rdvs = this.rdvsByDate.get(dateKey);
+    if (!rdvs || rdvs.length === 0) return false;
+    return rdvs.every((rdv) => rdv.dossierStatus?.verified);
+  }
+
   /**
    * Calcule les jours à afficher pour le mois actuel
    */
@@ -275,6 +302,9 @@ export class DashboardPlanningPageComponent implements OnInit {
       type,
       location,
       rdvCount,
+      modalites: disabled ? [] : this.getDayModalites(year, month, day),
+      readyCount: disabled ? 0 : this.getReadyCountForDate(year, month, day),
+      allVerified: disabled ? false : this.getDayAllVerified(year, month, day),
       disabled,
       isToday: this.isToday(year, month, day),
       year,
