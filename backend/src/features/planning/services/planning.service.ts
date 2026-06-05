@@ -96,7 +96,7 @@ export class PlanningService {
     const rangeStart = startDate ?? start;
     const rangeEnd = endDate ?? end;
 
-    return prisma.vacation.findMany({
+    const rows = await prisma.vacation.findMany({
       where: {
         medecinId,
         date: { gte: rangeStart, lte: rangeEnd },
@@ -105,12 +105,20 @@ export class PlanningService {
         id: true,
         date: true,
         horaire: true,
-        site: true,
-        ville: true,
         modalite: true,
+        site: { select: { nom: true, ville: true } },
       },
       orderBy: { date: 'asc' },
     });
+
+    return rows.map((v) => ({
+      id: v.id,
+      date: v.date,
+      horaire: v.horaire,
+      site: v.site.nom,
+      ville: v.site.ville,
+      modalite: v.modalite,
+    }));
   }
 
   async getRdvsByDateRange(
