@@ -40,8 +40,11 @@
       </div>
       <div class="birthdate">
         <p>Date de naissance</p>
-        <p>{{ formatDate(dossier.patient.dateNaissance) }} ({{ getAge(dossier.patient.dateNaissance) }}
-          ans)</p>
+        @if (dossier.patient.dateNaissance) {
+          <p>{{ formatDate(dossier.patient.dateNaissance) }} ({{ getAge(dossier.patient.dateNaissance) }} ans)</p>
+        } @else {
+          <p>Non renseignée</p>
+        }
       </div>
       <div class="sexe">
         <p>Sexe</p>
