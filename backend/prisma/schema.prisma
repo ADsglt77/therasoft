@@ -13,6 +13,7 @@ datasource db {
 enum Role {
   MEDECIN
   SECRETAIRE
+  PATIENT
 }
 
 enum Sexe {
@@ -52,6 +53,8 @@ model Medecin {
   vacations  Vacation[]
   sessions   AuthSession[]
   auditLogs  AuditLog[]
+  patients   Patient[] @relation("PatientMedecin")
+  rdvs       Rdv[]
 
   @@map("medecin")
 }
@@ -101,25 +104,35 @@ model Site {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   vacations Vacation[]
+  rdvs      Rdv[]
 
   @@unique([nom, ville])
   @@map("site")
 }
 
 model Patient {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   nom           String
   prenom        String
-  dateNaissance DateTime @map("date_naissance") @db.Date
-  sexe          Sexe?    @default(UNKNOWN)
+  dateNaissance DateTime? @map("date_naissance") @db.Date
+  sexe          Sexe?     @default(UNKNOWN)
+
+  // Compte patient (auto-inscription) : null pour les fiches créées côté médecin.
+  email        String? @unique
+  passwordHash String? @map("password_hash")
+
+  medecinId Int?     @map("id_medecin")
+  medecin   Medecin? @relation("PatientMedecin", fields: [medecinId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  rdvs Rdv[]
+  rdvs     Rdv[]
+  sessions AuthSession[]
 
   @@index([nom, prenom])
   @@index([dateNaissance])
+  @@index([medecinId])
   @@map("patient")
 }
 
@@ -131,9 +144,17 @@ model Rdv {
   heureFin   DateTime @map("heure_fin") @db.Time(0)
 
   modalite ModaliteType
+  motif    String?
 
   patientId Int     @map("id_patient")
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  // Réservation patient : médecin + site choisis (null pour les RDV seedés liés via vacation).
+  medecinId Int?     @map("id_medecin")
+  medecin   Medecin? @relation(fields: [medecinId], references: [id], onDelete: SetNull)
+
+  siteId Int?  @map("id_site")
+  site   Site? @relation(fields: [siteId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -144,6 +165,7 @@ model Rdv {
   @@index([patientId])
   @@index([date])
   @@index([patientId, date])
+  @@index([medecinId])
   @@map("rdv")
 }
 
@@ -228,8 +250,11 @@ model AuditLog {
 model AuthSession {
   id Int @id @default(autoincrement())
 
-  medecinId Int     @map("id_medecin")
-  medecin   Medecin @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+  medecinId Int?     @map("id_medecin")
+  medecin   Medecin? @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+
+  patientId Int?     @map("id_patient")
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   refreshTokenHash String    @map("refresh_token_hash")
   expiresAt        DateTime  @map("expires_at")
@@ -239,7 +264,17 @@ model AuthSession {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([medecinId])
+  @@index([patientId])
   @@index([expiresAt])
   @@map("auth_session")
+}
+
+// Durée (en minutes) d'un rendez-vous selon la modalité — éditable en base.
+model ModaliteConfig {
+  id           Int          @id @default(autoincrement())
+  modalite     ModaliteType @unique
+  dureeMinutes Int          @map("duree_minutes")
+
+  @@map("modalite_config")
 }
 
