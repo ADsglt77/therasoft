@@ -23,6 +23,7 @@ export class DayCardComponent {
   @Input() type: DayType = 'repos';
   @Input() location?: string; // Lieu de travail si type = 'travail'
   @Input() rdvCount: number = 0;
+  @Input() showRdvCount: boolean = true; // false côté patient (calendrier de réservation)
   @Input() modalites: string[] = []; // Modalités (types d'examen) distinctes du jour
   @Input() readyCount: number = 0; // Dossiers prêts pour l'opération ce jour-là
   @Input() allVerified: boolean = false; // true si tous les dossiers du jour sont vérifiés
