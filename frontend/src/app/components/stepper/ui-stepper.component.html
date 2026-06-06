@@ -1,0 +1,31 @@
+<ol class="stepper">
+  @for (step of steps; track step.label; let i = $index; let last = $last) {
+    <li
+      class="stepper__item"
+      [class.is-active]="i === current"
+      [class.is-done]="step.done"
+      [class.is-locked]="i > maxReachable">
+      <button
+        type="button"
+        class="stepper__btn"
+        [disabled]="i > maxReachable"
+        (click)="select(i)"
+        [attr.aria-current]="i === current ? 'step' : null">
+        <span class="stepper__circle">
+          @if (step.done && i !== current) {
+            <app-icon name="check" [size]="15"></app-icon>
+          } @else {
+            {{ i + 1 }}
+          }
+        </span>
+        <span class="stepper__meta">
+          <span class="stepper__label">{{ step.label }}</span>
+          <span class="stepper__value">{{ step.value || (i === current ? 'En cours' : 'À venir') }}</span>
+        </span>
+      </button>
+      @if (!last) {
+        <span class="stepper__line" [class.is-filled]="step.done" aria-hidden="true"></span>
+      }
+    </li>
+  }
+</ol>
