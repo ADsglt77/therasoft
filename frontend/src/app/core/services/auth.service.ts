@@ -5,39 +5,45 @@ import { ApiClientService } from '../../api/api-client.service';
 import { TokenStorageService } from './token-storage.service';
 import { Router } from '@angular/router';
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  nom: string;
-  prenom: string;
-}
-
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  medecin: {
-    id: number;
-    email?: string;
-    nom: string;
-    prenom: string;
-    role: string;
-    avatarUrl?: string | null;
-    avatarFileName?: string | null;
-  };
+export interface PatientRegisterRequest {
+  nom: string;
+  prenom: string;
+  email: string;
+  password: string;
+  medecinId: number;
 }
 
-export interface MeResponse {
+export interface MedecinOption {
   id: number;
-  email: string;
+  nom: string;
+  prenom: string;
+  specialite?: string | null;
+}
+
+/** Utilisateur connecté (médecin/secrétaire ou patient). */
+export interface AuthUser {
+  id: number;
   nom: string;
   prenom: string;
   role: string;
+  email?: string;
   avatarUrl?: string | null;
   avatarFileName?: string | null;
+  medecin?: MedecinOption | null;
+}
+
+/** Alias historique conservé pour les composants existants. */
+export type MeResponse = AuthUser;
+
+export interface AuthResponse {
+  accessToken: string;
+  role: string;
+  user: AuthUser;
 }
 
 @Injectable({
@@ -51,106 +57,59 @@ export class AuthService extends ApiClientService {
   ) {
     super(http);
   }
-  
-  /**
-   * BehaviorSubject pour stocker l'utilisateur actuel
-   * Permet de partager les informations utilisateur entre les composants
-   */
-  private currentUserSubject = new BehaviorSubject<MeResponse | null>(null);
+
+  private currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable().pipe(shareReplay(1));
 
-  /**
-   * Met à jour l'utilisateur actuel dans le BehaviorSubject
-   */
-  private setCurrentUser(user: MeResponse | null): void {
+  private setCurrentUser(user: AuthUser | null): void {
     this.currentUserSubject.next(user);
   }
 
-  /**
-   * Récupère l'utilisateur actuel (Observable)
-   * S'abonner à cette méthode pour recevoir les mises à jour en temps réel
-   */
-  getCurrentUser(): Observable<MeResponse | null> {
+  getCurrentUser(): Observable<AuthUser | null> {
     return this.currentUser$;
   }
 
-  /**
-   * Inscription d'un nouveau médecin
-   */
-  register(data: RegisterRequest): Observable<{ message: string; medecin: MeResponse }> {
-    return this.http.post<{ message: string; medecin: MeResponse }>(
-      `${this.baseUrl}/auth/register`,
-      data
-    );
-  }
-
-  /**
-   * Connexion d'un médecin
-   */
+  /** Connexion unifiée (médecin ou patient) ; le backend renvoie le rôle. */
   login(data: LoginRequest): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${this.baseUrl}/auth/login`, data, {
-        withCredentials: true, // Important pour recevoir les cookies httpOnly
-      })
-      .pipe(
-        tap((response) => {
-          // Sauvegarder l'access token
-          this.tokenStorage.setAccessToken(response.accessToken);
-          // Mettre à jour l'utilisateur actuel
-          if (response.medecin) {
-            this.setCurrentUser({
-              id: response.medecin.id,
-              email: response.medecin.email || '',
-              nom: response.medecin.nom,
-              prenom: response.medecin.prenom,
-              role: response.medecin.role,
-              avatarUrl: response.medecin.avatarUrl,
-              avatarFileName: response.medecin.avatarFileName,
-            });
-          }
-        })
-      );
+      .post<AuthResponse>(`${this.baseUrl}/auth/login`, data, { withCredentials: true })
+      .pipe(tap((res) => this.applyAuth(res)));
   }
 
-  /**
-   * Rafraîchir l'access token
-   */
+  /** Auto-inscription patient (+ médecin choisi) : connecte directement. */
+  registerPatient(data: PatientRegisterRequest): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${this.baseUrl}/auth/patient/register`, data, { withCredentials: true })
+      .pipe(tap((res) => this.applyAuth(res)));
+  }
+
+  /** Liste des médecins (pour le select d'inscription patient). */
+  getMedecins(): Observable<{ medecins: MedecinOption[] }> {
+    return this.http.get<{ medecins: MedecinOption[] }>(`${this.baseUrl}/auth/medecins`);
+  }
+
+  private applyAuth(res: AuthResponse): void {
+    this.tokenStorage.setAccessToken(res.accessToken);
+    this.tokenStorage.setRole(res.role);
+    this.setCurrentUser(res.user);
+  }
+
   refresh(): Observable<{ accessToken: string }> {
     return this.http
-      .post<{ accessToken: string }>(
-        `${this.baseUrl}/auth/refresh`,
-        {},
-        {
-          withCredentials: true, // Envoie les cookies
-        }
-      )
-      .pipe(
-        tap((response) => {
-          this.tokenStorage.setAccessToken(response.accessToken);
-        })
-      );
+      .post<{ accessToken: string }>(`${this.baseUrl}/auth/refresh`, {}, { withCredentials: true })
+      .pipe(tap((response) => this.tokenStorage.setAccessToken(response.accessToken)));
   }
 
-  /**
-   * Supprime le token et l'état utilisateur côté client (sans appel API).
-   */
+  /** Supprime le token et l'état utilisateur côté client (sans appel API). */
   clearSession(): void {
     this.tokenStorage.clear();
     this.setCurrentUser(null);
   }
 
-  /**
-   * Déconnexion : nettoie toujours la session locale, même si l'API échoue.
-   */
+  /** Déconnexion : nettoie toujours la session locale, même si l'API échoue. */
   logout(): Observable<void> {
     return this.http
-      .post<void>(
-        `${this.baseUrl}/auth/logout`,
-        {},
-        {
-          withCredentials: true,
-        }
-      )
+      .post<void>(`${this.baseUrl}/auth/logout`, {}, { withCredentials: true })
       .pipe(
         catchError(() => of(undefined)),
         finalize(() => {
@@ -160,61 +119,41 @@ export class AuthService extends ApiClientService {
       );
   }
 
-  /**
-   * Récupère les informations du médecin connecté
-   */
-  getMe(): Observable<MeResponse> {
-    return this.http.get<MeResponse>(`${this.baseUrl}/auth/me`).pipe(
-      tap((user) => {
-        // Mettre à jour l'utilisateur actuel après récupération
-        this.setCurrentUser(user);
-      })
-    );
+  /** Récupère l'utilisateur connecté selon son rôle. */
+  getMe(): Observable<AuthUser> {
+    const url = this.isPatient() ? `${this.baseUrl}/auth/patient/me` : `${this.baseUrl}/auth/me`;
+    return this.http.get<AuthUser>(url).pipe(tap((user) => this.setCurrentUser(user)));
   }
 
-  /**
-   * Modifie le profil du médecin connecté
-   */
-  updateProfile(data: { nom?: string; prenom?: string }): Observable<MeResponse> {
-    return this.http.patch<MeResponse>(`${this.baseUrl}/auth/me`, data).pipe(
-      tap((updatedUser) => {
-        // Mettre à jour l'utilisateur actuel après modification
-        this.setCurrentUser(updatedUser);
-      })
-    );
+  updateProfile(data: { nom?: string; prenom?: string }): Observable<AuthUser> {
+    const url = this.isPatient() ? `${this.baseUrl}/auth/patient/me` : `${this.baseUrl}/auth/me`;
+    return this.http.patch<AuthUser>(url, data).pipe(tap((updatedUser) => this.setCurrentUser(updatedUser)));
   }
 
-  /**
-   * Change le mot de passe du médecin connecté
-   */
   changePassword(data: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
-    return this.http.patch<{ message: string }>(`${this.baseUrl}/auth/password`, data);
+    const url = this.isPatient() ? `${this.baseUrl}/auth/patient/password` : `${this.baseUrl}/auth/password`;
+    return this.http.patch<{ message: string }>(url, data);
   }
 
-  /**
-   * Met à jour l'avatar du médecin connecté
-   */
-  updateAvatar(data: { avatarUrl: string | null; avatarFileName?: string | null }): Observable<MeResponse> {
-    return this.http.patch<MeResponse>(`${this.baseUrl}/auth/avatar`, data).pipe(
-      tap((updatedUser) => {
-        // Mettre à jour l'utilisateur actuel après modification
-        this.setCurrentUser(updatedUser);
-      })
-    );
+  updateAvatar(data: { avatarUrl: string | null; avatarFileName?: string | null }): Observable<AuthUser> {
+    return this.http
+      .patch<AuthUser>(`${this.baseUrl}/auth/avatar`, data)
+      .pipe(tap((updatedUser) => this.setCurrentUser(updatedUser)));
   }
 
-  /**
-   * Vérifie si l'utilisateur est authentifié
-   */
   isAuthenticated(): boolean {
     return !!this.tokenStorage.getAccessToken();
   }
 
-  /**
-   * Récupère le token d'accès
-   */
   getAccessToken(): string | null {
     return this.tokenStorage.getAccessToken();
   }
-}
 
+  getRole(): string | null {
+    return this.tokenStorage.getRole();
+  }
+
+  isPatient(): boolean {
+    return this.getRole() === 'PATIENT';
+  }
+}
