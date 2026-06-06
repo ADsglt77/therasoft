@@ -2,7 +2,7 @@ import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, E
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../icon/app-icon.component';
 
-export type InputType = 'text' | 'email' | 'password' | 'select' | 'file' | 'textarea';
+export type InputType = 'text' | 'email' | 'password' | 'select' | 'file' | 'textarea' | 'date';
 export type InputMessageType = 'error' | 'info' | 'success' | 'warning';
 
 export interface SelectOption {
@@ -59,6 +59,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() rows: number = 4;
   @Input() fullHeight: boolean = false;
   @Output() input = new EventEmitter<Event>();
+  @Output() valueChange = new EventEmitter<string>();
   @Output() blur = new EventEmitter<Event>();
   @Output() change = new EventEmitter<Event>();
   @Output() filesSelected = new EventEmitter<File[]>();
@@ -209,9 +210,10 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.computeAutoMessage();
     this.cdr.markForCheck();
     
-    // Émettre l'événement change
-      const changeEvent = new Event('change', { bubbles: true });
-      this.change.emit(changeEvent);
+    // Émettre la valeur sélectionnée + l'événement change
+    this.valueChange.emit(this.value);
+    const changeEvent = new Event('change', { bubbles: true });
+    this.change.emit(changeEvent);
   }
 
   get selectedLabel(): string {
@@ -232,7 +234,8 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.value = target.value;
     this.computeAutoMessage();
     this.cdr.markForCheck();
-    // Émettre l'événement vers le parent
+    // Émettre la valeur + l'événement vers le parent
+    this.valueChange.emit(this.value);
     this.input.emit(event);
   }
 
