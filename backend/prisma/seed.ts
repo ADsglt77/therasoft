@@ -207,6 +207,7 @@ async function main() {
     await prisma.authSession.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.medecin.deleteMany();
+    await prisma.modaliteConfig.deleteMany();
     console.log('✅ Base de données nettoyée\n');
   } else {
     console.log('🌱 Base vide : initialisation des données de démonstration...\n');
@@ -252,6 +253,23 @@ async function main() {
   });
 
   console.log(`✅ ${3} médecins créés\n`);
+
+  console.log('⏱️  Configuration des durées par modalité...');
+  const modaliteDurees: Record<ModaliteType, number> = {
+    [ModaliteType.XRAY]: 15,
+    [ModaliteType.CT]: 20,
+    [ModaliteType.MRI]: 30,
+    [ModaliteType.US]: 20,
+    [ModaliteType.MAMMO]: 15,
+    [ModaliteType.PET]: 45,
+    [ModaliteType.OTHER]: 30,
+  };
+  await Promise.all(
+    (Object.keys(modaliteDurees) as ModaliteType[]).map((modalite) =>
+      prisma.modaliteConfig.create({ data: { modalite, dureeMinutes: modaliteDurees[modalite] } })
+    )
+  );
+  console.log('✅ Durées par modalité configurées\n');
 
   console.log('👤 Création des patients...');
   const patients = [
@@ -560,6 +578,40 @@ async function main() {
     }
   }
   console.log(`✅ ${dossierCount} dossiers médicaux créés\n`);
+
+  console.log('🧑‍🤝‍🧑 Création d\'un compte patient de démonstration...');
+  // Réservation sur une vacation future de medecin2 (visible aussi côté médecin).
+  const todayKey = toUtcDateKey(new Date());
+  const refVacation =
+    vacations.find((v) => v.medecinId === medecin2.id && toUtcDateKey(v.date) >= todayKey) ??
+    vacations.find((v) => v.medecinId === medecin2.id);
+
+  const demoPatient = await prisma.patient.create({
+    data: {
+      nom: 'Patient',
+      prenom: 'Demo',
+      email: 'patient@patient.patient',
+      passwordHash,
+      medecinId: medecin2.id,
+    },
+  });
+
+  if (refVacation) {
+    await prisma.rdv.create({
+      data: {
+        date: refVacation.date,
+        heureDebut: withUtcTime(refVacation.date, 10, 0),
+        heureFin: withUtcTime(refVacation.date, 10, 30),
+        modalite: ModaliteType.OTHER,
+        motif: 'Consultation de suivi',
+        patientId: demoPatient.id,
+        medecinId: medecin2.id,
+        siteId: refVacation.siteId,
+        dossier: { create: {} },
+      },
+    });
+  }
+  console.log('✅ Compte patient : patient@patient.patient / Azertyuiop1!\n');
 
   console.log('✨ Seed terminé avec succès !\n');
   console.log('📊 Résumé:');
