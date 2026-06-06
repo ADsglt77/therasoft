@@ -1,0 +1,73 @@
+@use '../../../../../styles/tokens' as *;
+@use '../../../../../styles/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-8;
+  width: 100%;
+}
+
+.calendar-grid {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-4;
+  @include panel($spacing-8);
+
+  .weekdays,
+  .week-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: $spacing-6;
+  }
+
+  .week-row {
+    min-height: 64px;
+
+    app-day-card {
+      min-height: 64px;
+      height: 100%;
+    }
+  }
+
+  .week-day {
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: $font-weight-600;
+    padding: $spacing-2 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &__short {
+      display: none;
+    }
+  }
+
+  @media (max-width: $breakpoint-tablet) {
+    .weekdays,
+    .week-row {
+      grid-template-columns: repeat(5, 1fr);
+      gap: $spacing-4;
+    }
+
+    .weekdays .week-day:nth-child(6),
+    .weekdays .week-day:nth-child(7),
+    .week-row > app-day-card:nth-child(6),
+    .week-row > app-day-card:nth-child(7) {
+      display: none;
+    }
+
+    .week-day__full {
+      display: none;
+    }
+    .week-day__short {
+      display: inline;
+    }
+
+    .week-row,
+    app-day-card {
+      min-height: 52px;
+    }
+  }
+}

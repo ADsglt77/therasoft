@@ -1,0 +1,38 @@
+<app-nav-calendar
+  mode="month"
+  [monthName]="monthName"
+  [currentYear]="currentYear"
+  [yearOptions]="yearOptions"
+  (previous)="previousMonth()"
+  (next)="nextMonth()"
+  (yearChange)="onYearChange($event)">
+</app-nav-calendar>
+
+<div class="calendar-grid">
+  <div class="weekdays" role="row">
+    @for (dayName of weekDays; track dayName; let i = $index) {
+      <div class="week-day">
+        <span class="week-day__full">{{ dayName }}</span>
+        <span class="week-day__short">{{ weekDaysShort[i] }}</span>
+      </div>
+    }
+  </div>
+
+  @for (week of weeks; track $index) {
+    <div class="week-row" role="row">
+      @for (cell of week; track trackCell($index, cell)) {
+        <app-day-card
+          [dayNumber]="cell.dayNumber"
+          [type]="isAvailable(cell) ? 'travail' : 'repos'"
+          [location]="isAvailable(cell) ? 'Disponible' : undefined"
+          [showRdvCount]="false"
+          [disabled]="!isAvailable(cell)"
+          [isToday]="cell.isToday"
+          [year]="cell.year"
+          [month]="cell.month"
+          (dayClick)="onDayClick($event)">
+        </app-day-card>
+      }
+    </div>
+  }
+</div>
