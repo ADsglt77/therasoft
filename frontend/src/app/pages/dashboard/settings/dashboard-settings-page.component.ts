@@ -53,6 +53,11 @@ export class DashboardSettingsPageComponent implements OnInit {
     this.loadUserInfo();
   }
 
+  /** Le patient n'a pas de photo de profil : la section avatar est masquée. */
+  get isPatient(): boolean {
+    return this.authService.isPatient();
+  }
+
   loadUserInfo(): void {
     this.isLoading = true;
     this.authService.getMe().subscribe({
