@@ -1,37 +1,31 @@
 import { Injectable } from '@angular/core';
 
 const ACCESS_TOKEN_KEY = 'access_token';
+const ROLE_KEY = 'role';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TokenStorageService {
-  /**
-   * Sauvegarde l'access token dans le localStorage
-   */
   setAccessToken(token: string): void {
     localStorage.setItem(ACCESS_TOKEN_KEY, token);
   }
 
-  /**
-   * Récupère l'access token depuis le localStorage
-   */
   getAccessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
   }
 
-  /**
-   * Supprime l'access token
-   */
-  removeAccessToken(): void {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  setRole(role: string): void {
+    localStorage.setItem(ROLE_KEY, role);
   }
 
-  /**
-   * Vide tout le stockage (pour logout)
-   */
+  getRole(): string | null {
+    return localStorage.getItem(ROLE_KEY);
+  }
+
+  /** Vide tout le stockage d'authentification (logout). */
   clear(): void {
-    this.removeAccessToken();
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(ROLE_KEY);
   }
 }
-
