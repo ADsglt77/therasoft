@@ -50,6 +50,19 @@ export const registerSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 
 /**
+ * Schéma de validation pour l'auto-inscription d'un patient (+ choix du médecin).
+ */
+export const patientRegisterSchema = z.object({
+  email: z.string().email('Email invalide').min(3, 'L\'email doit contenir au moins 3 caractères').max(100),
+  password: passwordSchema,
+  nom: z.string().min(1, 'Le nom est requis').max(100),
+  prenom: z.string().min(1, 'Le prénom est requis').max(100),
+  medecinId: z.coerce.number().int().positive('Veuillez choisir un médecin'),
+});
+
+export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
+
+/**
  * Schéma de validation pour la connexion
  */
 export const loginSchema = z.object({

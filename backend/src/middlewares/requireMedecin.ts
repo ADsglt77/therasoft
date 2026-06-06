@@ -7,3 +7,10 @@ export function requireMedecinId(req: Request): number {
   }
   return req.user.medecinId;
 }
+
+export function requirePatientId(req: Request): number {
+  if (!req.user?.patientId) {
+    throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
+  }
+  return req.user.patientId;
+}

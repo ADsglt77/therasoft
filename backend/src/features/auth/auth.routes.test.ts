@@ -8,6 +8,9 @@ vi.mock('../../lib/prisma', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    patient: {
+      findUnique: vi.fn(),
+    },
     authSession: {
       create: vi.fn(),
       update: vi.fn(),
