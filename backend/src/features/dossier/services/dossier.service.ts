@@ -26,7 +26,7 @@ export interface DossierResponse {
     id: number;
     nom: string;
     prenom: string;
-    dateNaissance: Date;
+    dateNaissance: Date | null;
     sexe: string | null;
   };
   rdv: {
