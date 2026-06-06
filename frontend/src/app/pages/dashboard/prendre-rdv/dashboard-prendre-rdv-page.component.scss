@@ -1,0 +1,165 @@
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  gap: $spacing-24;
+  max-width: $content-max-width;
+  margin: 0 auto;
+}
+
+// ============================================
+// WIZARD — carte compacte centrée
+// ============================================
+.wizard {
+  @include glass-panel;
+  width: 100%;
+  border-radius: $radius-16;
+  padding: $spacing-12;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-16;
+
+  // Carte statique : on neutralise le hover du mixin glass-panel.
+  &:hover {
+    background: color-mix(in srgb, var(--glass-color) var(--glass-surface-alpha), transparent);
+  }
+
+  &__body {
+    min-height: 196px;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-12;
+  }
+
+  &__summary {
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+    margin: 0;
+    padding: $spacing-8 $spacing-12;
+    border-radius: $radius-12;
+    border: 1px solid color-mix(in srgb, var(--color-primary-500) 35%, transparent);
+    background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+    color: var(--text);
+    font-size: $font-size-h6;
+    font-weight: $font-weight-500;
+
+    app-icon {
+      color: var(--color-primary-500);
+      flex-shrink: 0;
+    }
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-12;
+    border-top: 1px solid border-surface-color(10%);
+    padding-top: $spacing-16;
+  }
+
+  @media (max-width: $breakpoint-tablet) {
+    padding: $spacing-16;
+    gap: $spacing-12;
+  }
+}
+
+// --- Étape Type : grille dense de cartes ---
+.types {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: $spacing-8;
+}
+
+.type-card {
+  @include button-reset;
+  @include focus-visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-6;
+  padding: $spacing-12 $spacing-8;
+  border-radius: $radius-12;
+  border: 1px solid border-surface-color(12%);
+  background: color-mix(in srgb, var(--glass-color) 5%, transparent);
+  color: var(--text);
+  @include transition(border-color background-color, $duration-fast);
+
+  &__icon {
+    @include icon-center;
+    width: 38px;
+    height: 38px;
+    border-radius: $radius-12;
+    background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+    color: var(--color-primary-500);
+    @include transition(background-color color, $duration-fast);
+  }
+
+  &__label {
+    font-weight: $font-weight-600;
+    font-size: $font-size-h6;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  &__duree {
+    padding: 1px $spacing-8;
+    border-radius: $radius-full;
+    background: border-surface-color(14%);
+    color: var(--text-muted);
+    font-size: $font-size-span;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);
+  }
+
+  &--active {
+    border-color: var(--color-primary-500);
+    background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  }
+
+  &--active &__icon {
+    background: var(--color-primary-500);
+    color: #fff;
+  }
+}
+
+// --- Étape Créneau : grille compacte de boutons ---
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: $spacing-6;
+}
+
+.slot {
+  @include button-reset;
+  @include focus-visible;
+  padding: $spacing-6;
+  border-radius: $radius-8;
+  border: 1px solid border-surface-color(15%);
+  background: color-mix(in srgb, var(--glass-color) 6%, transparent);
+  color: var(--text);
+  text-align: center;
+  font-weight: $font-weight-600;
+  font-size: $font-size-h6;
+  @include transition(border-color background-color, $duration-fast);
+
+  &:hover {
+    border-color: var(--color-primary-500);
+    background: color-mix(in srgb, var(--color-primary-500) 14%, transparent);
+  }
+
+  &--active {
+    border-color: var(--color-primary-500);
+    background: var(--color-primary-500);
+    color: #fff;
+  }
+}
