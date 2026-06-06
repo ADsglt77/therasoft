@@ -137,7 +137,10 @@ export class PlanningService {
     const rows = await prisma.rdv.findMany({
       where: {
         date: { gte: rangeStart, lte: rangeEnd },
-        vacationLinks: { some: { vacation: { medecinId } } },
+        OR: [
+          { vacationLinks: { some: { vacation: { medecinId } } } },
+          { medecinId },
+        ],
       },
       select: rdvSelect,
       orderBy: [{ date: 'asc' }, { heureDebut: 'asc' }],
@@ -154,7 +157,10 @@ export class PlanningService {
     const rows = await prisma.rdv.findMany({
       where: {
         date: { gte: startOfDay, lte: endOfDay },
-        vacationLinks: { some: { vacation: { medecinId } } },
+        OR: [
+          { vacationLinks: { some: { vacation: { medecinId } } } },
+          { medecinId },
+        ],
       },
       select: rdvSelect,
       orderBy: { heureDebut: 'asc' },
