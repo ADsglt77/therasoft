@@ -35,7 +35,7 @@ export interface Dossier {
     id: number;
     nom: string;
     prenom: string;
-    dateNaissance: string;
+    dateNaissance: string | null;
     sexe: string | null;
   };
   rdv: {
