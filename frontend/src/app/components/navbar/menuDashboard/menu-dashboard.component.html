@@ -6,9 +6,15 @@
       <h2 class="brand-title">TsXcare</h2>
     </a>
     <div class="links">
-      <app-navbar-links icon="globe" text="Site" route="/site" [iconOnly]="collapsed"></app-navbar-links>
-      <app-navbar-links icon="calendar" text="Calendrier" route="/calendar" [iconOnly]="collapsed"></app-navbar-links>
-      <app-navbar-links icon="settings" text="Paramètres" route="/settings" [iconOnly]="collapsed"></app-navbar-links>
+      @if (isPatient) {
+        <app-navbar-links icon="calendar-heart" text="Prendre rendez-vous" route="/prendre-rendez-vous" [iconOnly]="collapsed"></app-navbar-links>
+        <app-navbar-links icon="calendar" text="Mes rendez-vous" route="/mes-rendez-vous" [iconOnly]="collapsed"></app-navbar-links>
+        <app-navbar-links icon="settings" text="Paramètres" route="/settings" [iconOnly]="collapsed"></app-navbar-links>
+      } @else {
+        <app-navbar-links icon="globe" text="Site" route="/site" [iconOnly]="collapsed"></app-navbar-links>
+        <app-navbar-links icon="calendar" text="Calendrier" route="/calendar" [iconOnly]="collapsed"></app-navbar-links>
+        <app-navbar-links icon="settings" text="Paramètres" route="/settings" [iconOnly]="collapsed"></app-navbar-links>
+      }
     </div>
   </div>
   <div class="footer">
@@ -36,9 +42,17 @@
 
 <!-- Mobile / tablette : barre fixe en bas (sidebar masquée) -->
 <nav class="nav-bottom" aria-label="Navigation principale">
-  <app-navbar-links icon="globe" text="Site" route="/site" [exact]="true" [iconOnly]="true"></app-navbar-links>
-  <app-navbar-links icon="calendar" text="Calendrier" route="/calendar" [iconOnly]="true"></app-navbar-links>
-  <app-navbar-links icon="home" text="Accueil" route="/" [exact]="true" [iconOnly]="true"></app-navbar-links>
-  <app-navbar-links icon="settings" text="Paramètres" route="/settings" [exact]="true" [iconOnly]="true"></app-navbar-links>
-  <app-navbar-links icon="logout" text="Déconnexion" [iconOnly]="true" (click)="onLogout()"></app-navbar-links>
+  @if (isPatient) {
+    <app-navbar-links icon="calendar-heart" text="Prendre" route="/prendre-rendez-vous" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="calendar" text="Mes RDV" route="/mes-rendez-vous" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="home" text="Accueil" route="/" [exact]="true" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="settings" text="Paramètres" route="/settings" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="logout" text="Déconnexion" [iconOnly]="true" (click)="onLogout()"></app-navbar-links>
+  } @else {
+    <app-navbar-links icon="globe" text="Site" route="/site" [exact]="true" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="calendar" text="Calendrier" route="/calendar" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="home" text="Accueil" route="/" [exact]="true" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="settings" text="Paramètres" route="/settings" [exact]="true" [iconOnly]="true"></app-navbar-links>
+    <app-navbar-links icon="logout" text="Déconnexion" [iconOnly]="true" (click)="onLogout()"></app-navbar-links>
+  }
 </nav>

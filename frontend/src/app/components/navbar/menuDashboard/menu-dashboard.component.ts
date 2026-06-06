@@ -83,6 +83,11 @@ export class MenuDashboardComponent implements OnInit, OnDestroy {
     return `${prenomInitial}${nomInitial}` || '?';
   }
 
+  /** Le menu s'adapte au rôle : un patient ne voit que la prise de rendez-vous. */
+  get isPatient(): boolean {
+    return this.currentUser?.role === 'PATIENT';
+  }
+
   onLogout(): void {
     // Éviter les appels multiples
     if (this.isLoggingOut) {
