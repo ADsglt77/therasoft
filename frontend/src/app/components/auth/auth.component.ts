@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, HostBinding, OnInit } from '@angula
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { UiButtonComponent } from '../button/ui-button.component';
-import { UiInputComponent, InputMessageType } from '../input/ui-input.component';
+import { UiInputComponent, InputMessageType, SelectOption } from '../input/ui-input.component';
 import { PasswordStrengthIndicatorComponent } from '../password-strength-indicator/password-strength-indicator.component';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -26,6 +26,7 @@ export class AuthComponent implements OnInit {
 
   loginForm: FormGroup;
   registerForm: FormGroup;
+  medecinOptions: SelectOption[] = [];
 
   @HostBinding('class')
   get hostClasses(): string {
@@ -52,6 +53,7 @@ export class AuthComponent implements OnInit {
       email: ['', [Validators.required, Validators.email, Validators.minLength(3), Validators.maxLength(100)]],
       password: ['', [Validators.required, PasswordValidator.strong()]],
       confirmPassword: ['', [Validators.required]],
+      medecinId: ['', [Validators.required]],
     }, {
       validators: this.passwordMatchValidator
     });
@@ -70,17 +72,34 @@ export class AuthComponent implements OnInit {
     // Déterminer le mode selon l'URL
     this.isLoginMode = currentPath === '/login';
     
-    // Si l'utilisateur est déjà authentifié, rediriger vers le dashboard
+    // Si l'utilisateur est déjà authentifié, rediriger selon son rôle
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/calendar']);
+      this.router.navigate([this.authService.isPatient() ? '/prendre-rendez-vous' : '/calendar']);
       return;
     }
+
+    // Charger la liste des médecins pour le select d'inscription patient
+    this.loadMedecins();
 
     // Pré-remplir l'email si passé en query param (après inscription)
     this.route.queryParams.subscribe(params => {
       if (params['email'] && this.isLoginMode) {
         this.loginForm.patchValue({ email: params['email'] });
       }
+    });
+  }
+
+  private loadMedecins(): void {
+    this.authService.getMedecins().subscribe({
+      next: ({ medecins }) => {
+        this.medecinOptions = medecins.map((m) => ({
+          value: m.id,
+          label: `Dr ${m.prenom} ${m.nom}${m.specialite ? ' — ' + m.specialite : ''}`,
+        }));
+      },
+      error: () => {
+        this.medecinOptions = [];
+      },
     });
   }
 
@@ -137,10 +156,10 @@ export class AuthComponent implements OnInit {
     const { email, password } = this.loginForm.value;
 
     this.authService.login({ email, password }).subscribe({
-      next: () => {
+      next: (res) => {
         this.isLoading = false;
         this.notificationService.show('success', NotificationMessages.AUTH_LOGIN_SUCCESS);
-        this.router.navigate(['/calendar']);
+        this.router.navigate([res.role === 'PATIENT' ? '/prendre-rendez-vous' : '/calendar']);
       },
       error: (error) => {
         this.isLoading = false;
@@ -158,25 +177,27 @@ export class AuthComponent implements OnInit {
       return;
     }
 
-    const fields = ['email', 'password', 'nom', 'prenom'];
+    const fields = ['email', 'password', 'nom', 'prenom', 'medecinId'];
     this.isLoading = true;
     this.clearServerErrors(this.registerForm, fields);
 
-    const { nom, prenom, email, password } = this.registerForm.value;
+    const { nom, prenom, email, password, medecinId } = this.registerForm.value;
 
-    this.authService.register({ nom, prenom, email, password }).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.notificationService.show('success', NotificationMessages.AUTH_REGISTER_SUCCESS, 5000);
-        this.router.navigate(['/login'], { queryParams: { email } });
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.handleAuthError(this.registerForm, error, fields, {
-          AUTH_EMAIL_EXISTS: 'email',
-        });
-      },
-    });
+    this.authService
+      .registerPatient({ nom, prenom, email, password, medecinId: Number(medecinId) })
+      .subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.notificationService.show('success', NotificationMessages.AUTH_REGISTER_SUCCESS, 5000);
+          this.router.navigate(['/prendre-rendez-vous']);
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.handleAuthError(this.registerForm, error, fields, {
+            AUTH_EMAIL_EXISTS: 'email',
+          });
+        },
+      });
   }
 
   /** Réinitialise les erreurs des champs donnés (avant un nouvel envoi). */
@@ -294,6 +315,10 @@ export class AuthComponent implements OnInit {
 
   get registerEmailMessage() {
     return this.getInputMessage(this.registerForm, 'email');
+  }
+
+  get registerMedecinMessage() {
+    return this.getInputMessage(this.registerForm, 'medecinId');
   }
 
   get registerPasswordMessage() {

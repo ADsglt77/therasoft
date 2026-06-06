@@ -84,6 +84,23 @@
 
       <div class="field-wrapper">
         <ui-input
+          type="select"
+          label="Votre médecin"
+          [value]="registerForm.get('medecinId')?.value || ''"
+          [options]="medecinOptions"
+          (valueChange)="updateFormControl(registerForm, 'medecinId', $event)"
+          placeholder="Choisissez votre médecin"
+          id="register-medecin"
+          [required]="true"
+          [touched]="registerForm.get('medecinId')?.touched || false"
+          [dirty]="registerForm.get('medecinId')?.dirty || false"
+          [message]="registerMedecinMessage.message"
+          [messageType]="registerMedecinMessage.type">
+        </ui-input>
+      </div>
+
+      <div class="field-wrapper">
+        <ui-input
           type="email"
           label="Email"
           [value]="registerForm.get('email')?.value || ''"
