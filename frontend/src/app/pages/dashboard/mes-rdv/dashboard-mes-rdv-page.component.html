@@ -1,0 +1,60 @@
+@if (isLoading) {
+  <p class="state">Chargement de vos rendez-vous…</p>
+} @else if (!upcoming.length && !past.length) {
+  <div class="empty">
+    <span class="empty__icon"><app-icon name="calendar" [size]="30"></app-icon></span>
+    <p class="state">Vous n'avez encore aucun rendez-vous.</p>
+    <ui-button color="primary700" routerLink="/prendre-rendez-vous">
+      <app-icon name="calendar-heart" [size]="16"></app-icon>
+      Prendre rendez-vous
+    </ui-button>
+  </div>
+} @else {
+  @if (upcoming.length) {
+    <section class="group">
+      <h2 class="group__title">À venir <span class="group__count">{{ upcoming.length }}</span></h2>
+      <div class="cards">
+        @for (b of upcoming; track b.data.id) {
+          <ng-container *ngTemplateOutlet="card; context: { $implicit: b }"></ng-container>
+        }
+      </div>
+    </section>
+  }
+
+  @if (past.length) {
+    <section class="group">
+      <h2 class="group__title">Passés <span class="group__count">{{ past.length }}</span></h2>
+      <div class="cards">
+        @for (b of past; track b.data.id) {
+          <ng-container *ngTemplateOutlet="card; context: { $implicit: b }"></ng-container>
+        }
+      </div>
+    </section>
+  }
+}
+
+<ng-template #card let-b>
+  <article class="appt-card" [class.appt-card--past]="b.isPast">
+    <header class="appt-card__head">
+      <app-icon name="calendar" [size]="18"></app-icon>
+      <h3>{{ b.dateLabel }}</h3>
+      <ui-badge [variant]="b.isPast ? 'repos' : 'success'" [text]="b.isPast ? 'Passé' : 'À venir'"></ui-badge>
+    </header>
+
+    <p class="appt-card__line"><app-icon name="clock" [size]="15"></app-icon> {{ b.timeLabel }}</p>
+    <p class="appt-card__line"><app-icon [name]="modaliteIcon(b.data.modalite)" [size]="15"></app-icon> {{ b.modaliteLabel }}</p>
+    @if (b.data.site) {
+      <p class="appt-card__line"><app-icon name="globe" [size]="15"></app-icon> {{ b.data.site.nom }} — {{ b.data.site.ville }}</p>
+    }
+    @if (b.data.motif) {
+      <p class="appt-card__line"><app-icon name="file-text" [size]="15"></app-icon> {{ b.data.motif }}</p>
+    }
+
+    @if (!b.isPast) {
+      <button type="button" class="appt-card__cancel" (click)="cancel(b.data.id)" aria-label="Annuler le rendez-vous">
+        <app-icon name="x" [size]="14"></app-icon>
+        Annuler
+      </button>
+    }
+  </article>
+</ng-template>
