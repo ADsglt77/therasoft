@@ -1,0 +1,30 @@
+<div class="combobox" [class.combobox--open]="isOpen">
+  <input
+    type="text"
+    class="combobox__input"
+    [value]="displayValue"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    (focus)="open()"
+    (input)="onInput($event)"
+    autocomplete="off"
+    role="combobox"
+    [attr.aria-expanded]="isOpen" />
+  <app-icon name="chevron-down" [size]="18" class="combobox__chevron"></app-icon>
+
+  @if (isOpen) {
+    <div class="combobox__list" role="listbox">
+      @for (opt of filtered; track opt.value) {
+        <button
+          type="button"
+          class="combobox__option"
+          [class.combobox__option--selected]="isSelected(opt)"
+          (click)="select(opt)">
+          {{ opt.label }}
+        </button>
+      } @empty {
+        <div class="combobox__empty">Aucun résultat</div>
+      }
+    </div>
+  }
+</div>
