@@ -593,6 +593,10 @@ async function main() {
       email: 'patient@patient.patient',
       passwordHash,
       medecinId: medecin2.id,
+      // Adresse vérifiée (Bordeaux) → les lieux seront triés par distance.
+      adresse: 'Place de la Bourse 33000 Bordeaux',
+      latitude: 44.8412,
+      longitude: -0.5700,
     },
   });
 
