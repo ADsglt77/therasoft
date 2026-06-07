@@ -597,6 +597,8 @@ async function main() {
       adresse: 'Place de la Bourse 33000 Bordeaux',
       latitude: 44.8412,
       longitude: -0.5700,
+      // Compte de démo : email déjà vérifié pour pouvoir réserver directement.
+      emailVerified: true,
     },
   });
 
