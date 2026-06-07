@@ -16,6 +16,7 @@
       [placeholder]="placeholder"
       (input)="onInput($event)"
       (focus)="onFocus()"
+      (keydown.enter)="onEnter($event)"
       autocomplete="off"
       role="combobox"
       [attr.aria-expanded]="isOpen" />

@@ -85,6 +85,15 @@ export class AddressAutocompleteComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Entrée : sélectionne la 1ʳᵉ suggestion (sans soumettre le formulaire) si la liste est ouverte. */
+  onEnter(event: Event): void {
+    if (this.isOpen && this.suggestions.length > 0) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.select(this.suggestions[0]);
+    }
+  }
+
   select(suggestion: AddressSuggestion): void {
     this.value = suggestion.label;
     this.valueChange.emit(suggestion.label);
