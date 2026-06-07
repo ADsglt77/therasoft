@@ -19,23 +19,19 @@ import { z } from 'zod';
  */
 const passwordSchema = z
   .string()
-  .min(12, 'Password must be at least 12 characters long.')
-  .refine(
-    (password) => /[A-Z]/.test(password),
-    { message: 'Password must contain at least 1 uppercase letter.' }
-  )
-  .refine(
-    (password) => /[a-z]/.test(password),
-    { message: 'Password must contain at least 1 lowercase letter.' }
-  )
-  .refine(
-    (password) => /[0-9]/.test(password),
-    { message: 'Password must contain at least 1 number.' }
-  )
-  .refine(
-    (password) => /[^A-Za-z0-9]/.test(password),
-    { message: 'Password must contain at least 1 special character.' }
-  );
+  .min(12, 'Le mot de passe doit contenir au moins 12 caractères.')
+  .refine((password) => /[A-Z]/.test(password), {
+    message: 'Le mot de passe doit contenir au moins 1 majuscule.',
+  })
+  .refine((password) => /[a-z]/.test(password), {
+    message: 'Le mot de passe doit contenir au moins 1 minuscule.',
+  })
+  .refine((password) => /[0-9]/.test(password), {
+    message: 'Le mot de passe doit contenir au moins 1 chiffre.',
+  })
+  .refine((password) => /[^A-Za-z0-9]/.test(password), {
+    message: 'Le mot de passe doit contenir au moins 1 caractère spécial.',
+  });
 
 /**
  * Schéma de validation pour l'inscription
