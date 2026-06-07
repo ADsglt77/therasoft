@@ -7,6 +7,7 @@ import { InputMessageType, UiInputComponent } from '../../../components/input/ui
 import { PasswordStrengthIndicatorComponent } from '../../../components/password-strength-indicator/password-strength-indicator.component';
 import { InputErrorMessages } from '../../../core/utils/input-error-messages';
 import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
+import { applyServerValidationErrors } from '../../../core/utils/form-error.utils';
 import { NotificationMessages } from '../../../core/constants/notification-messages';
 import { FormUtils } from '../../../core/utils/form-utils';
 import { PasswordValidator } from '../../../core/validators/password.validator';
@@ -194,17 +195,7 @@ export class DashboardSettingsPageComponent implements OnInit {
     this.clearServerErrors(form);
 
     // Gérer les erreurs de validation Zod
-    if (ApiErrorHandler.isValidationError(error)) {
-      const validationDetails = ApiErrorHandler.getValidationDetails(error);
-      validationDetails.forEach((detail) => {
-        const fieldPath = detail.path?.[0];
-        const fieldControl = form.get(fieldPath);
-        if (fieldControl) {
-          const errorMessage = InputErrorMessages.getServerValidationMessage(fieldPath, detail.message);
-          fieldControl.setErrors({ serverError: errorMessage });
-          fieldControl.markAsTouched();
-        }
-      });
+    if (applyServerValidationErrors(form, error)) {
       this.cdr.markForCheck();
       return;
     }
