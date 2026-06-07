@@ -1,89 +1,118 @@
 @if (medecin) {
   <section class="wizard">
-    <app-stepper
+    <ui-stepper
+      class="wizard__stepper"
       [steps]="steps"
       [current]="currentStep"
       [maxReachable]="maxReachableStep"
       (stepSelect)="goToStep($event)">
-    </app-stepper>
+    </ui-stepper>
 
     <div class="wizard__body">
-      @switch (currentStep) {
-        <!-- 1. Type -->
-        @case (0) {
-          <div class="types">
-            @for (t of types; track t.modalite) {
-              <button
-                type="button"
-                class="type-card"
-                [class.type-card--active]="t.modalite === selectedModalite"
-                (click)="selectType(t.modalite)">
-                <span class="type-card__icon"><app-icon [name]="modaliteIcon(t.modalite)" [size]="20"></app-icon></span>
-                <span class="type-card__label">{{ modaliteLabel(t.modalite) }}</span>
-                <span class="type-card__duree">{{ t.dureeMinutes }} min</span>
-              </button>
-            }
-          </div>
-        }
-
-        <!-- 2. Lieu -->
-        @case (1) {
-          <ui-combobox
-            [options]="siteOptions"
-            [value]="selectedSiteId ?? ''"
-            placeholder="Rechercher un lieu…"
-            (valueChange)="selectSite($event)">
-          </ui-combobox>
-        }
-
-        <!-- 3. Date -->
-        @case (2) {
-          <app-month-calendar
-            [availableDates]="availableDates"
-            (monthChange)="onMonthChange($event)"
-            (dateSelect)="selectDate($event)">
-          </app-month-calendar>
-        }
-
-        <!-- 4. Créneau -->
-        @case (3) {
-          <app-nav-calendar
-            mode="day"
-            [dayOfWeek]="dayHeader.dayOfWeek"
-            [monthName]="dayHeader.monthName"
-            [dayNumber]="dayHeader.dayNumber"
-            (previous)="shiftDay(-1)"
-            (next)="shiftDay(1)"
-            (goBack)="prev()">
-          </app-nav-calendar>
-
-          @if (isLoadingSlots) {
-            <p class="state">Chargement des créneaux…</p>
-          } @else if (slots.length === 0) {
-            <p class="state">Aucun créneau disponible ce jour. Essayez une autre date.</p>
-          } @else {
-            <div class="slots">
-              @for (s of slots; track s.heureDebut) {
+      <div class="wizard__step" [class.wizard__step--fill]="currentStep >= 1">
+        @switch (currentStep) {
+          <!-- 1. Type -->
+          @case (0) {
+            <div class="types">
+              @for (t of types; track t.modalite) {
                 <button
                   type="button"
-                  class="slot"
-                  [class.slot--active]="selectedSlot?.heureDebut === s.heureDebut"
-                  (click)="selectSlot(s)"
-                  [attr.title]="formatTime(s.heureDebut) + ' – ' + formatTime(s.heureFin)">
-                  {{ formatTime(s.heureDebut) }}
+                  class="type-card"
+                  [class.type-card--active]="t.modalite === selectedModalite"
+                  (click)="selectType(t.modalite)">
+                  <span class="type-card__icon"><app-icon [name]="modaliteIcon(t.modalite)" [size]="22"></app-icon></span>
+                  <span class="type-card__label">{{ modaliteLabel(t.modalite) }}</span>
+                  <span class="type-card__duree">{{ t.dureeMinutes }} min</span>
                 </button>
               }
             </div>
           }
 
-          @if (bookingSummary) {
-            <p class="wizard__summary">
-              <app-icon name="check" [size]="16"></app-icon>
-              {{ bookingSummary }}
-            </p>
+          <!-- 2. Lieu -->
+          @case (1) {
+            <div class="search">
+              <app-icon name="search" [size]="18" class="search__icon"></app-icon>
+              <input
+                type="text"
+                class="search__input"
+                placeholder="Rechercher un lieu…"
+                [value]="siteSearch"
+                (input)="siteSearch = $any($event.target).value"
+                autocomplete="off"
+                aria-label="Rechercher un lieu" />
+            </div>
+
+            <div class="site-cards">
+              @for (s of filteredSites; track s.id) {
+                <button
+                  type="button"
+                  class="site-card"
+                  [class.site-card--active]="s.id === selectedSiteId"
+                  [attr.title]="s.nom + ' — ' + s.ville"
+                  (click)="selectSite(s)">
+                  <span class="site-card__icon"><app-icon name="globe" [size]="20"></app-icon></span>
+                  <span class="site-card__text">
+                    <span class="site-card__name">{{ s.nom }}</span>
+                    <span class="site-card__city">
+                      {{ s.ville }}@if (s.distanceKm != null) {<span class="site-card__distance"> · {{ distanceLabel(s.distanceKm) }}</span>}
+                    </span>
+                  </span>
+                </button>
+              } @empty {
+                <p class="state">Aucun lieu ne correspond à votre recherche.</p>
+              }
+            </div>
+          }
+
+          <!-- 3. Date -->
+          @case (2) {
+            <app-month-calendar
+              [availableDates]="availableDates"
+              (monthChange)="onMonthChange($event)"
+              (dateSelect)="selectDate($event)">
+            </app-month-calendar>
+          }
+
+          <!-- 4. Créneau -->
+          @case (3) {
+            <app-nav-calendar
+              mode="day"
+              [dayOfWeek]="dayHeader.dayOfWeek"
+              [monthName]="dayHeader.monthName"
+              [dayNumber]="dayHeader.dayNumber"
+              (previous)="shiftDay(-1)"
+              (next)="shiftDay(1)"
+              (goBack)="prev()">
+            </app-nav-calendar>
+
+            @if (isLoadingSlots) {
+              <p class="state">Chargement des créneaux…</p>
+            } @else if (slots.length === 0) {
+              <p class="state">Aucun créneau disponible ce jour. Essayez une autre date.</p>
+            } @else {
+              <div class="slots">
+                @for (s of slots; track s.heureDebut) {
+                  <button
+                    type="button"
+                    class="slot"
+                    [class.slot--active]="selectedSlot?.heureDebut === s.heureDebut"
+                    (click)="selectSlot(s)"
+                    [attr.title]="formatTime(s.heureDebut) + ' – ' + formatTime(s.heureFin)">
+                    {{ formatTime(s.heureDebut) }}
+                  </button>
+                }
+              </div>
+            }
+
+            @if (bookingSummary) {
+              <p class="wizard__summary">
+                <app-icon name="check" [size]="16"></app-icon>
+                {{ bookingSummary }}
+              </p>
+            }
           }
         }
-      }
+      </div>
     </div>
 
     <footer class="wizard__foot">
@@ -109,4 +138,9 @@
       }
     </footer>
   </section>
+} @else {
+  <div class="no-medecin">
+    <span class="no-medecin__icon"><app-icon name="info" [size]="28"></app-icon></span>
+    <p>Aucun médecin n'est rattaché à votre compte pour le moment.</p>
+  </div>
 }

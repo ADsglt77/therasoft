@@ -4,37 +4,89 @@
 :host {
   display: flex;
   flex-direction: column;
-  align-items: center;
   width: 100%;
   height: 100%;
-  overflow-y: auto;
-  gap: $spacing-24;
-  max-width: $content-max-width;
-  margin: 0 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: $spacing-12;
 }
 
 // ============================================
-// WIZARD — carte compacte centrée
+// WIZARD — surface plein écran (toute la zone de contenu)
 // ============================================
 .wizard {
   @include glass-panel;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
   border-radius: $radius-16;
-  padding: $spacing-12;
+  padding: $spacing-24;
   display: flex;
   flex-direction: column;
-  gap: $spacing-16;
+  gap: $spacing-20;
 
-  // Carte statique : on neutralise le hover du mixin glass-panel.
+  // Surface statique : on neutralise le hover du mixin glass-panel.
   &:hover {
     background: color-mix(in srgb, var(--glass-color) var(--glass-surface-alpha), transparent);
   }
 
+  // Stepper et pied : pleine largeur disponible.
+  &__stepper,
+  &__foot {
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  // Zone défilable : le contenu reste dans la page (pas de scroll global).
   &__body {
-    min-height: 196px;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: $spacing-12;
+  }
+
+  // Contenu de l'étape : pleine largeur ; centré verticalement quand court, défilable quand long.
+  &__step {
+    margin-block: auto;
+    width: 100%;
+    padding: $spacing-16 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-16;
+
+    // Étapes Date / Créneau : le contenu occupe toute la hauteur disponible.
+    &--fill {
+      margin-block: 0;
+      flex: 1 1 0;
+      min-height: 0;
+      justify-content: flex-start;
+
+      app-month-calendar {
+        flex: 1 1 0;
+        min-height: 0;
+      }
+
+      app-nav-calendar {
+        flex-shrink: 0;
+      }
+
+      .search {
+        flex-shrink: 0;
+      }
+
+      .slots,
+      .site-cards {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow-y: auto;
+        align-content: flex-start;
+      }
+
+      .state {
+        margin: auto 0;
+      }
+    }
   }
 
   &__summary {
@@ -42,7 +94,7 @@
     align-items: center;
     gap: $spacing-8;
     margin: 0;
-    padding: $spacing-8 $spacing-12;
+    padding: $spacing-12;
     border-radius: $radius-12;
     border: 1px solid color-mix(in srgb, var(--color-primary-500) 35%, transparent);
     background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
@@ -67,15 +119,23 @@
 
   @media (max-width: $breakpoint-tablet) {
     padding: $spacing-16;
-    gap: $spacing-12;
+    gap: $spacing-16;
   }
 }
 
-// --- Étape Type : grille dense de cartes ---
+.state {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  margin: 0;
+}
+
+// --- Étape Type : grille de cartes pleine largeur ---
 .types {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
-  gap: $spacing-8;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: $spacing-12;
+  width: 100%;
 }
 
 .type-card {
@@ -84,8 +144,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: $spacing-6;
-  padding: $spacing-12 $spacing-8;
+  gap: $spacing-8;
+  padding: $spacing-16 $spacing-8;
   border-radius: $radius-12;
   border: 1px solid border-surface-color(12%);
   background: color-mix(in srgb, var(--glass-color) 5%, transparent);
@@ -94,8 +154,8 @@
 
   &__icon {
     @include icon-center;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     border-radius: $radius-12;
     background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
     color: var(--color-primary-500);
@@ -132,17 +192,133 @@
   }
 }
 
+// --- Étape Lieu : barre de recherche + cartes ---
+.search {
+  display: flex;
+  align-items: center;
+  gap: $spacing-8;
+  width: 100%;
+  padding: $spacing-8 $spacing-12;
+  border-radius: $radius-12;
+  border: 1px solid border-surface-color(15%);
+  background: color-mix(in srgb, var(--glass-color) 6%, transparent);
+  @include transition(border-color, $duration-fast);
+
+  &:focus-within {
+    border-color: var(--color-primary-500);
+  }
+
+  &__icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  &__input {
+    @include button-reset;
+    flex: 1;
+    min-width: 0;
+    cursor: text;
+    color: var(--text);
+    font-size: $font-size-h6;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.site-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: $spacing-12;
+  width: 100%;
+}
+
+.site-card {
+  @include button-reset;
+  @include focus-visible;
+  display: flex;
+  align-items: center;
+  gap: $spacing-12;
+  padding: $spacing-12;
+  border-radius: $radius-12;
+  border: 1px solid border-surface-color(12%);
+  background: color-mix(in srgb, var(--glass-color) 5%, transparent);
+  color: var(--text);
+  text-align: left;
+  @include transition(border-color background-color, $duration-fast);
+
+  &__icon {
+    @include icon-center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: $radius-12;
+    background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+    color: var(--color-primary-500);
+    @include transition(background-color color, $duration-fast);
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: $font-weight-600;
+    font-size: $font-size-h6;
+    line-height: 1.2;
+  }
+
+  &__city {
+    color: var(--text-muted);
+    font-size: $font-size-span;
+  }
+
+  &__distance {
+    color: var(--color-primary-500);
+    font-weight: $font-weight-600;
+  }
+
+  &__name,
+  &__city {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--color-primary-500) 50%, transparent);
+  }
+
+  &--active {
+    border-color: var(--color-primary-500);
+    background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+  }
+
+  &--active &__icon {
+    background: var(--color-primary-500);
+    color: #fff;
+  }
+}
+
 // --- Étape Créneau : grille compacte de boutons ---
 .slots {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: $spacing-6;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: $spacing-8;
 }
 
 .slot {
   @include button-reset;
   @include focus-visible;
-  padding: $spacing-6;
+  padding: $spacing-8;
   border-radius: $radius-8;
   border: 1px solid border-surface-color(15%);
   background: color-mix(in srgb, var(--glass-color) 6%, transparent);
@@ -161,5 +337,25 @@
     border-color: var(--color-primary-500);
     background: var(--color-primary-500);
     color: #fff;
+  }
+}
+
+// --- État : aucun médecin rattaché ---
+.no-medecin {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-12;
+  text-align: center;
+  color: var(--text-muted);
+
+  &__icon {
+    @include icon-center;
+    width: 56px;
+    height: 56px;
+    border-radius: $radius-full;
+    background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+    color: var(--color-primary-500);
   }
 }

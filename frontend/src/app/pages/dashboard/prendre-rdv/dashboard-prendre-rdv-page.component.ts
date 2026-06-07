@@ -2,23 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
-import { UiComboboxComponent } from '../../../components/combobox/ui-combobox.component';
 import { MonthCalendarComponent } from '../../../components/calendar/month/month-calendar/month-calendar.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { UiStepperComponent, StepperStep } from '../../../components/stepper/ui-stepper.component';
-import { SelectOption } from '../../../components/input/ui-input.component';
-import { BookingService, BookingMedecin, BookingType, Slot } from '../../../core/services/booking.service';
+import { BookingService, BookingMedecin, BookingSite, BookingType, Slot } from '../../../core/services/booking.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { formatDateLong, formatTime } from '../../../core/utils/date.utils';
 import { getModaliteUi } from '../../../core/constants/modalite.constants';
-
-const STEP_TITLES = ['Type de rendez-vous', 'Lieu', 'Date', 'Créneau'] as const;
-const STEP_DESCRIPTIONS = [
-  "Choisissez le type d'examen souhaité.",
-  'Sélectionnez le lieu de votre rendez-vous.',
-  'Choisissez une date disponible.',
-  'Sélectionnez un créneau horaire puis confirmez.',
-] as const;
 
 /**
  * Prise de rendez-vous sous forme de parcours guidé (wizard) :
@@ -31,7 +21,6 @@ const STEP_DESCRIPTIONS = [
   imports: [
     AppIconComponent,
     UiButtonComponent,
-    UiComboboxComponent,
     MonthCalendarComponent,
     NavCalendarComponent,
     UiStepperComponent,
@@ -42,7 +31,8 @@ const STEP_DESCRIPTIONS = [
 export class DashboardPrendreRdvPageComponent implements OnInit {
   medecin: BookingMedecin | null = null;
   types: BookingType[] = [];
-  siteOptions: SelectOption[] = [];
+  sites: BookingSite[] = [];
+  siteSearch = '';
 
   // Sélections du parcours
   currentStep = 0;
@@ -61,8 +51,6 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
   private calMonth = new Date().getMonth();
 
   readonly formatTime = formatTime;
-  readonly stepTitles = STEP_TITLES;
-  readonly stepDescriptions = STEP_DESCRIPTIONS;
 
   constructor(
     private bookingService: BookingService,
@@ -78,7 +66,7 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
     this.bookingService.getBookingSites().subscribe({
       next: ({ medecin, sites }) => {
         this.medecin = medecin;
-        this.siteOptions = sites.map((s) => ({ value: s.id, label: `${s.nom} — ${s.ville}` }));
+        this.sites = sites;
       },
       error: () => this.notificationService.show('danger', 'Impossible de charger les lieux'),
     });
@@ -108,6 +96,19 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
 
   get currentStepComplete(): boolean {
     return this.steps[this.currentStep]?.done ?? false;
+  }
+
+  /** Lieux filtrés par la barre de recherche (nom ou ville). */
+  get filteredSites(): BookingSite[] {
+    const q = this.siteSearch.trim().toLowerCase();
+    return q ? this.sites.filter((s) => `${s.nom} ${s.ville}`.toLowerCase().includes(q)) : this.sites;
+  }
+
+  /** Distance lisible (« 3,2 km » / « 248 km »). */
+  distanceLabel(km: number): string {
+    return km >= 10
+      ? `${Math.round(km)} km`
+      : `${km.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`;
   }
 
   get dayHeader(): { dayOfWeek: string; monthName: string; dayNumber: number } {
@@ -147,9 +148,9 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
     this.currentStep = 1;
   }
 
-  selectSite(value: string): void {
-    this.selectedSiteId = Number(value);
-    this.selectedSiteLabel = this.siteOptions.find((o) => String(o.value) === value)?.label ?? null;
+  selectSite(site: BookingSite): void {
+    this.selectedSiteId = site.id;
+    this.selectedSiteLabel = `${site.nom} — ${site.ville}`;
     this.selectedDate = null;
     this.selectedSlot = null;
     this.slots = [];
