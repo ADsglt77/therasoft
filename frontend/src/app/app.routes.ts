@@ -14,6 +14,21 @@ export const appRoutes: Routes = [
       import('./pages/main/auth/auth-page.component').then((m) => m.AuthPageComponent),
   },
   {
+    path: 'verifier-email',
+    loadComponent: () =>
+      import('./pages/main/verify-email/verify-email-page.component').then((m) => m.VerifyEmailPageComponent),
+  },
+  {
+    path: 'mot-de-passe-oublie',
+    loadComponent: () =>
+      import('./pages/main/forgot-password/forgot-password-page.component').then((m) => m.ForgotPasswordPageComponent),
+  },
+  {
+    path: 'reinitialiser-mot-de-passe',
+    loadComponent: () =>
+      import('./pages/main/reset-password/reset-password-page.component').then((m) => m.ResetPasswordPageComponent),
+  },
+  {
     path: '',
     loadComponent: () => import('./pages/main/main-page.component').then((m) => m.MainPageComponent),
     pathMatch: 'full',
