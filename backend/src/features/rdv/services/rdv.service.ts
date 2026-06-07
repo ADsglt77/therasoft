@@ -5,66 +5,18 @@ import { env } from '../../../config/env';
 import { sendMail, logoAttachment } from '../../../lib/mailer';
 import { bookingConfirmationEmail, bookingCancellationEmail, BookingEmailData } from '../../../lib/email-templates';
 import { CreateBookingInput } from '../schemas/rdv.schemas';
-
-interface OpeningHour {
-  day: number; // 1 = lundi … 7 = dimanche
-  open: string; // "HH:mm"
-  close: string; // "HH:mm"
-}
-
-const DEFAULT_DURATION_MIN = 30;
-
-/** Libellés FR des modalités pour les emails. */
-const MODALITE_LABELS: Record<string, string> = {
-  XRAY: 'Radiographie',
-  CT: 'Scanner (CT)',
-  MRI: 'IRM',
-  US: 'Échographie',
-  MAMMO: 'Mammographie',
-  PET: 'TEP',
-  OTHER: 'Autre',
-};
-
-function toMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
-}
-function fromMinutes(total: number): string {
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-/** Time(0) stocké en UTC → minutes depuis minuit. */
-function timeDateToMinutes(d: Date): number {
-  return d.getUTCHours() * 60 + d.getUTCMinutes();
-}
-/** "HH:mm" → Date Time(0) (UTC 1970-01-01). */
-function timeStrToDate(hhmm: string): Date {
-  const [h, m] = hhmm.split(':').map(Number);
-  return new Date(Date.UTC(1970, 0, 1, h, m, 0, 0));
-}
-/** Jour ISO de la semaine (1 = lundi … 7 = dimanche) en UTC. */
-function isoWeekdayUtc(date: Date): number {
-  const d = date.getUTCDay();
-  return d === 0 ? 7 : d;
-}
-function utcDateKey(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-/** Distance à vol d'oiseau (km) entre deux points GPS (formule de haversine). */
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
+import {
+  OpeningHour,
+  DEFAULT_DURATION_MIN,
+  modaliteLabel,
+  toMinutes,
+  fromMinutes,
+  timeDateToMinutes,
+  timeStrToDate,
+  isoWeekdayUtc,
+  utcDateKey,
+  haversineKm,
+} from '../rdv.utils';
 
 export interface Slot {
   heureDebut: string;
@@ -344,7 +296,7 @@ export class RdvService {
     const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     return {
       prenom,
-      modaliteLabel: MODALITE_LABELS[booking.modalite] ?? booking.modalite,
+      modaliteLabel: modaliteLabel(booking.modalite),
       dateLabel: cap(
         booking.date.toLocaleDateString('fr-FR', {
           weekday: 'long',
