@@ -48,14 +48,18 @@ async function getSessionUser(req: Request): Promise<SessionUser | null> {
 }
 
 async function signInWithBetterAuth(req: Request, res: Response, body: { email: string; password: string }) {
-  const auth = await getBetterAuth();
-  const response = await auth.api.signInEmail({
-    body,
-    headers: requestHeaders(req),
-    asResponse: true,
-  });
-  applySetCookieHeaders(res, response.headers);
-  if (!response.ok) {
+  try {
+    const auth = await getBetterAuth();
+    const response = await auth.api.signInEmail({
+      body,
+      headers: requestHeaders(req),
+      asResponse: true,
+    });
+    applySetCookieHeaders(res, response.headers);
+    if (!response.ok) {
+      throw new ApiError('Identifiants invalides', 'AUTH_INVALID_CREDENTIALS', 401);
+    }
+  } catch {
     throw new ApiError('Identifiants invalides', 'AUTH_INVALID_CREDENTIALS', 401);
   }
 }

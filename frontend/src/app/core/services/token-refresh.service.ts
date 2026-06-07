@@ -26,7 +26,7 @@ export class TokenRefreshService {
     }
 
     const refresh$ = this.authService.refresh().pipe(
-      map((response) => response.accessToken),
+      map((response) => response.role),
       finalize(() => this.refreshInProgress$.next(null)),
       shareReplay(1)
     );
