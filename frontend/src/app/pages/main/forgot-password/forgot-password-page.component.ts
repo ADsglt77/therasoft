@@ -1,0 +1,70 @@
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { AppIconComponent } from '../../../components/icon/app-icon.component';
+import { UiInputComponent, InputMessageType } from '../../../components/input/ui-input.component';
+import { UiButtonComponent } from '../../../components/button/ui-button.component';
+import { AuthService } from '../../../core/services/auth.service';
+import { FormUtils } from '../../../core/utils/form-utils';
+
+/**
+ * Page « Mot de passe oublié » : saisie de l'email → envoi d'un lien de réinitialisation.
+ * Réponse anti-énumération : même message que l'email existe ou non.
+ */
+@Component({
+  selector: 'app-forgot-password-page',
+  standalone: true,
+  imports: [ReactiveFormsModule, RouterLink, AppIconComponent, UiInputComponent, UiButtonComponent],
+  templateUrl: './forgot-password-page.component.html',
+  styleUrl: './forgot-password-page.component.scss',
+})
+export class ForgotPasswordPageComponent {
+  sent = false;
+  isLoading = false;
+  form: FormGroup;
+
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService
+  ) {
+    this.form = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+    });
+  }
+
+  get emailMessage(): { message: string; type: InputMessageType | '' } {
+    const c = this.form.get('email');
+    if (c && (c.touched || c.dirty)) {
+      if (c.hasError('required')) return { message: "L'email est requis", type: 'error' };
+      if (c.hasError('email')) return { message: 'Email invalide', type: 'error' };
+    }
+    return { message: '', type: '' };
+  }
+
+  updateEmail(value: string): void {
+    this.form.get('email')?.setValue(value);
+    this.form.get('email')?.markAsTouched();
+  }
+
+  onSubmit(): void {
+    if (this.isLoading) {
+      return;
+    }
+    if (this.form.invalid) {
+      FormUtils.markFormGroupTouched(this.form);
+      return;
+    }
+    this.isLoading = true;
+    this.authService.forgotPassword(this.form.value.email).subscribe({
+      // Anti-énumération : succès quel que soit le résultat.
+      next: () => {
+        this.isLoading = false;
+        this.sent = true;
+      },
+      error: () => {
+        this.isLoading = false;
+        this.sent = true;
+      },
+    });
+  }
+}
