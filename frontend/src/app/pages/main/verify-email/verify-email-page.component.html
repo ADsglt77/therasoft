@@ -1,0 +1,23 @@
+<div class="verify">
+  <div class="verify__card">
+    @switch (state) {
+      @case ('loading') {
+        <span class="verify__icon verify__icon--info"><app-icon name="clock" [size]="30"></app-icon></span>
+        <h1>Vérification en cours…</h1>
+        <p>Merci de patienter quelques instants.</p>
+      }
+      @case ('success') {
+        <span class="verify__icon verify__icon--success"><app-icon name="check" [size]="30"></app-icon></span>
+        <h1>Adresse email vérifiée</h1>
+        <p>Votre compte est activé : vous pouvez maintenant prendre rendez-vous.</p>
+        <ui-button color="primary500" routerLink="/prendre-rendez-vous">Prendre rendez-vous</ui-button>
+      }
+      @case ('error') {
+        <span class="verify__icon verify__icon--error"><app-icon name="x" [size]="30"></app-icon></span>
+        <h1>Vérification impossible</h1>
+        <p>{{ message }}</p>
+        <ui-button color="primary500" routerLink="/login">Aller à la connexion</ui-button>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,65 @@
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
+
+:host {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-16;
+}
+
+.verify {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  &__card {
+    @include glass-panel;
+    width: 100%;
+    max-width: 420px;
+    border-radius: $radius-16;
+    padding: $spacing-32 $spacing-24;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-12;
+    text-align: center;
+
+    h1 {
+      margin: 0;
+      font-size: $font-size-h3;
+    }
+
+    p {
+      margin: 0;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    ui-button {
+      margin-top: $spacing-8;
+    }
+  }
+
+  &__icon {
+    @include icon-center;
+    width: 64px;
+    height: 64px;
+    border-radius: $radius-full;
+
+    &--info {
+      background: color-mix(in srgb, var(--color-primary-500) 14%, transparent);
+      color: var(--color-primary-500);
+    }
+    &--success {
+      background: color-mix(in srgb, var(--color-success) 16%, transparent);
+      color: var(--color-success);
+    }
+    &--error {
+      background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+      color: var(--color-danger);
+    }
+  }
+}
