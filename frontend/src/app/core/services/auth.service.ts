@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, tap, BehaviorSubject, shareReplay, catchError, finalize, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, tap, BehaviorSubject, shareReplay, catchError, finalize, of, map } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
 import { TokenStorageService } from './token-storage.service';
 import { Router } from '@angular/router';
@@ -16,6 +16,16 @@ export interface PatientRegisterRequest {
   email: string;
   password: string;
   medecinId: number;
+  adresse: string;
+}
+
+/** Suggestion d'adresse normalisée (API Adresse gouv.fr via le backend). */
+export interface AddressSuggestion {
+  label: string;
+  latitude: number;
+  longitude: number;
+  city: string | null;
+  postcode: string | null;
 }
 
 export interface MedecinOption {
@@ -86,6 +96,14 @@ export class AuthService extends ApiClientService {
   /** Liste des médecins (pour le select d'inscription patient). */
   getMedecins(): Observable<{ medecins: MedecinOption[] }> {
     return this.http.get<{ medecins: MedecinOption[] }>(`${this.baseUrl}/auth/medecins`);
+  }
+
+  /** Autocomplétion d'adresse (proxy API Adresse gouv.fr) pour l'inscription patient. */
+  searchAddresses(query: string): Observable<AddressSuggestion[]> {
+    const params = new HttpParams().set('q', query);
+    return this.http
+      .get<{ suggestions: AddressSuggestion[] }>(`${this.baseUrl}/auth/address/search`, { params })
+      .pipe(map((res) => res.suggestions));
   }
 
   private applyAuth(res: AuthResponse): void {
