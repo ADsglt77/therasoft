@@ -20,7 +20,7 @@
       </button>
       @if (showHamburgerMenu) {
         <div class="hamburger-menu" (mouseenter)="onAvatarMouseEnter()" (mouseleave)="onAvatarMouseLeave()">
-          <app-menu-hamburger (logout)="onLogout()"></app-menu-hamburger>
+          <app-menu-hamburger [links]="navLinks" (logout)="onLogout()"></app-menu-hamburger>
         </div>
       }
     </div>
@@ -73,8 +73,9 @@
       @if (!isAuthenticated) {
         <ui-button color="primary500" [block]="true" (click)="onLoginClick()">Se connecter</ui-button>
       } @else {
-        <app-navbar-links icon="calendar" text="Calendrier" route="/calendar" (click)="closeMobileMenu()"></app-navbar-links>
-        <app-navbar-links icon="settings" text="Paramètres" route="/settings" (click)="closeMobileMenu()"></app-navbar-links>
+        @for (link of navLinks; track link.route) {
+          <app-navbar-links [icon]="link.icon" [text]="link.text" [route]="link.route" [exact]="link.exact" (click)="closeMobileMenu()"></app-navbar-links>
+        }
         <app-navbar-links icon="logout" text="Déconnexion" (click)="onMobileLogout()"></app-navbar-links>
       }
     </div>

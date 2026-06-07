@@ -7,6 +7,7 @@ import { AppIconComponent } from '../../icon/app-icon.component';
 import { MenuHamburgerComponent } from './menuHamburger/menu-hamburger.component';
 import { NavbarLinksComponent } from '../navbar-links/navbar-links.component';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
+import { navLinksForRole, NavLink } from '../../../core/constants/nav-links';
 import { ThemeService } from '../../../shared/theme/theme.service';
 
 @Component({
@@ -81,6 +82,11 @@ export class MenuMainComponent implements OnInit {
       this.currentUser = null;
       this.cdr.markForCheck();
     }
+  }
+
+  /** Liens de navigation selon le rôle (source unique partagée avec le dashboard). */
+  get navLinks(): NavLink[] {
+    return navLinksForRole(this.currentUser?.role);
   }
 
   getInitial(): string {
