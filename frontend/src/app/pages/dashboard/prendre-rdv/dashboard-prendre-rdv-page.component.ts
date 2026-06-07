@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { take } from 'rxjs';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { MonthCalendarComponent } from '../../../components/calendar/month/month-calendar/month-calendar.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
 import { UiStepperComponent, StepperStep } from '../../../components/stepper/ui-stepper.component';
 import { BookingService, BookingMedecin, BookingSite, BookingType, Slot } from '../../../core/services/booking.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { formatDateLong, formatTime } from '../../../core/utils/date.utils';
 import { getModaliteUi } from '../../../core/constants/modalite.constants';
@@ -47,6 +49,11 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
   isLoadingSlots = false;
   isSubmitting = false;
 
+  // Vérification d'email : la réservation est bloquée tant que l'email n'est pas vérifié.
+  isVerified = true;
+  patientEmail = '';
+  isResending = false;
+
   private calYear = new Date().getFullYear();
   private calMonth = new Date().getMonth();
 
@@ -54,11 +61,24 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
 
   constructor(
     private bookingService: BookingService,
+    private authService: AuthService,
     private notificationService: NotificationService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    // Statut de vérification : valeur courante (évite le flash) puis rafraîchissement serveur.
+    this.authService
+      .getCurrentUser()
+      .pipe(take(1))
+      .subscribe((user) => {
+        if (user && user.role === 'PATIENT') {
+          this.isVerified = user.emailVerified !== false;
+          this.patientEmail = user.email ?? '';
+        }
+      });
+    this.loadVerificationStatus();
+
     this.bookingService.getTypes().subscribe({
       next: ({ types }) => (this.types = types),
       error: () => this.notificationService.show('danger', 'Impossible de charger les types de rendez-vous'),
@@ -228,11 +248,56 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
         },
         error: (err) => {
           this.isSubmitting = false;
+          if (err?.error?.error?.code === 'AUTH_EMAIL_NOT_VERIFIED') {
+            this.isVerified = false;
+          }
           this.notificationService.show('danger', err?.error?.error?.message || 'La réservation a échoué');
           this.selectedSlot = null;
           this.loadSlots();
         },
       });
+  }
+
+  // ---- Vérification d'email ----
+  resend(): void {
+    if (this.isResending) {
+      return;
+    }
+    this.isResending = true;
+    this.authService.resendVerification().subscribe({
+      next: () => {
+        this.isResending = false;
+        this.notificationService.show('success', `Email de vérification renvoyé à ${this.patientEmail}`);
+      },
+      error: () => {
+        this.isResending = false;
+        this.notificationService.show('danger', "L'envoi de l'email a échoué");
+      },
+    });
+  }
+
+  checkAgain(): void {
+    this.authService.getMe().subscribe({
+      next: (user) => {
+        this.isVerified = user.emailVerified !== false;
+        this.patientEmail = user.email ?? this.patientEmail;
+        this.notificationService.show(
+          this.isVerified ? 'success' : 'information',
+          this.isVerified ? 'Adresse email vérifiée' : "Votre email n'est pas encore vérifié"
+        );
+      },
+      error: () => this.notificationService.show('danger', 'Impossible de vérifier le statut'),
+    });
+  }
+
+  private loadVerificationStatus(): void {
+    this.authService.getMe().subscribe({
+      next: (user) => {
+        this.isVerified = user.emailVerified !== false;
+        this.patientEmail = user.email ?? this.patientEmail;
+      },
+      error: () => {},
+    });
   }
 
   private shortDate(dateKey: string): string {

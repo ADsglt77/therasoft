@@ -1,4 +1,19 @@
-@if (medecin) {
+@if (!isVerified) {
+  <div class="verify-gate">
+    <span class="verify-gate__icon"><app-icon name="info" [size]="30"></app-icon></span>
+    <h2>Vérifiez votre adresse email</h2>
+    <p>
+      Un lien de vérification a été envoyé à <strong>{{ patientEmail }}</strong>.
+      Cliquez dessus pour activer la prise de rendez-vous.
+    </p>
+    <div class="verify-gate__actions">
+      <ui-button color="primary500" [disabled]="isResending" (click)="resend()">
+        {{ isResending ? 'Envoi…' : "Renvoyer l'email" }}
+      </ui-button>
+      <ui-button color="connect" (click)="checkAgain()">J'ai vérifié</ui-button>
+    </div>
+  </div>
+} @else if (medecin) {
   <section class="wizard">
     <ui-stepper
       class="wizard__stepper"
