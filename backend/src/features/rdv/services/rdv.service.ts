@@ -1,6 +1,9 @@
 import { ModaliteType } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
+import { env } from '../../../config/env';
+import { sendMail, logoAttachment } from '../../../lib/mailer';
+import { bookingConfirmationEmail, bookingCancellationEmail, BookingEmailData } from '../../../lib/email-templates';
 import { CreateBookingInput } from '../schemas/rdv.schemas';
 
 interface OpeningHour {
@@ -10,6 +13,17 @@ interface OpeningHour {
 }
 
 const DEFAULT_DURATION_MIN = 30;
+
+/** Libellés FR des modalités pour les emails. */
+const MODALITE_LABELS: Record<string, string> = {
+  XRAY: 'Radiographie',
+  CT: 'Scanner (CT)',
+  MRI: 'IRM',
+  US: 'Échographie',
+  MAMMO: 'Mammographie',
+  PET: 'TEP',
+  OTHER: 'Autre',
+};
 
 function toMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
@@ -232,10 +246,13 @@ export class RdvService {
   async createBooking(patientId: number, input: CreateBookingInput): Promise<BookingResponse> {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      select: { medecinId: true },
+      select: { medecinId: true, emailVerified: true, email: true, prenom: true },
     });
     if (!patient?.medecinId) {
       throw new ApiError('Aucun médecin rattaché à votre compte', 'BOOKING_NO_MEDECIN', 400);
+    }
+    if (!patient.emailVerified) {
+      throw new ApiError('Veuillez vérifier votre adresse email avant de réserver', 'AUTH_EMAIL_NOT_VERIFIED', 403);
     }
 
     // Re-vérification serveur : le créneau doit toujours être disponible.
@@ -245,7 +262,7 @@ export class RdvService {
       throw new ApiError("Ce créneau n'est plus disponible", 'BOOKING_SLOT_UNAVAILABLE', 409);
     }
 
-    return prisma.rdv.create({
+    const booking = await prisma.rdv.create({
       data: {
         date: input.date,
         heureDebut: timeStrToDate(slot.heureDebut),
@@ -260,6 +277,17 @@ export class RdvService {
       },
       select: bookingSelect,
     });
+
+    // Email de confirmation (ne bloque pas la réservation si l'envoi échoue).
+    if (patient.email) {
+      const data = this.bookingEmailData(booking, patient.prenom, `${env.appUrl}/mes-rendez-vous`);
+      const mail = bookingConfirmationEmail(data);
+      sendMail({ to: patient.email, ...mail, attachments: logoAttachment() }).catch((err) =>
+        console.error('Email de confirmation RDV échoué :', err)
+      );
+    }
+
+    return booking;
   }
 
   async getMyBookings(patientId: number): Promise<BookingResponse[]> {
@@ -273,12 +301,64 @@ export class RdvService {
   async cancelBooking(patientId: number, rdvId: number): Promise<void> {
     const rdv = await prisma.rdv.findUnique({
       where: { id: rdvId },
-      select: { id: true, patientId: true },
+      select: {
+        id: true,
+        patientId: true,
+        date: true,
+        heureDebut: true,
+        heureFin: true,
+        modalite: true,
+        site: { select: { nom: true, ville: true } },
+        medecin: { select: { nom: true, prenom: true } },
+        patient: { select: { email: true, prenom: true } },
+      },
     });
     if (!rdv || rdv.patientId !== patientId) {
       throw new ApiError('Rendez-vous introuvable', 'NOT_FOUND', 404);
     }
     await prisma.rdv.delete({ where: { id: rdvId } });
+
+    // Email d'annulation (ne bloque pas l'annulation si l'envoi échoue).
+    if (rdv.patient?.email) {
+      const data = this.bookingEmailData(rdv, rdv.patient.prenom, `${env.appUrl}/prendre-rendez-vous`);
+      const mail = bookingCancellationEmail(data);
+      sendMail({ to: rdv.patient.email, ...mail, attachments: logoAttachment() }).catch((err) =>
+        console.error("Email d'annulation RDV échoué :", err)
+      );
+    }
+  }
+
+  /** Construit les données d'email à partir d'un RDV (dates en UTC, libellés FR). */
+  private bookingEmailData(
+    booking: {
+      date: Date;
+      heureDebut: Date;
+      heureFin: Date;
+      modalite: string;
+      site: { nom: string; ville: string } | null;
+      medecin: { nom: string; prenom: string } | null;
+    },
+    prenom: string,
+    link: string
+  ): BookingEmailData {
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    return {
+      prenom,
+      modaliteLabel: MODALITE_LABELS[booking.modalite] ?? booking.modalite,
+      dateLabel: cap(
+        booking.date.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        })
+      ),
+      timeLabel: `${fromMinutes(timeDateToMinutes(booking.heureDebut))} – ${fromMinutes(timeDateToMinutes(booking.heureFin))}`,
+      siteLabel: booking.site ? `${booking.site.nom} — ${booking.site.ville}` : '—',
+      medecinLabel: booking.medecin ? `Dr ${booking.medecin.prenom} ${booking.medecin.nom}` : '—',
+      link,
+    };
   }
 }
 

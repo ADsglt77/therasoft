@@ -21,7 +21,7 @@ function mockContext({
   duration = 30,
   busy = [] as { heureDebut: Date; heureFin: Date }[],
 } = {}) {
-  vi.mocked(prisma.patient.findUnique).mockResolvedValue({ medecinId } as never);
+  vi.mocked(prisma.patient.findUnique).mockResolvedValue({ medecinId, emailVerified: true } as never);
   vi.mocked(prisma.vacation.findFirst).mockResolvedValue({ id: 1 } as never);
   vi.mocked(prisma.site.findUnique).mockResolvedValue({ openingHours } as never);
   vi.mocked(prisma.modaliteConfig.findUnique).mockResolvedValue({ dureeMinutes: duration } as never);
