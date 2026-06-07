@@ -101,6 +101,9 @@ export class DashboardSettingsPageComponent implements OnInit {
   }
 
   onUpdateProfile(): void {
+    if (this.isProfileLoading) {
+      return;
+    }
     if (this.profileForm.invalid) {
       FormUtils.markFormGroupTouched(this.profileForm);
       return;
@@ -128,6 +131,9 @@ export class DashboardSettingsPageComponent implements OnInit {
   }
 
   onChangePassword(): void {
+    if (this.isPasswordLoading) {
+      return;
+    }
     if (this.passwordForm.invalid) {
       FormUtils.markFormGroupTouched(this.passwordForm);
       return;

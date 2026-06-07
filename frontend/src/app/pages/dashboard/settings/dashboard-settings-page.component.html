@@ -2,7 +2,7 @@
 <div class="loading" role="status" aria-live="polite">Chargement...</div>
 } @else {
 <h2>Informations personnelles</h2>
-<form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()">
+<form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()" (keydown.enter)="onUpdateProfile()">
   <div class="profile-fields-container">
     <div class="container-inputs">
       <ui-input type="email" label="Email (Login)" [value]="currentUser?.email || ''" [disabled]="true" id="login"
@@ -39,7 +39,7 @@
   </div>
 </form>
 <h2>Changer le mot de passe</h2>
-<form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()">
+<form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" (keydown.enter)="onChangePassword()">
   <div class="container-inputs">
     <ui-input type="password" label="Mot de passe actuel" [value]="passwordForm.get('currentPassword')?.value || ''"
       (input)="updateFormControl(passwordForm, 'currentPassword', $any($event.target).value)"
