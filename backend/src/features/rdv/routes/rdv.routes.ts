@@ -4,6 +4,7 @@ import { verifyPatientAccessToken } from '../../../middlewares/jwt.middleware';
 import { requirePatientId } from '../../../middlewares/requireMedecin';
 import { validateBody, validateParams, validateQuery } from '../../../middlewares/validate';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
+import { emailBaseUrl } from '../../../lib/request-url';
 import {
   createBookingSchema,
   rdvIdParamsSchema,
@@ -67,7 +68,7 @@ router.post(
   verifyPatientAccessToken,
   validateBody(createBookingSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    res.status(201).json(await rdvService.createBooking(requirePatientId(req), req.body));
+    res.status(201).json(await rdvService.createBooking(requirePatientId(req), req.body, emailBaseUrl(req)));
   })
 );
 
@@ -77,7 +78,7 @@ router.delete(
   validateParams(rdvIdParamsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params as unknown as RdvIdParams;
-    await rdvService.cancelBooking(requirePatientId(req), id);
+    await rdvService.cancelBooking(requirePatientId(req), id, emailBaseUrl(req));
     res.status(204).send();
   })
 );

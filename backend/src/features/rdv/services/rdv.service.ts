@@ -195,7 +195,7 @@ export class RdvService {
     return slots;
   }
 
-  async createBooking(patientId: number, input: CreateBookingInput): Promise<BookingResponse> {
+  async createBooking(patientId: number, input: CreateBookingInput, baseUrl: string = env.appUrl): Promise<BookingResponse> {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
       select: { medecinId: true, emailVerified: true, email: true, prenom: true },
@@ -232,7 +232,7 @@ export class RdvService {
 
     // Email de confirmation (ne bloque pas la réservation si l'envoi échoue).
     if (patient.email) {
-      const data = this.bookingEmailData(booking, patient.prenom, `${env.appUrl}/mes-rendez-vous`);
+      const data = this.bookingEmailData(booking, patient.prenom, `${baseUrl}/mes-rendez-vous`);
       const mail = bookingConfirmationEmail(data);
       sendMail({ to: patient.email, ...mail, attachments: logoAttachment() }).catch((err) =>
         console.error('Email de confirmation RDV échoué :', err)
@@ -250,7 +250,7 @@ export class RdvService {
     });
   }
 
-  async cancelBooking(patientId: number, rdvId: number): Promise<void> {
+  async cancelBooking(patientId: number, rdvId: number, baseUrl: string = env.appUrl): Promise<void> {
     const rdv = await prisma.rdv.findUnique({
       where: { id: rdvId },
       select: {
@@ -272,7 +272,7 @@ export class RdvService {
 
     // Email d'annulation (ne bloque pas l'annulation si l'envoi échoue).
     if (rdv.patient?.email) {
-      const data = this.bookingEmailData(rdv, rdv.patient.prenom, `${env.appUrl}/prendre-rendez-vous`);
+      const data = this.bookingEmailData(rdv, rdv.patient.prenom, `${baseUrl}/prendre-rendez-vous`);
       const mail = bookingCancellationEmail(data);
       sendMail({ to: rdv.patient.email, ...mail, attachments: logoAttachment() }).catch((err) =>
         console.error("Email d'annulation RDV échoué :", err)
