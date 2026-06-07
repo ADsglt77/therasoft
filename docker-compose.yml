@@ -33,6 +33,14 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-true}
       ALLOW_PUBLIC_REGISTER: ${ALLOW_PUBLIC_REGISTER:-false}
+      # Liens des emails (vérification) + SMTP (vérification d'email)
+      APP_URL: ${APP_URL:-http://localhost}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-TsXcare <no-reply@tsxcare.local>}
     volumes:
       - uploads_data:/app/uploads
 
