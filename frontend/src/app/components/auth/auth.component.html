@@ -11,7 +11,7 @@
   </div>
 
   @if (isLoginMode) {
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="form">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" (keydown.enter)="onSubmit()" class="form">
       <div class="field-wrapper">
         <ui-input
           type="email"
@@ -48,7 +48,7 @@
       </div>
     </form>
   } @else {
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" (keydown.enter)="onSubmit()" class="form">
       <div class="name-fields">
         <div class="field-wrapper">
           <ui-input
