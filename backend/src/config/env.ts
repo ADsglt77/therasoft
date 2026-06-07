@@ -24,6 +24,16 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
 
   FRONTEND_ORIGIN: z.string().default('http://localhost'),
+  // Base des liens envoyés par email (par défaut = FRONTEND_ORIGIN).
+  APP_URL: z.string().optional(),
+
+  // SMTP (vérification d'email). Optionnel : sans SMTP_HOST, le lien est loggé au lieu d'être envoyé.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: envBool(false),
+  MAIL_FROM: z.string().default('TsXcare <no-reply@tsxcare.local>'),
 
   // Inscription publique : false en prod, true pour la démo / le dev.
   ALLOW_PUBLIC_REGISTER: envBool(false),
@@ -51,6 +61,16 @@ export const env = {
   refreshTokenTtlDays: data.REFRESH_TOKEN_TTL_DAYS,
 
   frontendOrigin: data.FRONTEND_ORIGIN,
+  appUrl: data.APP_URL || data.FRONTEND_ORIGIN,
   allowPublicRegister: data.ALLOW_PUBLIC_REGISTER,
   resetDbOnSeed: data.RESET_DB_ON_SEED,
+
+  smtp: {
+    host: data.SMTP_HOST,
+    port: data.SMTP_PORT,
+    user: data.SMTP_USER,
+    pass: data.SMTP_PASS,
+    secure: data.SMTP_SECURE,
+    from: data.MAIL_FROM,
+  },
 } as const;
