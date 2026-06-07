@@ -55,7 +55,7 @@ export class PatientAuthService {
   /**
    * Auto-inscription : crée le compte patient rattaché au médecin choisi, puis connecte.
    */
-  async registerPatient(input: PatientRegisterInput) {
+  async registerPatient(input: PatientRegisterInput, baseUrl: string = env.appUrl) {
     const existing = await prisma.patient.findUnique({ where: { email: input.email } });
     if (existing) {
       throw new ApiError('Cet email est déjà utilisé', 'AUTH_EMAIL_EXISTS', 409);
@@ -92,8 +92,8 @@ export class PatientAuthService {
     });
 
     // Email de vérification (ne bloque pas l'inscription si l'envoi échoue).
-    await this.sendVerificationEmail({ id: created.id, email: input.email, prenom: created.prenom }).catch((err) =>
-      console.error("Échec de l'envoi de l'email de vérification :", err)
+    await this.sendVerificationEmail({ id: created.id, email: input.email, prenom: created.prenom }, baseUrl).catch(
+      (err) => console.error("Échec de l'envoi de l'email de vérification :", err)
     );
 
     return this.login({ email: input.email, password: input.password });
@@ -212,9 +212,12 @@ export class PatientAuthService {
   }
 
   /** Envoie l'email de vérification (lien valable 24 h). */
-  async sendVerificationEmail(patient: { id: number; email: string; prenom: string }): Promise<void> {
+  async sendVerificationEmail(
+    patient: { id: number; email: string; prenom: string },
+    baseUrl: string = env.appUrl
+  ): Promise<void> {
     const token = this.generateVerifyToken(patient.id);
-    const link = `${env.appUrl}/verifier-email?token=${token}`;
+    const link = `${baseUrl}/verifier-email?token=${token}`;
     const { subject, html, text } = verificationEmail({ prenom: patient.prenom, link });
     await sendMail({ to: patient.email, subject, html, text, attachments: logoAttachment() });
   }
@@ -234,7 +237,7 @@ export class PatientAuthService {
   }
 
   /** Renvoie l'email de vérification au patient connecté (no-op si déjà vérifié). */
-  async resendVerification(patientId: number): Promise<void> {
+  async resendVerification(patientId: number, baseUrl: string = env.appUrl): Promise<void> {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
       select: { id: true, email: true, prenom: true, emailVerified: true },
@@ -245,7 +248,7 @@ export class PatientAuthService {
     if (patient.emailVerified) {
       return;
     }
-    await this.sendVerificationEmail({ id: patient.id, email: patient.email, prenom: patient.prenom });
+    await this.sendVerificationEmail({ id: patient.id, email: patient.email, prenom: patient.prenom }, baseUrl);
   }
 
   /** Modifie le profil (nom / prénom) du patient connecté. */

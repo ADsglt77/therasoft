@@ -16,6 +16,7 @@ import {
 } from '../schemas/auth.schemas';
 import { addressService } from '../services/address.service';
 import { passwordResetService } from '../services/password-reset.service';
+import { emailBaseUrl } from '../../../lib/request-url';
 import { verifyAccessToken, verifyPatientAccessToken } from '../../../middlewares/jwt.middleware';
 import { requireMedecinId, requirePatientId } from '../../../middlewares/requireMedecin';
 import { ApiError } from '../../../middlewares/errorHandler';
@@ -89,7 +90,7 @@ router.post(
   authRateLimiter,
   validateBody(forgotPasswordSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    await passwordResetService.requestReset(req.body.email);
+    await passwordResetService.requestReset(req.body.email, emailBaseUrl(req));
     // Réponse identique que l'email existe ou non (anti-énumération).
     res.status(200).json({ message: 'Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.' });
   })
@@ -188,7 +189,7 @@ router.post(
   authRateLimiter,
   validateBody(patientRegisterSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const { accessToken, refreshToken, patient } = await patientAuthService.registerPatient(req.body);
+    const { accessToken, refreshToken, patient } = await patientAuthService.registerPatient(req.body, emailBaseUrl(req));
     setRefreshTokenCookie(res, refreshToken);
     res.status(201).json({ accessToken, role: patient.role, user: patient });
   })
@@ -216,7 +217,7 @@ router.post(
   '/patient/resend-verification',
   verifyPatientAccessToken,
   asyncHandler(async (req: Request, res: Response) => {
-    await patientAuthService.resendVerification(requirePatientId(req));
+    await patientAuthService.resendVerification(requirePatientId(req), emailBaseUrl(req));
     res.status(200).json({ message: 'Email de vérification renvoyé' });
   })
 );

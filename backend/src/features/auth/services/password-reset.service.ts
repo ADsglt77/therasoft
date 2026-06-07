@@ -32,13 +32,13 @@ export class PasswordResetService {
   }
 
   /** Envoie un email de réinitialisation si l'email existe (sinon : rien — anti-énumération). */
-  async requestReset(email: string): Promise<void> {
+  async requestReset(email: string, baseUrl: string = env.appUrl): Promise<void> {
     const medecin = await prisma.medecin.findUnique({
       where: { email },
       select: { id: true, prenom: true, email: true, passwordHash: true },
     });
     if (medecin?.passwordHash) {
-      await this.send('medecin', medecin.id, medecin.prenom, medecin.email, medecin.passwordHash);
+      await this.send('medecin', medecin.id, medecin.prenom, medecin.email, medecin.passwordHash, baseUrl);
       return;
     }
     const patient = await prisma.patient.findUnique({
@@ -46,13 +46,20 @@ export class PasswordResetService {
       select: { id: true, prenom: true, email: true, passwordHash: true },
     });
     if (patient?.email && patient.passwordHash) {
-      await this.send('patient', patient.id, patient.prenom, patient.email, patient.passwordHash);
+      await this.send('patient', patient.id, patient.prenom, patient.email, patient.passwordHash, baseUrl);
     }
   }
 
-  private async send(principal: Principal, id: number, prenom: string, email: string, passwordHash: string): Promise<void> {
+  private async send(
+    principal: Principal,
+    id: number,
+    prenom: string,
+    email: string,
+    passwordHash: string,
+    baseUrl: string
+  ): Promise<void> {
     const token = this.generateToken(principal, id, passwordHash);
-    const link = `${env.appUrl}/reinitialiser-mot-de-passe?token=${token}`;
+    const link = `${baseUrl}/reinitialiser-mot-de-passe?token=${token}`;
     const mail = passwordResetEmail({ prenom, link });
     await sendMail({ to: email, ...mail, attachments: logoAttachment() });
   }
