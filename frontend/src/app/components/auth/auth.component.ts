@@ -9,6 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { InputErrorMessages } from '../../core/utils/input-error-messages';
 import { ApiErrorHandler } from '../../core/utils/api-error-handler';
+import { applyServerValidationErrors } from '../../core/utils/form-error.utils';
 import { NotificationMessages } from '../../core/constants/notification-messages';
 import { FormUtils } from '../../core/utils/form-utils';
 import { PasswordValidator } from '../../core/validators/password.validator';
@@ -237,17 +238,7 @@ export class AuthComponent implements OnInit {
 
     this.clearServerErrors(form, fields);
 
-    if (ApiErrorHandler.isValidationError(error)) {
-      ApiErrorHandler.getValidationDetails(error).forEach((detail) => {
-        const fieldPath = detail.path?.[0];
-        const control = fieldPath ? form.get(fieldPath) : null;
-        if (control) {
-          control.setErrors({
-            serverError: InputErrorMessages.getServerValidationMessage(fieldPath, detail.message),
-          });
-          control.markAsTouched();
-        }
-      });
+    if (applyServerValidationErrors(form, error)) {
       return;
     }
 
