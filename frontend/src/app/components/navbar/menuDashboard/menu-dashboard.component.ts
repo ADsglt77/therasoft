@@ -5,6 +5,7 @@ import { AppIconComponent } from '../../icon/app-icon.component';
 import { NavbarLinksComponent } from '../navbar-links/navbar-links.component';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { navLinksForRole, NavLink } from '../../../core/constants/nav-links';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -83,9 +84,9 @@ export class MenuDashboardComponent implements OnInit, OnDestroy {
     return `${prenomInitial}${nomInitial}` || '?';
   }
 
-  /** Le menu s'adapte au rôle : un patient ne voit que la prise de rendez-vous. */
-  get isPatient(): boolean {
-    return this.currentUser?.role === 'PATIENT';
+  /** Liens de navigation selon le rôle (source unique partagée avec les autres navbars). */
+  get navLinks(): NavLink[] {
+    return navLinksForRole(this.currentUser?.role);
   }
 
   onLogout(): void {
