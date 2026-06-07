@@ -14,7 +14,7 @@ export interface StepperStep {
  * Les étapes au-delà de `maxReachable` sont verrouillées.
  */
 @Component({
-  selector: 'app-stepper',
+  selector: 'ui-stepper',
   standalone: true,
   imports: [AppIconComponent],
   templateUrl: './ui-stepper.component.html',

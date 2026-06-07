@@ -4,6 +4,11 @@
 $circle: 32px;
 $circle-sm: 26px;
 
+:host {
+  display: block;
+  width: 100%;
+}
+
 .stepper {
   display: flex;
   align-items: flex-start;
@@ -21,14 +26,15 @@ $circle-sm: 26px;
 }
 
 // Trait de liaison entre deux pastilles (du centre de celle-ci au centre de la suivante).
+// Posé DERRIÈRE les pastilles (z-index 0) : les pastilles, opaques, le masquent proprement.
 .stepper__line {
   position: absolute;
-  top: calc(#{$circle} / 2 - 1px);
+  top: calc(#{$circle} / 2);
   left: 50%;
   width: 100%;
   height: 2px;
+  transform: translateY(-50%);
   background: border-surface-color(22%);
-  border-radius: $radius-full;
   z-index: 0;
   @include transition(background-color, $duration-base);
 
@@ -113,7 +119,8 @@ $circle-sm: 26px;
 .stepper__item.is-active {
   .stepper__circle {
     border-color: var(--color-primary-500);
-    background: color-mix(in srgb, var(--color-primary-500) 16%, transparent);
+    // Fond OPAQUE (teinte sur --bg) : le trait passe derrière sans se voir au centre.
+    background: color-mix(in srgb, var(--color-primary-500) 16%, var(--bg));
     color: var(--color-primary-500);
   }
   .stepper__label {
@@ -139,6 +146,6 @@ $circle-sm: 26px;
     height: $circle-sm;
   }
   .stepper__line {
-    top: calc(#{$circle-sm} / 2 - 1px);
+    top: calc(#{$circle-sm} / 2);
   }
 }
