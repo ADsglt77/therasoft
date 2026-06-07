@@ -1,10 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
+import { FeedbackCardComponent, FeedbackVariant } from '../../../components/feedback-card/feedback-card.component';
 import { AuthService } from '../../../core/services/auth.service';
 
 type VerifyState = 'loading' | 'success' | 'error';
+
+interface VerifyView {
+  icon: string;
+  variant: FeedbackVariant;
+  title: string;
+  message: string;
+  cta: { label: string; route: string } | null;
+}
 
 /**
  * Page publique de vérification d'email : lit le jeton du lien reçu,
@@ -13,31 +21,60 @@ type VerifyState = 'loading' | 'success' | 'error';
 @Component({
   selector: 'app-verify-email-page',
   standalone: true,
-  imports: [AppIconComponent, UiButtonComponent, RouterLink],
+  imports: [UiButtonComponent, RouterLink, FeedbackCardComponent],
   templateUrl: './verify-email-page.component.html',
-  styleUrl: './verify-email-page.component.scss',
+  host: { style: 'display: block' },
 })
 export class VerifyEmailPageComponent implements OnInit {
   state: VerifyState = 'loading';
-  message = '';
+  errorMessage = 'Lien de vérification invalide ou expiré.';
 
   constructor(
     private route: ActivatedRoute,
     private authService: AuthService
   ) {}
 
+  get view(): VerifyView {
+    switch (this.state) {
+      case 'success':
+        return {
+          icon: 'check',
+          variant: 'success',
+          title: 'Adresse email vérifiée',
+          message: 'Votre compte est activé : vous pouvez maintenant prendre rendez-vous.',
+          cta: { label: 'Prendre rendez-vous', route: '/prendre-rendez-vous' },
+        };
+      case 'error':
+        return {
+          icon: 'x',
+          variant: 'error',
+          title: 'Vérification impossible',
+          message: this.errorMessage,
+          cta: { label: 'Aller à la connexion', route: '/login' },
+        };
+      default:
+        return {
+          icon: 'clock',
+          variant: 'info',
+          title: 'Vérification en cours…',
+          message: 'Merci de patienter quelques instants.',
+          cta: null,
+        };
+    }
+  }
+
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
     if (!token) {
       this.state = 'error';
-      this.message = 'Lien de vérification invalide.';
+      this.errorMessage = 'Lien de vérification invalide.';
       return;
     }
     this.authService.verifyEmail(token).subscribe({
       next: () => (this.state = 'success'),
       error: (err) => {
         this.state = 'error';
-        this.message = err?.error?.error?.message || 'Lien de vérification invalide ou expiré.';
+        this.errorMessage = err?.error?.error?.message || 'Lien de vérification invalide ou expiré.';
       },
     });
   }
