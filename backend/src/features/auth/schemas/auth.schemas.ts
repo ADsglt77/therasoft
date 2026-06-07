@@ -73,6 +73,31 @@ export const addressSearchSchema = z.object({
 export type AddressSearchQuery = z.infer<typeof addressSearchSchema>;
 
 /**
+ * Schéma de validation pour la vérification d'email (jeton reçu par lien).
+ */
+export const verifyEmailSchema = z.object({
+  token: z.string().min(10, 'Jeton invalide'),
+});
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+/**
+ * Schémas pour la réinitialisation du mot de passe (mot de passe oublié).
+ */
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Email invalide').max(100),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(10, 'Jeton invalide'),
+  newPassword: passwordSchema,
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+/**
  * Schéma de validation pour la connexion
  */
 export const loginSchema = z.object({

@@ -4,6 +4,8 @@ import { env } from '../../../config/env';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { authService } from './auth.service';
 import { addressService } from './address.service';
+import { sendMail, logoAttachment } from '../../../lib/mailer';
+import { verificationEmail } from '../../../lib/email-templates';
 import { PatientRegisterInput, LoginInput, ChangePasswordInput, UpdateProfileInput } from '../schemas/auth.schemas';
 
 const patientSelect = {
@@ -12,6 +14,7 @@ const patientSelect = {
   nom: true,
   prenom: true,
   adresse: true,
+  emailVerified: true,
   medecin: { select: { id: true, nom: true, prenom: true, specialite: true } },
 } as const;
 
@@ -74,7 +77,7 @@ export class PatientAuthService {
     }
 
     const passwordHash = await authService.hashPassword(input.password);
-    await prisma.patient.create({
+    const created = await prisma.patient.create({
       data: {
         nom: input.nom,
         prenom: input.prenom,
@@ -85,7 +88,13 @@ export class PatientAuthService {
         latitude: geo.latitude,
         longitude: geo.longitude,
       },
+      select: { id: true, email: true, prenom: true },
     });
+
+    // Email de vérification (ne bloque pas l'inscription si l'envoi échoue).
+    await this.sendVerificationEmail({ id: created.id, email: input.email, prenom: created.prenom }).catch((err) =>
+      console.error("Échec de l'envoi de l'email de vérification :", err)
+    );
 
     return this.login({ email: input.email, password: input.password });
   }
@@ -98,6 +107,7 @@ export class PatientAuthService {
         nom: true,
         prenom: true,
         passwordHash: true,
+        emailVerified: true,
         medecin: { select: { id: true, nom: true, prenom: true, specialite: true } },
       },
     });
@@ -136,6 +146,7 @@ export class PatientAuthService {
         nom: patient.nom,
         prenom: patient.prenom,
         role: 'PATIENT' as const,
+        emailVerified: patient.emailVerified,
         medecin: patient.medecin,
       },
     };
@@ -192,6 +203,49 @@ export class PatientAuthService {
       throw new ApiError('Patient introuvable', 'AUTH_PATIENT_NOT_FOUND', 404);
     }
     return { ...patient, role: 'PATIENT' as const };
+  }
+
+  // ---- Vérification de l'email ----
+
+  private generateVerifyToken(patientId: number): string {
+    return jwt.sign({ patientId, purpose: 'verify-email' }, env.jwtAccessSecret, { expiresIn: '1d' });
+  }
+
+  /** Envoie l'email de vérification (lien valable 24 h). */
+  async sendVerificationEmail(patient: { id: number; email: string; prenom: string }): Promise<void> {
+    const token = this.generateVerifyToken(patient.id);
+    const link = `${env.appUrl}/verifier-email?token=${token}`;
+    const { subject, html, text } = verificationEmail({ prenom: patient.prenom, link });
+    await sendMail({ to: patient.email, subject, html, text, attachments: logoAttachment() });
+  }
+
+  /** Vérifie le jeton reçu par email et marque l'adresse comme vérifiée. */
+  async verifyEmail(token: string): Promise<void> {
+    let payload: { patientId?: number; purpose?: string };
+    try {
+      payload = jwt.verify(token, env.jwtAccessSecret) as { patientId?: number; purpose?: string };
+    } catch {
+      throw new ApiError('Lien de vérification invalide ou expiré', 'AUTH_VERIFY_TOKEN_INVALID', 400);
+    }
+    if (payload.purpose !== 'verify-email' || !payload.patientId) {
+      throw new ApiError('Lien de vérification invalide', 'AUTH_VERIFY_TOKEN_INVALID', 400);
+    }
+    await prisma.patient.update({ where: { id: payload.patientId }, data: { emailVerified: true } });
+  }
+
+  /** Renvoie l'email de vérification au patient connecté (no-op si déjà vérifié). */
+  async resendVerification(patientId: number): Promise<void> {
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      select: { id: true, email: true, prenom: true, emailVerified: true },
+    });
+    if (!patient || !patient.email) {
+      throw new ApiError('Patient introuvable', 'AUTH_PATIENT_NOT_FOUND', 404);
+    }
+    if (patient.emailVerified) {
+      return;
+    }
+    await this.sendVerificationEmail({ id: patient.id, email: patient.email, prenom: patient.prenom });
   }
 
   /** Modifie le profil (nom / prénom) du patient connecté. */

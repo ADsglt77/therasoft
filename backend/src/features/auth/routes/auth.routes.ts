@@ -10,8 +10,12 @@ import {
   updateAvatarSchema,
   addressSearchSchema,
   AddressSearchQuery,
+  verifyEmailSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../schemas/auth.schemas';
 import { addressService } from '../services/address.service';
+import { passwordResetService } from '../services/password-reset.service';
 import { verifyAccessToken, verifyPatientAccessToken } from '../../../middlewares/jwt.middleware';
 import { requireMedecinId, requirePatientId } from '../../../middlewares/requireMedecin';
 import { ApiError } from '../../../middlewares/errorHandler';
@@ -77,6 +81,27 @@ router.post(
       setRefreshTokenCookie(res, newRefreshToken);
       res.status(200).json({ accessToken });
     }
+  })
+);
+
+router.post(
+  '/forgot-password',
+  authRateLimiter,
+  validateBody(forgotPasswordSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    await passwordResetService.requestReset(req.body.email);
+    // Réponse identique que l'email existe ou non (anti-énumération).
+    res.status(200).json({ message: 'Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.' });
+  })
+);
+
+router.post(
+  '/reset-password',
+  authRateLimiter,
+  validateBody(resetPasswordSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    await passwordResetService.resetPassword(req.body.token, req.body.newPassword);
+    res.status(200).json({ message: 'Mot de passe réinitialisé' });
   })
 );
 
@@ -175,6 +200,24 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const patient = await patientAuthService.getMe(requirePatientId(req));
     res.status(200).json(patient);
+  })
+);
+
+router.post(
+  '/verify-email',
+  validateBody(verifyEmailSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    await patientAuthService.verifyEmail(req.body.token);
+    res.status(200).json({ message: 'Adresse email vérifiée' });
+  })
+);
+
+router.post(
+  '/patient/resend-verification',
+  verifyPatientAccessToken,
+  asyncHandler(async (req: Request, res: Response) => {
+    await patientAuthService.resendVerification(requirePatientId(req));
+    res.status(200).json({ message: 'Email de vérification renvoyé' });
   })
 );
 
