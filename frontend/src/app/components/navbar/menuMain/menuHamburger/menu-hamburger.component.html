@@ -1,7 +1,8 @@
 <div class="menu-hamburger">
   <nav>
-    <app-navbar-links icon="calendar" text="Calendrier" route="/calendar"></app-navbar-links>
-    <app-navbar-links icon="settings" text="Settings" route="/settings"></app-navbar-links>
-    <app-navbar-links icon="logout" text="Logout" (click)="onLogout()"></app-navbar-links>
+    @for (link of links; track link.route) {
+      <app-navbar-links [icon]="link.icon" [text]="link.text" [route]="link.route" [exact]="link.exact"></app-navbar-links>
+    }
+    <app-navbar-links icon="logout" text="Déconnexion" (click)="onLogout()"></app-navbar-links>
   </nav>
 </div>
