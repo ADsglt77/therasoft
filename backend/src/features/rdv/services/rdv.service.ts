@@ -41,6 +41,17 @@ function utcDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Distance à vol d'oiseau (km) entre deux points GPS (formule de haversine). */
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 export interface Slot {
   heureDebut: string;
   heureFin: string;
@@ -77,11 +88,11 @@ export class RdvService {
     });
   }
 
-  /** Médecin rattaché + ses sites (sélecteur de lieu). */
+  /** Médecin rattaché + ses sites, triés par distance depuis l'adresse du patient. */
   async getBookingSites(patientId: number) {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      select: { medecinId: true },
+      select: { medecinId: true, latitude: true, longitude: true },
     });
     if (!patient?.medecinId) {
       return { medecin: null, sites: [] };
@@ -93,11 +104,32 @@ export class RdvService {
       }),
       prisma.site.findMany({
         where: { vacations: { some: { medecinId: patient.medecinId } } },
-        select: { id: true, nom: true, ville: true },
-        orderBy: [{ ville: 'asc' }, { nom: 'asc' }],
+        select: { id: true, nom: true, ville: true, latitude: true, longitude: true },
       }),
     ]);
-    return { medecin, sites };
+
+    const hasPatientCoords = patient.latitude != null && patient.longitude != null;
+    const withDistance = sites.map((s) => ({
+      id: s.id,
+      nom: s.nom,
+      ville: s.ville,
+      distanceKm:
+        hasPatientCoords && s.latitude != null && s.longitude != null
+          ? Math.round(haversineKm(patient.latitude!, patient.longitude!, s.latitude, s.longitude) * 10) / 10
+          : null,
+    }));
+
+    // Tri par distance croissante ; les sites sans coordonnées (ou patient sans adresse) en alphabétique.
+    withDistance.sort((a, b) => {
+      if (a.distanceKm == null && b.distanceKm == null) {
+        return a.ville.localeCompare(b.ville) || a.nom.localeCompare(b.nom);
+      }
+      if (a.distanceKm == null) return 1;
+      if (b.distanceKm == null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+
+    return { medecin, sites: withDistance };
   }
 
   /** Dates du mois où le médecin a une vacation à ce lieu (jours réservables). */
