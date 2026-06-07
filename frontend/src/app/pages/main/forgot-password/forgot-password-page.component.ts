@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent, InputMessageType } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
+import { FeedbackCardComponent } from '../../../components/feedback-card/feedback-card.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { FormUtils } from '../../../core/utils/form-utils';
 
@@ -14,7 +14,7 @@ import { FormUtils } from '../../../core/utils/form-utils';
 @Component({
   selector: 'app-forgot-password-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, AppIconComponent, UiInputComponent, UiButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, UiInputComponent, UiButtonComponent, FeedbackCardComponent],
   templateUrl: './forgot-password-page.component.html',
   styleUrl: './forgot-password-page.component.scss',
 })
