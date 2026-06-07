@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { authService } from '../features/auth/services/auth.service';
 import { prisma } from '../lib/prisma';
-import { env } from '../config/env';
 import { ApiError } from './errorHandler';
+import { getBetterAuth, requestHeaders } from '../lib/better-auth';
 
 declare global {
   namespace Express {
@@ -26,22 +24,21 @@ export const verifyAccessToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    const auth = await getBetterAuth();
+    const session = await auth.api.getSession({
+      headers: requestHeaders(req),
+      query: { disableRefresh: false },
+    });
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApiError('Token manquant', 'AUTH_TOKEN_MISSING', 401);
+    if (!session) {
+      throw new ApiError('Session expirée', 'AUTH_UNAUTHORIZED', 401);
     }
-
-    const token = authHeader.substring(7);
-    const decoded = authService.verifyAccessToken(token);
-
-    // Rejette proprement un token patient sur une route médecin.
-    if (!decoded.medecinId) {
+    if (session.user.role === 'PATIENT' || session.user.profileType !== 'MEDECIN') {
       throw new ApiError('Accès réservé au personnel médical', 'AUTH_FORBIDDEN', 403);
     }
 
     const medecin = await prisma.medecin.findUnique({
-      where: { id: decoded.medecinId },
+      where: { id: session.user.profileId },
       select: { id: true, isActive: true },
     });
 
@@ -50,8 +47,8 @@ export const verifyAccessToken = async (
     }
 
     req.user = {
-      medecinId: decoded.medecinId,
-      role: decoded.role,
+      medecinId: medecin.id,
+      role: session.user.role,
     };
 
     next();
@@ -69,26 +66,21 @@ export const verifyPatientAccessToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    const auth = await getBetterAuth();
+    const session = await auth.api.getSession({
+      headers: requestHeaders(req),
+      query: { disableRefresh: false },
+    });
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApiError('Token manquant', 'AUTH_TOKEN_MISSING', 401);
+    if (!session) {
+      throw new ApiError('Session expirée', 'AUTH_UNAUTHORIZED', 401);
     }
-
-    const token = authHeader.substring(7);
-    let decoded: { patientId?: number; role?: string };
-    try {
-      decoded = jwt.verify(token, env.jwtAccessSecret) as { patientId?: number; role?: string };
-    } catch {
-      throw new ApiError('Token invalide ou expiré', 'AUTH_INVALID_TOKEN', 401);
-    }
-
-    if (decoded.role !== 'PATIENT' || !decoded.patientId) {
+    if (session.user.role !== 'PATIENT' || session.user.profileType !== 'PATIENT') {
       throw new ApiError('Accès réservé aux patients', 'AUTH_FORBIDDEN', 403);
     }
 
     const patient = await prisma.patient.findUnique({
-      where: { id: decoded.patientId },
+      where: { id: session.user.profileId },
       select: { id: true },
     });
 
@@ -97,7 +89,7 @@ export const verifyPatientAccessToken = async (
     }
 
     req.user = {
-      patientId: decoded.patientId,
+      patientId: patient.id,
       role: 'PATIENT',
     };
 

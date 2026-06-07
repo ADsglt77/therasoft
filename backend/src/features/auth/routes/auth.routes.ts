@@ -15,7 +15,6 @@ import {
   resetPasswordSchema,
 } from '../schemas/auth.schemas';
 import { addressService } from '../services/address.service';
-import { passwordResetService } from '../services/password-reset.service';
 import { emailBaseUrl } from '../../../lib/request-url';
 import { verifyAccessToken, verifyPatientAccessToken } from '../../../middlewares/jwt.middleware';
 import { requireMedecinId, requirePatientId } from '../../../middlewares/requireMedecin';
@@ -25,9 +24,65 @@ import { authRateLimiter } from '../../../middlewares/rateLimiter';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { env } from '../../../config/env';
 import { prisma } from '../../../lib/prisma';
-import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../auth.cookies';
+import { clearRefreshTokenCookie } from '../auth.cookies';
+import { applySetCookieHeaders, getBetterAuth, requestHeaders } from '../../../lib/better-auth';
 
 const router = Router();
+
+type SessionUser = {
+  id: string;
+  role: string;
+  profileType: string;
+  profileId: number;
+  email: string;
+  emailVerified: boolean;
+};
+
+async function getSessionUser(req: Request): Promise<SessionUser | null> {
+  const auth = await getBetterAuth();
+  const session = await auth.api.getSession({ headers: requestHeaders(req), query: { disableRefresh: false } });
+  if (!session) {
+    return null;
+  }
+  return session.user as SessionUser;
+}
+
+async function signInWithBetterAuth(req: Request, res: Response, body: { email: string; password: string }) {
+  const auth = await getBetterAuth();
+  const response = await auth.api.signInEmail({
+    body,
+    headers: requestHeaders(req),
+    asResponse: true,
+  });
+  applySetCookieHeaders(res, response.headers);
+  if (!response.ok) {
+    throw new ApiError('Identifiants invalides', 'AUTH_INVALID_CREDENTIALS', 401);
+  }
+}
+
+async function ensureBetterAuthUser(
+  req: Request,
+  body: { email: string; password: string; name: string; role: string; profileType: string; profileId: number }
+) {
+  const auth = await getBetterAuth();
+  const response = await auth.api.signUpEmail({
+    body,
+    headers: requestHeaders(req),
+    asResponse: true,
+  });
+  if (!response.ok && response.status !== 409) {
+    throw new ApiError('Impossible de migrer le compte vers Better Auth', 'AUTH_MIGRATION_FAILED', 500);
+  }
+}
+
+async function mapSessionUserToApiUser(user: SessionUser) {
+  if (user.profileType === 'PATIENT') {
+    const patient = await patientAuthService.getMe(user.profileId);
+    return { ...patient, emailVerified: user.emailVerified, role: 'PATIENT' as const };
+  }
+  const medecin = await authService.getMe(user.profileId);
+  return { ...medecin, role: user.role };
+}
 
 router.post(
   '/register',
@@ -38,7 +93,17 @@ router.post(
       throw new ApiError('Inscription désactivée', 'AUTH_REGISTER_DISABLED', 403);
     }
     const medecin = await authService.register(req.body);
-    res.status(201).json({ message: 'Inscription réussie', medecin });
+    await ensureBetterAuthUser(req, {
+      email: req.body.email,
+      password: req.body.password,
+      name: `${req.body.prenom} ${req.body.nom}`.trim(),
+      role: medecin.role,
+      profileType: 'MEDECIN',
+      profileId: medecin.id,
+    });
+    await signInWithBetterAuth(req, res, { email: req.body.email, password: req.body.password });
+    const user = await getSessionUser(req);
+    res.status(201).json({ role: medecin.role, user: user ? await mapSessionUserToApiUser(user) : medecin });
   })
 );
 
@@ -48,18 +113,49 @@ router.post(
   validateBody(loginSchema),
   asyncHandler(async (req: Request, res: Response) => {
     try {
-      const { accessToken, refreshToken, medecin } = await authService.login(req.body);
-      setRefreshTokenCookie(res, refreshToken);
-      res.status(200).json({ accessToken, role: medecin.role, user: medecin });
-    } catch (error) {
-      // Pas un médecin avec ces identifiants : on tente le compte patient.
-      if (error instanceof ApiError && error.code === 'AUTH_INVALID_CREDENTIALS') {
-        const { accessToken, refreshToken, patient } = await patientAuthService.login(req.body);
-        setRefreshTokenCookie(res, refreshToken);
-        res.status(200).json({ accessToken, role: patient.role, user: patient });
-        return;
+      await signInWithBetterAuth(req, res, req.body);
+      const user = await getSessionUser(req);
+      if (!user) {
+        throw new ApiError('Session introuvable', 'AUTH_UNAUTHORIZED', 401);
       }
-      throw error;
+      res.status(200).json({ role: user.role, user: await mapSessionUserToApiUser(user) });
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.code !== 'AUTH_INVALID_CREDENTIALS') {
+        throw error;
+      }
+
+      // Migration automatique des comptes legacy vers Better Auth.
+      try {
+        const { medecin } = await authService.login(req.body);
+        await ensureBetterAuthUser(req, {
+          email: req.body.email,
+          password: req.body.password,
+          name: `${medecin.prenom} ${medecin.nom}`.trim(),
+          role: medecin.role,
+          profileType: 'MEDECIN',
+          profileId: medecin.id,
+        });
+      } catch (legacyMedecinError) {
+        if (!(legacyMedecinError instanceof ApiError) || legacyMedecinError.code !== 'AUTH_INVALID_CREDENTIALS') {
+          throw legacyMedecinError;
+        }
+        const { patient } = await patientAuthService.login(req.body);
+        await ensureBetterAuthUser(req, {
+          email: req.body.email,
+          password: req.body.password,
+          name: `${patient.prenom} ${patient.nom}`.trim(),
+          role: 'PATIENT',
+          profileType: 'PATIENT',
+          profileId: patient.id,
+        });
+      }
+
+      await signInWithBetterAuth(req, res, req.body);
+      const user = await getSessionUser(req);
+      if (!user) {
+        throw new ApiError('Session introuvable', 'AUTH_UNAUTHORIZED', 401);
+      }
+      res.status(200).json({ role: user.role, user: await mapSessionUserToApiUser(user) });
     }
   })
 );
@@ -68,20 +164,11 @@ router.post(
   '/refresh',
   authRateLimiter,
   asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = req.cookies?.refresh_token;
-    if (!refreshToken) {
-      throw new ApiError('Refresh token manquant', 'AUTH_REFRESH_TOKEN_MISSING', 401);
+    const user = await getSessionUser(req);
+    if (!user) {
+      throw new ApiError('Session expirée', 'AUTH_UNAUTHORIZED', 401);
     }
-    try {
-      const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(refreshToken);
-      setRefreshTokenCookie(res, newRefreshToken);
-      res.status(200).json({ accessToken });
-    } catch {
-      // Session patient : on tente le refresh patient.
-      const { accessToken, refreshToken: newRefreshToken } = await patientAuthService.refresh(refreshToken);
-      setRefreshTokenCookie(res, newRefreshToken);
-      res.status(200).json({ accessToken });
-    }
+    res.status(200).json({ accessToken: '', role: user.role, user: await mapSessionUserToApiUser(user) });
   })
 );
 
@@ -90,7 +177,11 @@ router.post(
   authRateLimiter,
   validateBody(forgotPasswordSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    await passwordResetService.requestReset(req.body.email, emailBaseUrl(req));
+    const auth = await getBetterAuth();
+    await auth.api.requestPasswordReset({
+      body: { email: req.body.email, redirectTo: `${emailBaseUrl(req)}/reinitialiser-mot-de-passe` },
+      headers: requestHeaders(req),
+    });
     // Réponse identique que l'email existe ou non (anti-énumération).
     res.status(200).json({ message: 'Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.' });
   })
@@ -101,7 +192,11 @@ router.post(
   authRateLimiter,
   validateBody(resetPasswordSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    await passwordResetService.resetPassword(req.body.token, req.body.newPassword);
+    const auth = await getBetterAuth();
+    await auth.api.resetPassword({
+      body: { token: req.body.token, newPassword: req.body.newPassword },
+      headers: requestHeaders(req),
+    });
     res.status(200).json({ message: 'Mot de passe réinitialisé' });
   })
 );
@@ -109,14 +204,12 @@ router.post(
 router.post(
   '/logout',
   asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = req.cookies?.refresh_token;
-    if (refreshToken) {
-      try {
-        await authService.logout(refreshToken);
-      } catch {
-        // Toujours effacer le cookie côté client
-      }
-    }
+    const auth = await getBetterAuth();
+    const signOutResponse = await auth.api.signOut({
+      headers: requestHeaders(req),
+      asResponse: true,
+    });
+    applySetCookieHeaders(res, signOutResponse.headers);
     clearRefreshTokenCookie(res);
     res.status(204).send();
   })
@@ -136,8 +229,9 @@ router.patch(
   verifyAccessToken,
   validateBody(changePasswordSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.changePassword(requireMedecinId(req), req.body);
-    res.status(200).json(result);
+    const auth = await getBetterAuth();
+    await auth.api.changePassword({ body: req.body, headers: requestHeaders(req) });
+    res.status(200).json({ message: 'Mot de passe modifié avec succès' });
   })
 );
 
@@ -189,9 +283,18 @@ router.post(
   authRateLimiter,
   validateBody(patientRegisterSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const { accessToken, refreshToken, patient } = await patientAuthService.registerPatient(req.body, emailBaseUrl(req));
-    setRefreshTokenCookie(res, refreshToken);
-    res.status(201).json({ accessToken, role: patient.role, user: patient });
+    const { patient } = await patientAuthService.registerPatient(req.body, emailBaseUrl(req));
+    await ensureBetterAuthUser(req, {
+      email: req.body.email,
+      password: req.body.password,
+      name: `${patient.prenom} ${patient.nom}`.trim(),
+      role: 'PATIENT',
+      profileType: 'PATIENT',
+      profileId: patient.id,
+    });
+    await signInWithBetterAuth(req, res, { email: req.body.email, password: req.body.password });
+    const user = await getSessionUser(req);
+    res.status(201).json({ role: 'PATIENT', user: user ? await mapSessionUserToApiUser(user) : patient });
   })
 );
 
@@ -200,7 +303,8 @@ router.get(
   verifyPatientAccessToken,
   asyncHandler(async (req: Request, res: Response) => {
     const patient = await patientAuthService.getMe(requirePatientId(req));
-    res.status(200).json(patient);
+    const user = await getSessionUser(req);
+    res.status(200).json({ ...patient, emailVerified: user?.emailVerified ?? patient.emailVerified });
   })
 );
 
@@ -208,7 +312,11 @@ router.post(
   '/verify-email',
   validateBody(verifyEmailSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    await patientAuthService.verifyEmail(req.body.token);
+    const auth = await getBetterAuth();
+    await auth.api.verifyEmail({
+      query: { token: req.body.token, callbackURL: `${emailBaseUrl(req)}/verifier-email` },
+      headers: requestHeaders(req),
+    });
     res.status(200).json({ message: 'Adresse email vérifiée' });
   })
 );
@@ -217,7 +325,14 @@ router.post(
   '/patient/resend-verification',
   verifyPatientAccessToken,
   asyncHandler(async (req: Request, res: Response) => {
-    await patientAuthService.resendVerification(requirePatientId(req), emailBaseUrl(req));
+    const auth = await getBetterAuth();
+    const patient = await patientAuthService.getMe(requirePatientId(req));
+    if (patient.email) {
+      await auth.api.sendVerificationEmail({
+        body: { email: patient.email, callbackURL: `${emailBaseUrl(req)}/verifier-email` },
+        headers: requestHeaders(req),
+      });
+    }
     res.status(200).json({ message: 'Email de vérification renvoyé' });
   })
 );
@@ -237,8 +352,9 @@ router.patch(
   verifyPatientAccessToken,
   validateBody(changePasswordSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const result = await patientAuthService.changePassword(requirePatientId(req), req.body);
-    res.status(200).json(result);
+    const auth = await getBetterAuth();
+    await auth.api.changePassword({ body: req.body, headers: requestHeaders(req) });
+    res.status(200).json({ message: 'Mot de passe modifié avec succès' });
   })
 );
 

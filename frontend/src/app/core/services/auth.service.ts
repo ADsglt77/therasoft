@@ -54,7 +54,6 @@ export interface AuthUser {
 export type MeResponse = AuthUser;
 
 export interface AuthResponse {
-  accessToken: string;
   role: string;
   user: AuthUser;
 }
@@ -110,15 +109,14 @@ export class AuthService extends ApiClientService {
   }
 
   private applyAuth(res: AuthResponse): void {
-    this.tokenStorage.setAccessToken(res.accessToken);
     this.tokenStorage.setRole(res.role);
     this.setCurrentUser(res.user);
   }
 
-  refresh(): Observable<{ accessToken: string }> {
+  refresh(): Observable<AuthResponse> {
     return this.http
-      .post<{ accessToken: string }>(`${this.baseUrl}/auth/refresh`, {}, { withCredentials: true })
-      .pipe(tap((response) => this.tokenStorage.setAccessToken(response.accessToken)));
+      .post<AuthResponse>(`${this.baseUrl}/auth/refresh`, {}, { withCredentials: true })
+      .pipe(tap((response) => this.applyAuth(response)));
   }
 
   /** Supprime le token et l'état utilisateur côté client (sans appel API). */
@@ -163,11 +161,11 @@ export class AuthService extends ApiClientService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.tokenStorage.getAccessToken();
+    return !!this.tokenStorage.getRole();
   }
 
   getAccessToken(): string | null {
-    return this.tokenStorage.getAccessToken();
+    return null;
   }
 
   getRole(): string | null {

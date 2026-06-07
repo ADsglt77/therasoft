@@ -17,6 +17,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET must be at least 32 characters').optional(),
 
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
@@ -57,6 +58,7 @@ export const env = {
 
   jwtAccessSecret: data.JWT_ACCESS_SECRET,
   jwtRefreshSecret: data.JWT_REFRESH_SECRET,
+  betterAuthSecret: data.BETTER_AUTH_SECRET || data.JWT_ACCESS_SECRET,
   accessTokenTtlMinutes: data.ACCESS_TOKEN_TTL_MINUTES,
   refreshTokenTtlDays: data.REFRESH_TOKEN_TTL_DAYS,
 
