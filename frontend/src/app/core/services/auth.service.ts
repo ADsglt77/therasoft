@@ -44,6 +44,9 @@ export interface AuthUser {
   email?: string;
   avatarUrl?: string | null;
   avatarFileName?: string | null;
+  adresse?: string | null;
+  /** Patient uniquement : email vérifié ou non. */
+  emailVerified?: boolean;
   medecin?: MedecinOption | null;
 }
 
@@ -173,5 +176,25 @@ export class AuthService extends ApiClientService {
 
   isPatient(): boolean {
     return this.getRole() === 'PATIENT';
+  }
+
+  /** Vérifie l'adresse email à partir du jeton reçu par lien. */
+  verifyEmail(token: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/auth/verify-email`, { token });
+  }
+
+  /** Renvoie l'email de vérification au patient connecté. */
+  resendVerification(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/auth/patient/resend-verification`, {});
+  }
+
+  /** Demande un email de réinitialisation de mot de passe. */
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/auth/forgot-password`, { email });
+  }
+
+  /** Réinitialise le mot de passe à partir du jeton reçu par email. */
+  resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/auth/reset-password`, { token, newPassword });
   }
 }
