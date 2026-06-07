@@ -1,0 +1,126 @@
+@use '../../../styles/tokens' as *;
+@use '../../../styles/mixins' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.addr {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-6;
+  width: 100%;
+
+  &__label {
+    font-size: $font-size-h6;
+    font-weight: $font-weight-500;
+    color: var(--text);
+  }
+
+  &__required {
+    color: var(--color-danger);
+  }
+
+  &__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+    padding: $spacing-8 $spacing-12;
+    border-radius: $radius-8;
+    border: 1px solid border-surface-color(20%);
+    background: color-mix(in srgb, var(--glass-color) 6%, transparent);
+    @include transition(border-color, $duration-fast);
+
+    &:focus-within {
+      border-color: var(--color-primary-500);
+    }
+  }
+
+  &__icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  &__input {
+    @include button-reset;
+    flex: 1;
+    min-width: 0;
+    cursor: text;
+    color: var(--text);
+    font-size: $font-size-h6;
+
+    &::placeholder {
+      color: var(--text-muted);
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &__list {
+    position: absolute;
+    top: calc(100% + #{$spacing-4});
+    left: 0;
+    right: 0;
+    z-index: $z-dropdown;
+    margin: 0;
+    padding: $spacing-4;
+    list-style: none;
+    max-height: 260px;
+    overflow-y: auto;
+    border-radius: $radius-12;
+    // Fond quasi opaque (lisibilité) : la liste ne doit pas laisser voir le champ dessous.
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+    border: 1px solid border-surface-color(20%);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    @include elevation(lg);
+  }
+
+  &__option {
+    @include button-reset;
+    @include focus-visible;
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+    width: 100%;
+    padding: $spacing-8 $spacing-12;
+    border-radius: $radius-8;
+    color: var(--text);
+    text-align: left;
+    @include transition(background-color, $duration-fast);
+
+    app-icon {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-primary-500) 14%, transparent);
+    }
+  }
+
+  &__option-label {
+    font-size: $font-size-h6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__message {
+    font-size: $font-size-span;
+    color: var(--text-muted);
+  }
+
+  &--error {
+    .addr__field {
+      border-color: var(--color-danger);
+    }
+    .addr__message {
+      color: var(--color-danger);
+    }
+  }
+}

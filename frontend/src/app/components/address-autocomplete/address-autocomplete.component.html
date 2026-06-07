@@ -1,0 +1,40 @@
+<div class="addr" [class.addr--error]="messageType === 'error'">
+  @if (label) {
+    <label class="addr__label" [for]="id">
+      {{ label }}@if (required) {<span class="addr__required" aria-hidden="true"> *</span>}
+    </label>
+  }
+
+  <div class="addr__field">
+    <app-icon name="search" [size]="18" class="addr__icon"></app-icon>
+    <input
+      #input
+      [id]="id"
+      type="text"
+      class="addr__input"
+      [value]="value"
+      [placeholder]="placeholder"
+      (input)="onInput($event)"
+      (focus)="onFocus()"
+      autocomplete="off"
+      role="combobox"
+      [attr.aria-expanded]="isOpen" />
+
+    @if (isOpen && suggestions.length) {
+      <ul class="addr__list" role="listbox">
+        @for (s of suggestions; track s.label) {
+          <li>
+            <button type="button" class="addr__option" (click)="select(s)">
+              <app-icon name="globe" [size]="15"></app-icon>
+              <span class="addr__option-label">{{ s.label }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  @if (message) {
+    <span class="addr__message">{{ message }}</span>
+  }
+</div>
