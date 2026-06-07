@@ -14,11 +14,6 @@ export const appRoutes: Routes = [
       import('./pages/main/auth/auth-page.component').then((m) => m.AuthPageComponent),
   },
   {
-    path: 'playground',
-    loadComponent: () =>
-      import('./pages/playground/playground-page.component').then((m) => m.PlaygroundPageComponent),
-  },
-  {
     path: '',
     loadComponent: () => import('./pages/main/main-page.component').then((m) => m.MainPageComponent),
     pathMatch: 'full',
@@ -86,4 +81,6 @@ export const appRoutes: Routes = [
       },
     ],
   },
+  // Toute URL inconnue renvoie vers l'accueil.
+  { path: '**', redirectTo: '' },
 ];
