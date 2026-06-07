@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiInputComponent, InputMessageType } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
+import { FeedbackCardComponent } from '../../../components/feedback-card/feedback-card.component';
 import { PasswordStrengthIndicatorComponent } from '../../../components/password-strength-indicator/password-strength-indicator.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { PasswordValidator } from '../../../core/validators/password.validator';
@@ -22,9 +22,9 @@ type ResetState = 'form' | 'success' | 'invalid';
   imports: [
     ReactiveFormsModule,
     RouterLink,
-    AppIconComponent,
     UiInputComponent,
     UiButtonComponent,
+    FeedbackCardComponent,
     PasswordStrengthIndicatorComponent,
   ],
   templateUrl: './reset-password-page.component.html',
