@@ -123,8 +123,10 @@ model Patient {
   longitude Float?
 
   // Compte patient (auto-inscription) : null pour les fiches créées côté médecin.
-  email        String? @unique
-  passwordHash String? @map("password_hash")
+  email         String?  @unique
+  passwordHash  String?  @map("password_hash")
+  // Vérification de l'email : false tant que le patient n'a pas cliqué le lien reçu.
+  emailVerified Boolean  @default(false) @map("email_verified")
 
   medecinId Int?     @map("id_medecin")
   medecin   Medecin? @relation("PatientMedecin", fields: [medecinId], references: [id], onDelete: SetNull)
