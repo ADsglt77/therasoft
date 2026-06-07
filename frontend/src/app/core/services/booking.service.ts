@@ -7,6 +7,8 @@ export interface BookingSite {
   id: number;
   nom: string;
   ville: string;
+  /** Distance (km) depuis l'adresse du patient ; null si inconnue. */
+  distanceKm?: number | null;
 }
 
 export interface BookingMedecin {
