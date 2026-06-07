@@ -117,6 +117,11 @@ model Patient {
   dateNaissance DateTime? @map("date_naissance") @db.Date
   sexe          Sexe?     @default(UNKNOWN)
 
+  // Adresse postale vérifiée (API Adresse gouv.fr) + coordonnées GPS, pour le tri par distance.
+  adresse   String?
+  latitude  Float?
+  longitude Float?
+
   // Compte patient (auto-inscription) : null pour les fiches créées côté médecin.
   email        String? @unique
   passwordHash String? @map("password_hash")
