@@ -148,16 +148,16 @@ export class InputErrorMessages {
         };
       }
       if (field.hasError('passwordUppercase')) {
-        return { message: 'Password must contain at least 1 uppercase letter.', type: 'error' };
+        return { message: 'Au moins 1 majuscule requise.', type: 'error' };
       }
       if (field.hasError('passwordLowercase')) {
-        return { message: 'Password must contain at least 1 lowercase letter.', type: 'error' };
+        return { message: 'Au moins 1 minuscule requise.', type: 'error' };
       }
       if (field.hasError('passwordNumber')) {
-        return { message: 'Password must contain at least 1 number.', type: 'error' };
+        return { message: 'Au moins 1 chiffre requis.', type: 'error' };
       }
       if (field.hasError('passwordSpecial')) {
-        return { message: 'Password must contain at least 1 special character.', type: 'error' };
+        return { message: 'Au moins 1 caractère spécial requis.', type: 'error' };
       }
     }
 
