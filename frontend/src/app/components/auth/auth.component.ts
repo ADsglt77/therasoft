@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { UiButtonComponent } from '../button/ui-button.component';
 import { UiInputComponent, InputMessageType, SelectOption } from '../input/ui-input.component';
+import { AddressAutocompleteComponent } from '../address-autocomplete/address-autocomplete.component';
 import { PasswordStrengthIndicatorComponent } from '../password-strength-indicator/password-strength-indicator.component';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -15,7 +16,7 @@ import { PasswordValidator } from '../../core/validators/password.validator';
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
+  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, AddressAutocompleteComponent, PasswordStrengthIndicatorComponent],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,
@@ -54,6 +55,7 @@ export class AuthComponent implements OnInit {
       password: ['', [Validators.required, PasswordValidator.strong()]],
       confirmPassword: ['', [Validators.required]],
       medecinId: ['', [Validators.required]],
+      adresse: ['', [Validators.required, Validators.minLength(3)]],
     }, {
       validators: this.passwordMatchValidator
     });
@@ -177,14 +179,14 @@ export class AuthComponent implements OnInit {
       return;
     }
 
-    const fields = ['email', 'password', 'nom', 'prenom', 'medecinId'];
+    const fields = ['email', 'password', 'nom', 'prenom', 'medecinId', 'adresse'];
     this.isLoading = true;
     this.clearServerErrors(this.registerForm, fields);
 
-    const { nom, prenom, email, password, medecinId } = this.registerForm.value;
+    const { nom, prenom, email, password, medecinId, adresse } = this.registerForm.value;
 
     this.authService
-      .registerPatient({ nom, prenom, email, password, medecinId: Number(medecinId) })
+      .registerPatient({ nom, prenom, email, password, medecinId: Number(medecinId), adresse })
       .subscribe({
         next: () => {
           this.isLoading = false;
@@ -195,6 +197,7 @@ export class AuthComponent implements OnInit {
           this.isLoading = false;
           this.handleAuthError(this.registerForm, error, fields, {
             AUTH_EMAIL_EXISTS: 'email',
+            AUTH_ADDRESS_NOT_FOUND: 'adresse',
           });
         },
       });
@@ -319,6 +322,10 @@ export class AuthComponent implements OnInit {
 
   get registerMedecinMessage() {
     return this.getInputMessage(this.registerForm, 'medecinId');
+  }
+
+  get registerAdresseMessage() {
+    return this.getInputMessage(this.registerForm, 'adresse');
   }
 
   get registerPasswordMessage() {

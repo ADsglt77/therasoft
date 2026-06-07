@@ -83,6 +83,19 @@
       </div>
 
       <div class="field-wrapper">
+        <app-address-autocomplete
+          id="register-adresse"
+          label="Adresse postale"
+          placeholder="Saisissez puis choisissez votre adresse"
+          [value]="registerForm.get('adresse')?.value || ''"
+          [required]="true"
+          (valueChange)="updateFormControl(registerForm, 'adresse', $event)"
+          [message]="registerAdresseMessage.message"
+          [messageType]="registerAdresseMessage.type">
+        </app-address-autocomplete>
+      </div>
+
+      <div class="field-wrapper">
         <ui-input
           type="select"
           label="Votre médecin"
