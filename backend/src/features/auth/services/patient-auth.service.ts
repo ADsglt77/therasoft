@@ -3,6 +3,7 @@ import { prisma } from '../../../lib/prisma';
 import { env } from '../../../config/env';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { authService } from './auth.service';
+import { addressService } from './address.service';
 import { PatientRegisterInput, LoginInput, ChangePasswordInput, UpdateProfileInput } from '../schemas/auth.schemas';
 
 const patientSelect = {
@@ -10,6 +11,7 @@ const patientSelect = {
   email: true,
   nom: true,
   prenom: true,
+  adresse: true,
   medecin: { select: { id: true, nom: true, prenom: true, specialite: true } },
 } as const;
 
@@ -64,6 +66,13 @@ export class PatientAuthService {
       throw new ApiError('Médecin introuvable', 'AUTH_MEDECIN_NOT_FOUND', 404);
     }
 
+    // Vérification de l'adresse : on stocke la version normalisée + les coordonnées
+    // renvoyées par le service officiel (concordance des données, tri par distance).
+    const geo = await addressService.geocode(input.adresse);
+    if (!geo) {
+      throw new ApiError('Adresse introuvable, choisissez une suggestion proposée', 'AUTH_ADDRESS_NOT_FOUND', 400);
+    }
+
     const passwordHash = await authService.hashPassword(input.password);
     await prisma.patient.create({
       data: {
@@ -72,6 +81,9 @@ export class PatientAuthService {
         email: input.email,
         passwordHash,
         medecinId: input.medecinId,
+        adresse: geo.label,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
       },
     });
 

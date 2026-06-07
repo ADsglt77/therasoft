@@ -8,11 +8,14 @@ import {
   changePasswordSchema,
   updateProfileSchema,
   updateAvatarSchema,
+  addressSearchSchema,
+  AddressSearchQuery,
 } from '../schemas/auth.schemas';
+import { addressService } from '../services/address.service';
 import { verifyAccessToken, verifyPatientAccessToken } from '../../../middlewares/jwt.middleware';
 import { requireMedecinId, requirePatientId } from '../../../middlewares/requireMedecin';
 import { ApiError } from '../../../middlewares/errorHandler';
-import { validateBody } from '../../../middlewares/validate';
+import { validateBody, validateQuery } from '../../../middlewares/validate';
 import { authRateLimiter } from '../../../middlewares/rateLimiter';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { env } from '../../../config/env';
@@ -133,6 +136,15 @@ router.patch(
 );
 
 // ---- Patient (auto-inscription + portail de réservation) ----
+
+router.get(
+  '/address/search',
+  validateQuery(addressSearchSchema),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { q } = req.query as unknown as AddressSearchQuery;
+    res.json({ suggestions: await addressService.search(q) });
+  })
+);
 
 router.get(
   '/medecins',

@@ -58,9 +58,19 @@ export const patientRegisterSchema = z.object({
   nom: z.string().min(1, 'Le nom est requis').max(100),
   prenom: z.string().min(1, 'Le prénom est requis').max(100),
   medecinId: z.coerce.number().int().positive('Veuillez choisir un médecin'),
+  adresse: z.string().min(3, 'Veuillez renseigner votre adresse').max(200),
 });
 
 export type PatientRegisterInput = z.infer<typeof patientRegisterSchema>;
+
+/**
+ * Schéma de validation pour la recherche d'adresses (autocomplétion).
+ */
+export const addressSearchSchema = z.object({
+  q: z.string().min(3, 'Au moins 3 caractères').max(200),
+});
+
+export type AddressSearchQuery = z.infer<typeof addressSearchSchema>;
 
 /**
  * Schéma de validation pour la connexion
