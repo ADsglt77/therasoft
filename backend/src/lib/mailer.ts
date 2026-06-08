@@ -5,8 +5,8 @@ import { env } from '../config/env';
 
 /**
  * Envoi d'emails via SMTP (variables d'env SMTP_*).
- * Si aucun SMTP n'est configuré (SMTP_HOST absent), le contenu est loggué
- * au lieu d'être envoyé — pratique en dev sans serveur mail.
+ * Si aucun SMTP n'est configuré (SMTP_HOST absent), aucun email n'est envoyé
+ * et une erreur est notifiée dans les logs.
  */
 let transporter: Transporter | null = null;
 let initialized = false;
@@ -72,7 +72,9 @@ function logFallback(message: MailMessage, reason: string): void {
 export async function sendMail(message: MailMessage): Promise<void> {
   const tx = getTransporter();
   if (!tx) {
-    logFallback(message, 'SMTP non configuré');
+    console.error(
+      `❌ Email non envoyé à ${message.to} (« ${message.subject} ») : SMTP non configuré (SMTP_HOST manquant).`
+    );
     return;
   }
   try {
