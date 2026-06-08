@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import nodemailer, { Transporter } from 'nodemailer';
 import { env } from '../config/env';
+import { logger } from './logger';
 
 /**
  * Envoi d'emails via SMTP (variables d'env SMTP_*).
@@ -63,17 +64,12 @@ export function logoAttachment(): MailAttachment[] {
   return logo ? [{ filename: 'logo.png', content: logo, cid: 'tsxcare-logo' }] : [];
 }
 
-/** Repli : loggue le message (le lien reste utilisable) quand l'envoi n'est pas possible. */
-function logFallback(message: MailMessage, reason: string): void {
-  console.log(`📧 [MAIL ${reason}] → ${message.to} : ${message.subject}`);
-  console.log(`   ${message.text}`);
-}
-
 export async function sendMail(message: MailMessage): Promise<void> {
   const tx = getTransporter();
   if (!tx) {
-    console.error(
-      `❌ Email non envoyé à ${message.to} (« ${message.subject} ») : SMTP non configuré (SMTP_HOST manquant).`
+    logger.error(
+      { to: message.to, subject: message.subject },
+      'Email non envoyé : SMTP non configuré (SMTP_HOST manquant)'
     );
     return;
   }
@@ -86,10 +82,8 @@ export async function sendMail(message: MailMessage): Promise<void> {
       html: message.html,
       attachments: message.attachments,
     });
-    console.log(`📧 Email envoyé à ${message.to} (id ${info.messageId})`);
+    logger.info({ to: message.to, messageId: info.messageId }, 'Email envoyé');
   } catch (err) {
-    // SMTP configuré mais envoi en échec (identifiants manquants/incorrects…) : on loggue le lien.
-    console.error('Envoi SMTP échoué :', (err as Error)?.message);
-    logFallback(message, 'repli après échec SMTP');
+    logger.error({ to: message.to, subject: message.subject, err }, 'Envoi SMTP échoué');
   }
 }
