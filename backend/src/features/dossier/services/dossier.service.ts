@@ -63,24 +63,9 @@ export class DossierService {
     rdvId: number,
     medecinId: number
   ): Promise<DossierResponse> {
-    await assertDossierAccess(patientId, rdvId, medecinId);
-
-    const dossier = await prisma.dossier.findUnique({
-      where: { rdvId },
-      select: dossierSelect,
-    });
-
-    if (!dossier) {
-      throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
-    }
-
-    await syncDossierOperationReady(dossier.id);
-    const refreshed = await prisma.dossier.findUnique({
-      where: { id: dossier.id },
-      select: dossierSelect,
-    });
-
-    return mapDossier(refreshed!);
+    const dossierId = await this.requireDossierId(patientId, rdvId, medecinId);
+    await syncDossierOperationReady(dossierId);
+    return this.loadMapped(dossierId);
   }
 
   async updateObservations(
@@ -89,29 +74,10 @@ export class DossierService {
     observations: string | null,
     medecinId: number
   ): Promise<DossierResponse> {
-    await assertDossierAccess(patientId, rdvId, medecinId);
-
-    const existingDossier = await prisma.dossier.findUnique({
-      where: { rdvId },
-    });
-
-    if (!existingDossier) {
-      throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
-    }
-
-    await prisma.dossier.update({
-      where: { id: existingDossier.id },
-      data: { observations },
-    });
-
-    await syncDossierOperationReady(existingDossier.id);
-
-    const updatedDossier = await prisma.dossier.findUnique({
-      where: { id: existingDossier.id },
-      select: dossierSelect,
-    });
-
-    return mapDossier(updatedDossier!);
+    const dossierId = await this.requireDossierId(patientId, rdvId, medecinId);
+    await prisma.dossier.update({ where: { id: dossierId }, data: { observations } });
+    await syncDossierOperationReady(dossierId);
+    return this.loadMapped(dossierId);
   }
 
   async setVerified(
@@ -120,25 +86,32 @@ export class DossierService {
     verified: boolean,
     medecinId: number
   ): Promise<DossierResponse> {
+    const dossierId = await this.requireDossierId(patientId, rdvId, medecinId);
+    await prisma.dossier.update({ where: { id: dossierId }, data: { verified } });
+    return this.loadMapped(dossierId);
+  }
+
+  /** Vérifie l'accès médecin→dossier et renvoie l'id du dossier du RDV (404 sinon). */
+  private async requireDossierId(
+    patientId: number,
+    rdvId: number,
+    medecinId: number
+  ): Promise<number> {
     await assertDossierAccess(patientId, rdvId, medecinId);
-
-    const existingDossier = await prisma.dossier.findUnique({ where: { rdvId } });
-
-    if (!existingDossier) {
+    const dossier = await prisma.dossier.findUnique({ where: { rdvId }, select: { id: true } });
+    if (!dossier) {
       throw new ApiError('Dossier médical non trouvé pour ce rendez-vous', 'NOT_FOUND', 404);
     }
+    return dossier.id;
+  }
 
-    await prisma.dossier.update({
-      where: { id: existingDossier.id },
-      data: { verified },
-    });
-
-    const updatedDossier = await prisma.dossier.findUnique({
-      where: { id: existingDossier.id },
+  /** Recharge le dossier complet (projection dossierSelect) et le mappe en réponse. */
+  private async loadMapped(dossierId: number): Promise<DossierResponse> {
+    const dossier = await prisma.dossier.findUnique({
+      where: { id: dossierId },
       select: dossierSelect,
     });
-
-    return mapDossier(updatedDossier!);
+    return mapDossier(dossier!);
   }
 }
 
