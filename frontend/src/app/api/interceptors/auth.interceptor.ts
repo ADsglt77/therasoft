@@ -1,30 +1,17 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { TokenStorageService } from '../../core/services/token-storage.service';
-import { AUTH_PUBLIC_ROUTES, matchesRoute, isApiRequest } from '../../core/constants/api-routes';
+import { isApiRequest } from '../../core/constants/api-routes';
 
 /**
- * Interceptor qui ajoute le Bearer token aux requêtes authentifiées
+ * Interceptor qui ajoute withCredentials aux requêtes API pour BetterAuth
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const tokenStorage = inject(TokenStorageService);
-  const token = tokenStorage.getAccessToken();
-
-  // Ne pas ajouter le token pour les routes publiques d'auth
-  if (matchesRoute(req.url, AUTH_PUBLIC_ROUTES)) {
-    return next(req);
-  }
-
-  // Ajouter le token pour toutes les autres requêtes API
-  if (token && isApiRequest(req.url)) {
+  // Ajouter withCredentials pour toutes les requêtes API
+  if (isApiRequest(req.url)) {
     const clonedReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
+      withCredentials: true
     });
     return next(clonedReq);
   }
 
   return next(req);
 };
-
