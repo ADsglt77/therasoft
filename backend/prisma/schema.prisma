@@ -38,20 +38,16 @@ model Medecin {
   nom        String
   prenom     String
   specialite String?
-  email      String  @unique
 
-  passwordHash   String    @map("password_hash")
-  role           Role      @default(MEDECIN)
   isActive       Boolean   @default(true) @map("is_active")
-  lastLoginAt    DateTime? @map("last_login_at")
-  avatarUrl      String?   @map("avatar_url")
-  avatarFileName String?   @map("avatar_file_name")
+
+  userId         String    @unique @map("user_id")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   vacations  Vacation[]
-  sessions   AuthSession[]
   auditLogs  AuditLog[]
   patients   Patient[] @relation("PatientMedecin")
   rdvs       Rdv[]
@@ -122,11 +118,8 @@ model Patient {
   latitude  Float?
   longitude Float?
 
-  // Compte patient (auto-inscription) : null pour les fiches créées côté médecin.
-  email         String?  @unique
-  passwordHash  String?  @map("password_hash")
-  // Vérification de l'email : false tant que le patient n'a pas cliqué le lien reçu.
-  emailVerified Boolean  @default(false) @map("email_verified")
+  userId    String?  @unique @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   medecinId Int?     @map("id_medecin")
   medecin   Medecin? @relation("PatientMedecin", fields: [medecinId], references: [id], onDelete: SetNull)
@@ -135,7 +128,6 @@ model Patient {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   rdvs     Rdv[]
-  sessions AuthSession[]
 
   @@index([nom, prenom])
   @@index([dateNaissance])
@@ -254,26 +246,68 @@ model AuditLog {
   @@map("audit_log")
 }
 
-model AuthSession {
-  id Int @id @default(autoincrement())
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @map("email_verified")
+  image         String?
+  createdAt     DateTime  @map("created_at")
+  updatedAt     DateTime  @map("updated_at")
+  
+  role          String?   @default("PATIENT")
+  
+  sessions      Session[]
+  accounts      Account[]
+  
+  medecin       Medecin?
+  patient       Patient?
 
-  medecinId Int?     @map("id_medecin")
-  medecin   Medecin? @relation(fields: [medecinId], references: [id], onDelete: Cascade)
+  @@map("user")
+}
 
-  patientId Int?     @map("id_patient")
-  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: Cascade)
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  refreshTokenHash String    @map("refresh_token_hash")
-  expiresAt        DateTime  @map("expires_at")
-  revokedAt        DateTime? @map("revoked_at")
+  @@map("session")
+}
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @map("created_at")
+  updatedAt             DateTime  @map("updated_at")
 
-  @@index([medecinId])
-  @@index([patientId])
-  @@index([expiresAt])
-  @@map("auth_session")
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+
+  @@map("verification")
 }
 
 // Durée (en minutes) d'un rendez-vous selon la modalité — éditable en base.
