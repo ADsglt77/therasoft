@@ -185,7 +185,7 @@ model RdvVacation {
   @@unique([rdvId, vacationId])
   @@index([rdvId])
   @@index([vacationId])
-  @@map("modalite")
+  @@map("rdv_vacation")
 }
 
 // Un dossier par RDV (patient dérivé via rdv.patient)
@@ -255,7 +255,7 @@ model User {
   createdAt     DateTime  @map("created_at")
   updatedAt     DateTime  @map("updated_at")
   
-  role          String?   @default("PATIENT")
+  role          Role      @default(PATIENT)
   
   sessions      Session[]
   accounts      Account[]
