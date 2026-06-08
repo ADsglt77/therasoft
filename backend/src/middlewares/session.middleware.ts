@@ -16,24 +16,26 @@ declare global {
   }
 }
 
+/**
+ * Vérifie la session Better Auth (cookie) et renseigne `req.user` avec le
+ * profil métier associé (medecinId ou patientId selon le rôle). Les contrôles
+ * de rôle fins restent à la charge des handlers (requireMedecinId / requirePatientId).
+ */
 export const verifySession = async (
   req: Request,
   _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-    console.log("verifySession - req.cookies:", req.cookies, "session:", session ? session.user.id : "null");
+    const session = await auth.api.getSession({ headers: req.headers });
 
     if (!session) {
       throw new ApiError('Non authentifié', 'AUTH_UNAUTHORIZED', 401);
     }
-    
+
     let medecinId: number | undefined;
     let patientId: number | undefined;
-    
+
     if (session.user.role === 'MEDECIN' || session.user.role === 'SECRETAIRE') {
       const medecin = await prisma.medecin.findUnique({ where: { userId: session.user.id } });
       if (!medecin || !medecin.isActive) {
@@ -60,6 +62,3 @@ export const verifySession = async (
     next(error);
   }
 };
-
-export const verifyAccessToken = verifySession;
-export const verifyPatientAccessToken = verifySession;

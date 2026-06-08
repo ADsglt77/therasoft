@@ -1,6 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { toNodeHandler } from 'better-auth/node';
-import { auth } from '../../../lib/auth';
 import { profileService } from '../services/profile.service';
 import {
   updateProfileSchema,
@@ -9,8 +7,8 @@ import {
   AddressSearchQuery,
 } from '../schemas/auth.schemas';
 import { addressService } from '../services/address.service';
-import { verifySession } from '../../../middlewares/jwt.middleware';
-import { requireMedecinId, requirePatientId } from '../../../middlewares/requireMedecin';
+import { verifySession } from '../../../middlewares/session.middleware';
+import { requireMedecinId, requirePatientId } from '../../../middlewares/requireProfile';
 import { validateBody, validateQuery } from '../../../middlewares/validate';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { prisma } from '../../../lib/prisma';
