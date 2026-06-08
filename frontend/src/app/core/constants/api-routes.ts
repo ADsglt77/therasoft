@@ -1,36 +1,24 @@
 /**
- * Routes API qui ne doivent PAS recevoir de Bearer token
+ * Endpoints d'authentification Better Auth dont un 401 est légitime (mauvais
+ * identifiants, mot de passe actuel incorrect, lien invalide…) : l'erreur est
+ * gérée par le composant appelant, sans déconnexion forcée.
  */
-export const AUTH_PUBLIC_ROUTES = ['/auth/login', '/auth/register'] as const;
-
-/**
- * Routes API pour lesquelles un 401 ne doit PAS déclencher un token refresh
- */
-export const AUTH_NO_REFRESH_ROUTES = [
-  '/auth/login',
-  '/auth/register',
-  '/auth/refresh',
-  '/auth/logout',
+export const AUTH_COMPONENT_HANDLED_ROUTES = [
+  '/auth/sign-in',
+  '/auth/sign-up',
+  '/auth/sign-out',
+  '/auth/change-password',
+  '/auth/forget-password',
+  '/auth/reset-password',
+  '/auth/verify-email',
 ] as const;
 
-/** En-tête posé après un refresh pour éviter une boucle de refresh */
-export const AUTH_RETRY_HEADER = 'X-Auth-Retry';
-
-/**
- * Routes API dont les erreurs 401 sont gérées dans le composant (pas de redirect)
- */
-export const AUTH_COMPONENT_HANDLED_ROUTES = ['/auth/password'] as const;
-
-/**
- * Vérifie si l'URL correspond à une des routes dans la liste
- */
+/** Vrai si l'URL contient l'une des routes listées. */
 export function matchesRoute(url: string, routes: readonly string[]): boolean {
   return routes.some((route) => url.includes(route));
 }
 
-/**
- * Vérifie si l'URL est une requête API
- */
+/** Vrai si l'URL est un appel à l'API. */
 export function isApiRequest(url: string): boolean {
   return url.includes('/api/');
 }
