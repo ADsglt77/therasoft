@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { dossierService } from '../services/dossier.service';
 import { dossierFileService } from '../services/dossier-file.service';
-import { verifyAccessToken } from '../../../middlewares/jwt.middleware';
-import { requireMedecinId } from '../../../middlewares/requireMedecin';
+import { verifySession } from '../../../middlewares/session.middleware';
+import { requireMedecinId } from '../../../middlewares/requireProfile';
 import {
   patientRdvParamsSchema,
   patientRdvFileParamsSchema,
@@ -20,7 +20,7 @@ const router = Router();
 
 router.get(
   '/:patientId/rdv/:rdvId/dossier',
-  verifyAccessToken,
+  verifySession,
   validateParams(patientRdvParamsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
@@ -33,7 +33,7 @@ router.get(
 
 router.patch(
   '/:patientId/rdv/:rdvId/dossier/observations',
-  verifyAccessToken,
+  verifySession,
   validateParams(patientRdvParamsSchema),
   validateBody(updateObservationsSchema),
   asyncHandler(async (req: Request, res: Response) => {
@@ -58,7 +58,7 @@ router.patch(
 
 router.patch(
   '/:patientId/rdv/:rdvId/dossier/verified',
-  verifyAccessToken,
+  verifySession,
   validateParams(patientRdvParamsSchema),
   validateBody(setVerifiedSchema),
   asyncHandler(async (req: Request, res: Response) => {
@@ -78,7 +78,7 @@ router.patch(
 
 router.post(
   '/:patientId/rdv/:rdvId/dossier/files',
-  verifyAccessToken,
+  verifySession,
   validateParams(patientRdvParamsSchema),
   (req: Request, res: Response, next) => {
     uploadDossierFiles(req, res, (err: unknown) => {
@@ -111,7 +111,7 @@ router.post(
 
 router.delete(
   '/:patientId/rdv/:rdvId/dossier/files/:fileId',
-  verifyAccessToken,
+  verifySession,
   validateParams(patientRdvFileParamsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
@@ -130,7 +130,7 @@ router.delete(
 
 router.get(
   '/:patientId/rdv/:rdvId/dossier/files/:fileId/download',
-  verifyAccessToken,
+  verifySession,
   validateParams(patientRdvFileParamsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
