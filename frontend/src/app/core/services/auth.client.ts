@@ -1,6 +1,6 @@
-import { createAuthClient } from "better-auth/client";
-import { environment } from "../../../environments/environment";
+import { createAuthClient } from 'better-auth/client';
 
 export const authClient = createAuthClient({
-  baseURL: window.location.origin, // Pointing to the host, BetterAuth will hit /api/auth by default
+  // Pointe vers l'hôte ; Better Auth cible /api/auth par défaut.
+  baseURL: window.location.origin,
 });
