@@ -5,6 +5,7 @@ import { UiButtonComponent } from '../button/ui-button.component';
 import { UiInputComponent, InputMessageType, SelectOption } from '../input/ui-input.component';
 import { AddressAutocompleteComponent } from '../address-autocomplete/address-autocomplete.component';
 import { PasswordStrengthIndicatorComponent } from '../password-strength-indicator/password-strength-indicator.component';
+import { UiStepperComponent, StepperStep } from '../stepper/ui-stepper.component';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { InputErrorMessages } from '../../core/utils/input-error-messages';
@@ -17,7 +18,7 @@ import { PasswordValidator } from '../../core/validators/password.validator';
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, AddressAutocompleteComponent, PasswordStrengthIndicatorComponent],
+  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, AddressAutocompleteComponent, PasswordStrengthIndicatorComponent, UiStepperComponent],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,
@@ -29,6 +30,15 @@ export class AuthComponent implements OnInit {
   loginForm: FormGroup;
   registerForm: FormGroup;
   medecinOptions: SelectOption[] = [];
+
+  // Wizard d'inscription : étape courante + champs validés par étape.
+  registerStep = 0;
+  registerMaxReachable = 0;
+  private readonly registerStepFields: readonly (readonly string[])[] = [
+    ['nom', 'prenom', 'adresse'],
+    ['medecinId'],
+    ['email', 'password', 'confirmPassword'],
+  ];
 
   @HostBinding('class')
   get hostClasses(): string {
@@ -134,6 +144,55 @@ export class AuthComponent implements OnInit {
     // Naviguer vers l'autre route
     const targetRoute = this.isLoginMode ? '/login' : '/register';
     this.router.navigate([targetRoute]);
+  }
+
+  // --- Wizard d'inscription (étapes) ---
+
+  get registerSteps(): StepperStep[] {
+    return [
+      { label: 'Vos informations', value: null, done: this.registerStep > 0 },
+      { label: 'Votre médecin', value: null, done: this.registerStep > 1 },
+      { label: 'Connexion', value: null, done: false },
+    ];
+  }
+
+  get isLastRegisterStep(): boolean {
+    return this.registerStep === this.registerStepFields.length - 1;
+  }
+
+  /** Valide l'étape courante puis avance (ou marque les champs en erreur). */
+  nextRegisterStep(): void {
+    const fields = this.registerStepFields[this.registerStep];
+    const stepValid = fields.every((field) => this.registerForm.get(field)?.valid);
+    if (!stepValid) {
+      fields.forEach((field) => this.registerForm.get(field)?.markAsTouched());
+      return;
+    }
+    if (!this.isLastRegisterStep) {
+      this.registerStep++;
+      this.registerMaxReachable = Math.max(this.registerMaxReachable, this.registerStep);
+    }
+  }
+
+  prevRegisterStep(): void {
+    if (this.registerStep > 0) {
+      this.registerStep--;
+    }
+  }
+
+  goToRegisterStep(index: number): void {
+    if (index <= this.registerMaxReachable) {
+      this.registerStep = index;
+    }
+  }
+
+  /** Entrée clavier dans le formulaire d'inscription : avance ou soumet. */
+  onRegisterEnter(): void {
+    if (this.isLastRegisterStep) {
+      this.onSubmit();
+    } else {
+      this.nextRegisterStep();
+    }
   }
 
   onSubmit(): void {

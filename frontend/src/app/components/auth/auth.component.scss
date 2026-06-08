@@ -8,7 +8,6 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 600px;
     padding: $spacing-24;
     @include glass-panel;
     border-radius: $radius-12;
@@ -77,6 +76,20 @@
           align-self: flex-end;
           @include link-primary;
         }
+      }
+    }
+
+    // Hauteur stable entre les étapes du wizard (la plus haute fixe le minimum).
+    .form--wizard {
+      min-height: 290px;
+    }
+
+    .step-nav {
+      display: flex;
+      gap: $spacing-12;
+
+      ui-button {
+        flex: 1;
       }
     }
 
