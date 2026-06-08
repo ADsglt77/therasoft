@@ -21,7 +21,11 @@ function mockContext({
   duration = 30,
   busy = [] as { heureDebut: Date; heureFin: Date }[],
 } = {}) {
-  vi.mocked(prisma.patient.findUnique).mockResolvedValue({ medecinId, emailVerified: true } as never);
+  vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+    medecinId,
+    prenom: 'Test',
+    user: { email: 'patient@test.fr', emailVerified: true },
+  } as never);
   vi.mocked(prisma.vacation.findFirst).mockResolvedValue({ id: 1 } as never);
   vi.mocked(prisma.site.findUnique).mockResolvedValue({ openingHours } as never);
   vi.mocked(prisma.modaliteConfig.findUnique).mockResolvedValue({ dureeMinutes: duration } as never);
@@ -59,7 +63,16 @@ describe('RdvService.createBooking / cancel', () => {
 
   it('crée le RDV si le créneau est disponible (médecin + site + dossier vide)', async () => {
     mockContext({ duration: 30 });
-    vi.mocked(prisma.rdv.create).mockResolvedValue({ id: 99 } as never);
+    vi.mocked(prisma.rdv.create).mockResolvedValue({
+      id: 99,
+      date,
+      heureDebut: new Date(Date.UTC(1970, 0, 1, 8, 0)),
+      heureFin: new Date(Date.UTC(1970, 0, 1, 8, 30)),
+      modalite: 'MRI',
+      motif: null,
+      site: { id: 2, nom: 'Centre', ville: 'Paris' },
+      medecin: { id: 5, nom: 'Doe', prenom: 'John' },
+    } as never);
     await rdvService.createBooking(7, { siteId: 2, date, heureDebut: '08:00', modalite: 'MRI' } as never);
     const arg = vi.mocked(prisma.rdv.create).mock.calls[0][0] as { data: Record<string, unknown> };
     expect(arg.data.medecinId).toBe(5);

@@ -198,12 +198,12 @@ export class RdvService {
   async createBooking(patientId: number, input: CreateBookingInput, baseUrl: string = env.appUrl): Promise<BookingResponse> {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      select: { medecinId: true, emailVerified: true, email: true, prenom: true },
+      select: { medecinId: true, prenom: true, user: { select: { email: true, emailVerified: true } } },
     });
     if (!patient?.medecinId) {
       throw new ApiError('Aucun médecin rattaché à votre compte', 'BOOKING_NO_MEDECIN', 400);
     }
-    if (!patient.emailVerified) {
+    if (!patient.user?.emailVerified) {
       throw new ApiError('Veuillez vérifier votre adresse email avant de réserver', 'AUTH_EMAIL_NOT_VERIFIED', 403);
     }
 
@@ -231,10 +231,10 @@ export class RdvService {
     });
 
     // Email de confirmation (ne bloque pas la réservation si l'envoi échoue).
-    if (patient.email) {
+    if (patient.user?.email) {
       const data = this.bookingEmailData(booking, patient.prenom, `${baseUrl}/mes-rendez-vous`);
       const mail = bookingConfirmationEmail(data);
-      sendMail({ to: patient.email, ...mail, attachments: logoAttachment() }).catch((err) =>
+      sendMail({ to: patient.user.email, ...mail, attachments: logoAttachment() }).catch((err) =>
         console.error('Email de confirmation RDV échoué :', err)
       );
     }
@@ -262,7 +262,7 @@ export class RdvService {
         modalite: true,
         site: { select: { nom: true, ville: true } },
         medecin: { select: { nom: true, prenom: true } },
-        patient: { select: { email: true, prenom: true } },
+        patient: { select: { prenom: true, user: { select: { email: true } } } },
       },
     });
     if (!rdv || rdv.patientId !== patientId) {
@@ -271,10 +271,10 @@ export class RdvService {
     await prisma.rdv.delete({ where: { id: rdvId } });
 
     // Email d'annulation (ne bloque pas l'annulation si l'envoi échoue).
-    if (rdv.patient?.email) {
+    if (rdv.patient?.user?.email) {
       const data = this.bookingEmailData(rdv, rdv.patient.prenom, `${baseUrl}/prendre-rendez-vous`);
       const mail = bookingCancellationEmail(data);
-      sendMail({ to: rdv.patient.email, ...mail, attachments: logoAttachment() }).catch((err) =>
+      sendMail({ to: rdv.patient.user.email, ...mail, attachments: logoAttachment() }).catch((err) =>
         console.error("Email d'annulation RDV échoué :", err)
       );
     }
