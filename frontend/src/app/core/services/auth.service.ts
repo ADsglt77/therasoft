@@ -274,16 +274,11 @@ export class AuthService extends ApiClientService {
   }
 
   forgotPassword(email: string): Observable<{ message: string }> {
-    // `forgetPassword` existe au runtime (POST /api/auth/forget-password) mais
-    // n'est pas exposé dans les types du client Better Auth.
-    const client = authClient as unknown as {
-      forgetPassword: (opts: {
-        email: string;
-        redirectTo: string;
-      }) => Promise<{ error?: { message: string } | null }>;
-    };
     return from(
-      client.forgetPassword({ email, redirectTo: `${window.location.origin}/reset-password` })
+      authClient.requestPasswordReset({
+        email,
+        redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
+      })
     ).pipe(
       map((res) => {
         if (res.error) throw new Error(res.error.message);
