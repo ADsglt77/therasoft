@@ -25,14 +25,10 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
       DB_USER: ${DB_USER}
       PORT: 3000
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      ACCESS_TOKEN_TTL_MINUTES: ${ACCESS_TOKEN_TTL_MINUTES:-15}
-      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      AUTH_SECRET: ${AUTH_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       NODE_ENV: ${NODE_ENV:-production}
       RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-true}
-      ALLOW_PUBLIC_REGISTER: ${ALLOW_PUBLIC_REGISTER:-false}
       # Liens des emails (vérification) + SMTP (vérification d'email)
       APP_URL: ${APP_URL:-http://localhost}
       SMTP_HOST: ${SMTP_HOST:-}

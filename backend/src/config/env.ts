@@ -18,16 +18,14 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
-  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
-  JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
-  ACCESS_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(15),
-  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  // Secret Better Auth (signature des sessions). ≥ 32 caractères.
+  AUTH_SECRET: z.string().min(32, 'AUTH_SECRET must be at least 32 characters'),
 
   FRONTEND_ORIGIN: z.string().default('http://localhost'),
   // Base des liens envoyés par email (par défaut = FRONTEND_ORIGIN).
   APP_URL: z.string().optional(),
 
-  // SMTP (vérification d'email). Optionnel : sans SMTP_HOST, le lien est loggé au lieu d'être envoyé.
+  // SMTP (vérification d'email). Optionnel : sans SMTP_HOST, l'envoi échoue et est notifié.
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_USER: z.string().optional(),
@@ -35,8 +33,6 @@ const envSchema = z.object({
   SMTP_SECURE: envBool(false),
   MAIL_FROM: z.string().default('TsXcare <no-reply@tsxcare.local>'),
 
-  // Inscription publique : false en prod, true pour la démo / le dev.
-  ALLOW_PUBLIC_REGISTER: envBool(false),
   // Reset complet de la base au seed (démo). false = seed idempotent.
   RESET_DB_ON_SEED: envBool(true),
 });
@@ -55,14 +51,10 @@ export const env = {
   nodeEnv: data.NODE_ENV,
   databaseUrl: data.DATABASE_URL,
 
-  jwtAccessSecret: data.JWT_ACCESS_SECRET,
-  jwtRefreshSecret: data.JWT_REFRESH_SECRET,
-  accessTokenTtlMinutes: data.ACCESS_TOKEN_TTL_MINUTES,
-  refreshTokenTtlDays: data.REFRESH_TOKEN_TTL_DAYS,
+  authSecret: data.AUTH_SECRET,
 
   frontendOrigin: data.FRONTEND_ORIGIN,
   appUrl: data.APP_URL || data.FRONTEND_ORIGIN,
-  allowPublicRegister: data.ALLOW_PUBLIC_REGISTER,
   resetDbOnSeed: data.RESET_DB_ON_SEED,
 
   smtp: {
