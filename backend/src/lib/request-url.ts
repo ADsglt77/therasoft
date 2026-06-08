@@ -37,7 +37,7 @@ export function emailBaseUrl(req: Request): string {
  * Extrait l'en-tête `Origin` d'une requête, quelle que soit sa forme :
  * Web Request (Better Auth/`toNodeHandler`), Express `Request`, ou Node brut.
  */
-export function requestOrigin(request: unknown): string | undefined {
+function requestOrigin(request: unknown): string | undefined {
   const r = request as {
     headers?: { get?: (k: string) => string | null; origin?: string };
     get?: (k: string) => string | undefined;
