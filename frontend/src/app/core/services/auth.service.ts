@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap, BehaviorSubject, shareReplay, catchError, finalize, of, map, from, switchMap } from 'rxjs';
 import { ApiClientService } from '../../api/api-client.service';
-import { TokenStorageService } from './token-storage.service';
+import { RoleStorageService } from './role-storage.service';
 import { Router } from '@angular/router';
 import { authClient } from './auth.client';
 
@@ -51,7 +51,6 @@ export interface AuthUser {
 export type MeResponse = AuthUser;
 
 export interface AuthResponse {
-  accessToken: string; // Faux token pour la rétrocompatibilité
   role: string;
   user: AuthUser;
 }
@@ -62,7 +61,7 @@ export interface AuthResponse {
 export class AuthService extends ApiClientService {
   constructor(
     http: HttpClient,
-    private tokenStorage: TokenStorageService,
+    private roleStorage: RoleStorageService,
     private router: Router
   ) {
     super(http);
@@ -71,10 +70,13 @@ export class AuthService extends ApiClientService {
   private currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable().pipe(shareReplay(1));
 
+  /** Requête de restauration de session en cours (partagée entre guards concurrents). */
+  private restoreRequest$?: Observable<AuthUser | null>;
+
   private setCurrentUser(user: AuthUser | null): void {
     this.currentUserSubject.next(user);
     if (user) {
-      this.tokenStorage.setRole(user.role);
+      this.roleStorage.setRole(user.role);
     }
   }
 
@@ -83,52 +85,35 @@ export class AuthService extends ApiClientService {
   }
 
   login(data: LoginRequest): Observable<AuthResponse> {
-    return from(authClient.signIn.email({
-      email: data.email,
-      password: data.password,
-    })).pipe(
+    return from(authClient.signIn.email({ email: data.email, password: data.password })).pipe(
       switchMap((res) => {
         if (res.error) throw new Error(res.error.message || 'Erreur de connexion');
         return this.getMe();
       }),
-      map((user) => {
-        const authResponse = {
-          accessToken: 'better-auth-cookie', // BetterAuth gère le cookie
-          role: user.role,
-          user: user
-        };
-        this.applyAuth(authResponse);
-        return authResponse;
-      })
+      map((user) => this.applyAuth(user))
     );
   }
 
   registerPatient(data: PatientRegisterRequest): Observable<AuthResponse> {
-    return from(authClient.signUp.email({
-      email: data.email,
-      password: data.password,
-      name: `${data.nom} ${data.prenom}`.trim(),
-    })).pipe(
+    return from(
+      authClient.signUp.email({
+        email: data.email,
+        password: data.password,
+        name: `${data.nom} ${data.prenom}`.trim(),
+      })
+    ).pipe(
       switchMap((res) => {
-        if (res.error) throw new Error(res.error.message || 'Erreur d\'inscription');
-        // Update the patient profile with adresse and medecinId
-        this.tokenStorage.setRole('PATIENT');
+        if (res.error) throw new Error(res.error.message || "Erreur d'inscription");
+        // Complète le profil patient (adresse + médecin choisi) créé par Better Auth.
+        this.roleStorage.setRole('PATIENT');
         return this.http.patch<AuthUser>(`${this.baseUrl}/auth/patient/me`, {
-           nom: data.nom,
-           prenom: data.prenom,
-           adresse: data.adresse,
-           medecinId: data.medecinId
+          nom: data.nom,
+          prenom: data.prenom,
+          adresse: data.adresse,
+          medecinId: data.medecinId,
         });
       }),
-      map((user) => {
-        const authResponse = {
-          accessToken: 'better-auth-cookie',
-          role: user.role,
-          user: user
-        };
-        this.applyAuth(authResponse);
-        return authResponse;
-      })
+      map((user) => this.applyAuth(user))
     );
   }
 
@@ -143,19 +128,13 @@ export class AuthService extends ApiClientService {
       .pipe(map((res) => res.suggestions));
   }
 
-  private applyAuth(res: AuthResponse): void {
-    this.tokenStorage.setAccessToken(res.accessToken);
-    this.tokenStorage.setRole(res.role);
-    this.setCurrentUser(res.user);
-  }
-
-  refresh(): Observable<{ accessToken: string }> {
-    // BetterAuth gère le refresh automatiquement
-    return of({ accessToken: 'better-auth-cookie' });
+  private applyAuth(user: AuthUser): AuthResponse {
+    this.setCurrentUser(user);
+    return { role: user.role, user };
   }
 
   clearSession(): void {
-    this.tokenStorage.clear();
+    this.roleStorage.clear();
     this.setCurrentUser(null);
   }
 
@@ -170,23 +149,63 @@ export class AuthService extends ApiClientService {
     );
   }
 
+  /**
+   * Charge le profil de l'utilisateur connecté. L'endpoint dépend du rôle ;
+   * si le rôle n'est pas connu localement (rechargement, storage vidé), on le
+   * récupère depuis la session Better Auth.
+   */
   getMe(): Observable<AuthUser> {
-    const isPat = this.isPatient();
-    // Default to /me if no role, or try both
-    const url = isPat ? `${this.baseUrl}/auth/patient/me` : `${this.baseUrl}/auth/me`;
-    return this.http.get<AuthUser>(url).pipe(
-      tap((user) => this.setCurrentUser(user)),
-      catchError((err) => {
-         // Si l'appel a échoué (par ex rôle incorrect), on essaye l'autre
-         const fallbackUrl = isPat ? `${this.baseUrl}/auth/me` : `${this.baseUrl}/auth/patient/me`;
-         return this.http.get<AuthUser>(fallbackUrl).pipe(
-            tap((u) => {
-              this.tokenStorage.setRole(u.role);
-              this.setCurrentUser(u);
-            })
-         );
+    const role = this.roleStorage.getRole();
+    if (role) {
+      return this.fetchProfile(role === 'PATIENT');
+    }
+    return from(authClient.getSession()).pipe(
+      switchMap((session) => {
+        const sessionRole = (session.data?.user as { role?: string } | undefined)?.role ?? 'PATIENT';
+        this.roleStorage.setRole(sessionRole);
+        return this.fetchProfile(sessionRole === 'PATIENT');
       })
     );
+  }
+
+  private fetchProfile(isPatient: boolean): Observable<AuthUser> {
+    const url = isPatient ? `${this.baseUrl}/auth/patient/me` : `${this.baseUrl}/auth/me`;
+    return this.http.get<AuthUser>(url).pipe(tap((user) => this.setCurrentUser(user)));
+  }
+
+  /**
+   * Restaure l'utilisateur courant à partir de la session Better Auth (cookie) :
+   * source de vérité pour les guards. Renvoie l'utilisateur, ou `null` si non
+   * authentifié. Les appels concurrents partagent la même requête réseau.
+   */
+  restoreSession(): Observable<AuthUser | null> {
+    const current = this.currentUserSubject.value;
+    if (current) {
+      return of(current);
+    }
+    if (!this.restoreRequest$) {
+      this.restoreRequest$ = from(authClient.getSession()).pipe(
+        switchMap((session) => {
+          const sessionUser = session.data?.user;
+          if (!sessionUser) {
+            this.clearSession();
+            return of(null);
+          }
+          const role = (sessionUser as { role?: string }).role ?? 'PATIENT';
+          this.roleStorage.setRole(role);
+          return this.fetchProfile(role === 'PATIENT').pipe(
+            map((user) => user as AuthUser | null),
+            catchError(() => of(null))
+          );
+        }),
+        catchError(() => of(null)),
+        finalize(() => {
+          this.restoreRequest$ = undefined;
+        }),
+        shareReplay(1)
+      );
+    }
+    return this.restoreRequest$;
   }
 
   updateProfile(data: { nom?: string; prenom?: string }): Observable<AuthUser> {
@@ -195,14 +214,16 @@ export class AuthService extends ApiClientService {
   }
 
   changePassword(data: { currentPassword: string; newPassword: string }): Observable<{ message: string }> {
-    return from(authClient.changePassword({
-      newPassword: data.newPassword,
-      currentPassword: data.currentPassword,
-      revokeOtherSessions: true,
-    })).pipe(
+    return from(
+      authClient.changePassword({
+        newPassword: data.newPassword,
+        currentPassword: data.currentPassword,
+        revokeOtherSessions: true,
+      })
+    ).pipe(
       map((res) => {
-         if (res.error) throw new Error(res.error.message || 'Erreur lors du changement de mot de passe');
-         return { message: 'Mot de passe modifié avec succès' };
+        if (res.error) throw new Error(res.error.message || 'Erreur lors du changement de mot de passe');
+        return { message: 'Mot de passe modifié avec succès' };
       })
     );
   }
@@ -214,15 +235,11 @@ export class AuthService extends ApiClientService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.tokenStorage.getAccessToken() || document.cookie.includes('better-auth');
-  }
-
-  getAccessToken(): string | null {
-    return this.tokenStorage.getAccessToken();
+    return !!this.roleStorage.getRole();
   }
 
   getRole(): string | null {
-    return this.tokenStorage.getRole();
+    return this.roleStorage.getRole();
   }
 
   isPatient(): boolean {
@@ -239,14 +256,15 @@ export class AuthService extends ApiClientService {
   }
 
   resendVerification(): Observable<{ message: string }> {
-    // Requires email, we can fetch it from current user or authClient.getSession
     return from(authClient.getSession()).pipe(
       switchMap((session) => {
         if (!session.data?.user.email) throw new Error('Email introuvable');
-        return from(authClient.sendVerificationEmail({
-           email: session.data.user.email,
-           callbackURL: `${window.location.origin}/verifier-email`,
-        }));
+        return from(
+          authClient.sendVerificationEmail({
+            email: session.data.user.email,
+            callbackURL: `${window.location.origin}/verifier-email`,
+          })
+        );
       }),
       map((res) => {
         if (res.error) throw new Error(res.error.message);
@@ -256,10 +274,17 @@ export class AuthService extends ApiClientService {
   }
 
   forgotPassword(email: string): Observable<{ message: string }> {
-    return from((authClient as any).forgetPassword({
-      email,
-      redirectTo: `${window.location.origin}/reset-password`,
-    }) as Promise<{ error: any }>).pipe(
+    // `forgetPassword` existe au runtime (POST /api/auth/forget-password) mais
+    // n'est pas exposé dans les types du client Better Auth.
+    const client = authClient as unknown as {
+      forgetPassword: (opts: {
+        email: string;
+        redirectTo: string;
+      }) => Promise<{ error?: { message: string } | null }>;
+    };
+    return from(
+      client.forgetPassword({ email, redirectTo: `${window.location.origin}/reset-password` })
+    ).pipe(
       map((res) => {
         if (res.error) throw new Error(res.error.message);
         return { message: 'Si un compte existe pour cet email, un lien a été envoyé.' };
@@ -268,13 +293,7 @@ export class AuthService extends ApiClientService {
   }
 
   resetPassword(token: string, newPassword: string): Observable<{ message: string }> {
-    // token in better-auth is usually passed via query param to page, we can set it via authClient.resetPassword
-    // wait, resetPassword only takes newPassword and infers token from URL. 
-    // we can pass it if we want? Let's check docs or just use the current way
-    return from(authClient.resetPassword({
-      newPassword,
-      // token can be implicit from URL
-    })).pipe(
+    return from(authClient.resetPassword({ newPassword, token })).pipe(
       map((res) => {
         if (res.error) throw new Error(res.error.message);
         return { message: 'Mot de passe réinitialisé' };
