@@ -22,7 +22,7 @@ Dans Dokploy :
 3. Variables obligatoires :
    - `RESET_DB_ON_SEED=true` — à chaque déploiement, le backend refait `db push` + reset + seed (données démo fraîches)
    - `FRONTEND_ORIGIN=https://ton-domaine.fr`
-   - `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` ≥ 32 caractères
+   - `AUTH_SECRET` ≥ 32 caractères
    - `DB_PASSWORD`, `DB_NAME`, `DB_USER`
 
 À chaque push / redémarrage du conteneur **backend**, l’entrypoint exécute automatiquement :
@@ -85,6 +85,6 @@ docker compose --profile studio up studio
 ## .env (minimum)
 
 - `DB_PASSWORD` — mot de passe PostgreSQL
-- `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` — secrets aléatoires
+- `AUTH_SECRET` — secret aléatoire (≥ 32 caractères)
 - `HTTP_PORT` — port app (défaut `80`)
 - `RESET_DB_ON_SEED=true` sur Dokploy démo (reset à chaque deploy) · `false` si prod réelle
