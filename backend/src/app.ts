@@ -3,10 +3,12 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
+import { toNodeHandler } from 'better-auth/node';
 import { requestIdMiddleware } from './middlewares/requestId';
 import { errorHandler } from './middlewares/errorHandler';
 import apiRoutes from './routes';
 import { env } from './config/env';
+import { auth } from './lib/auth';
 import { logger } from './lib/logger';
 
 export const createApp = (): Express => {
@@ -37,13 +39,9 @@ export const createApp = (): Express => {
 
   app.use('/api', apiRoutes);
 
-  // Mount Better Auth directly to avoid Express router path stripping
-  // Requires importing toNodeHandler and auth
-  app.all('/api/auth/*', (req, res) => {
-    const { auth } = require('./lib/auth');
-    const { toNodeHandler } = require('better-auth/node');
-    return toNodeHandler(auth)(req, res);
-  });
+  // Les routes profil (/api/auth/me, /medecins…) sont montées avant ce catch-all ;
+  // tout le reste de /api/auth/* est délégué à Better Auth.
+  app.all('/api/auth/*', toNodeHandler(auth));
   app.use(errorHandler);
 
   return app;
