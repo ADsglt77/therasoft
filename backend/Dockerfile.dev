@@ -20,6 +20,9 @@ RUN npx prisma generate
 # Le code src est monté en volume ; tsx watch recompile à la volée
 COPY src ./src
 
+# Logo embarqué dans les emails (cid:tsxcare-logo), lu via process.cwd()/assets
+COPY assets ./assets
+
 EXPOSE 3000
 
 ENTRYPOINT ["sh", "/app/docker-entrypoint.dev.sh"]
