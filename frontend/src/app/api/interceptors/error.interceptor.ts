@@ -5,7 +5,6 @@ import { catchError, throwError } from 'rxjs';
 import { NotificationService } from '../../core/services/notification.service';
 import { ApiErrorHandler } from '../../core/utils/api-error-handler';
 import {
-  AUTH_NO_REFRESH_ROUTES,
   AUTH_COMPONENT_HANDLED_ROUTES,
   matchesRoute,
   isApiRequest,
@@ -33,20 +32,14 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 && isApiRequest(req.url)) {
-        if (matchesRoute(req.url, AUTH_NO_REFRESH_ROUTES)) {
-          return throwError(() => error);
-        }
+        const onAuthPage = router.url.startsWith('/login') || router.url.startsWith('/register');
+        const handledByComponent = matchesRoute(req.url, AUTH_COMPONENT_HANDLED_ROUTES);
 
-        if (router.url === '/login' || router.url === '/register') {
-          return throwError(() => error);
+        // 401 sur une route protégée hors page d'auth : la session a expiré.
+        if (!onAuthPage && !handledByComponent) {
+          const extracted = ApiErrorHandler.extractError(error);
+          forceReLogin(extracted.message);
         }
-
-        if (matchesRoute(req.url, AUTH_COMPONENT_HANDLED_ROUTES)) {
-          return throwError(() => error);
-        }
-
-        const extracted = ApiErrorHandler.extractError(error);
-        forceReLogin(extracted.message);
       }
 
       return throwError(() => error);
