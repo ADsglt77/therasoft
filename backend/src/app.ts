@@ -36,6 +36,14 @@ export const createApp = (): Express => {
   );
 
   app.use('/api', apiRoutes);
+
+  // Mount Better Auth directly to avoid Express router path stripping
+  // Requires importing toNodeHandler and auth
+  app.all('/api/auth/*', (req, res) => {
+    const { auth } = require('./lib/auth');
+    const { toNodeHandler } = require('better-auth/node');
+    return toNodeHandler(auth)(req, res);
+  });
   app.use(errorHandler);
 
   return app;

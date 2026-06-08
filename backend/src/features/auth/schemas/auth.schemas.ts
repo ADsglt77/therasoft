@@ -119,6 +119,9 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export const updateProfileSchema = z.object({
   nom: z.string().min(1, 'Le nom est requis').max(100).optional(),
   prenom: z.string().min(1, 'Le prénom est requis').max(100).optional(),
+  adresse: z.string().optional(),
+  medecinId: z.coerce.number().optional(),
+  specialite: z.string().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

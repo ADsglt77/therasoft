@@ -1,168 +1,55 @@
 import { Router, Request, Response } from 'express';
-import { authService } from '../services/auth.service';
-import { patientAuthService } from '../services/patient-auth.service';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from '../../../lib/auth';
+import { profileService } from '../services/profile.service';
 import {
-  registerSchema,
-  loginSchema,
-  patientRegisterSchema,
-  changePasswordSchema,
   updateProfileSchema,
   updateAvatarSchema,
   addressSearchSchema,
   AddressSearchQuery,
-  verifyEmailSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
 } from '../schemas/auth.schemas';
 import { addressService } from '../services/address.service';
-import { passwordResetService } from '../services/password-reset.service';
-import { emailBaseUrl } from '../../../lib/request-url';
-import { verifyAccessToken, verifyPatientAccessToken } from '../../../middlewares/jwt.middleware';
+import { verifySession } from '../../../middlewares/jwt.middleware';
 import { requireMedecinId, requirePatientId } from '../../../middlewares/requireMedecin';
-import { ApiError } from '../../../middlewares/errorHandler';
 import { validateBody, validateQuery } from '../../../middlewares/validate';
-import { authRateLimiter } from '../../../middlewares/rateLimiter';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
-import { env } from '../../../config/env';
 import { prisma } from '../../../lib/prisma';
-import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../auth.cookies';
 
 const router = Router();
 
-router.post(
-  '/register',
-  authRateLimiter,
-  validateBody(registerSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    if (!env.allowPublicRegister) {
-      throw new ApiError('Inscription désactivée', 'AUTH_REGISTER_DISABLED', 403);
-    }
-    const medecin = await authService.register(req.body);
-    res.status(201).json({ message: 'Inscription réussie', medecin });
-  })
-);
+// Better Auth handled in app.ts
 
-router.post(
-  '/login',
-  authRateLimiter,
-  validateBody(loginSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    try {
-      const { accessToken, refreshToken, medecin } = await authService.login(req.body);
-      setRefreshTokenCookie(res, refreshToken);
-      res.status(200).json({ accessToken, role: medecin.role, user: medecin });
-    } catch (error) {
-      // Pas un médecin avec ces identifiants : on tente le compte patient.
-      if (error instanceof ApiError && error.code === 'AUTH_INVALID_CREDENTIALS') {
-        const { accessToken, refreshToken, patient } = await patientAuthService.login(req.body);
-        setRefreshTokenCookie(res, refreshToken);
-        res.status(200).json({ accessToken, role: patient.role, user: patient });
-        return;
-      }
-      throw error;
-    }
-  })
-);
-
-router.post(
-  '/refresh',
-  authRateLimiter,
-  asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = req.cookies?.refresh_token;
-    if (!refreshToken) {
-      throw new ApiError('Refresh token manquant', 'AUTH_REFRESH_TOKEN_MISSING', 401);
-    }
-    try {
-      const { accessToken, refreshToken: newRefreshToken } = await authService.refresh(refreshToken);
-      setRefreshTokenCookie(res, newRefreshToken);
-      res.status(200).json({ accessToken });
-    } catch {
-      // Session patient : on tente le refresh patient.
-      const { accessToken, refreshToken: newRefreshToken } = await patientAuthService.refresh(refreshToken);
-      setRefreshTokenCookie(res, newRefreshToken);
-      res.status(200).json({ accessToken });
-    }
-  })
-);
-
-router.post(
-  '/forgot-password',
-  authRateLimiter,
-  validateBody(forgotPasswordSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    await passwordResetService.requestReset(req.body.email, emailBaseUrl(req));
-    // Réponse identique que l'email existe ou non (anti-énumération).
-    res.status(200).json({ message: 'Si un compte existe pour cet email, un lien de réinitialisation a été envoyé.' });
-  })
-);
-
-router.post(
-  '/reset-password',
-  authRateLimiter,
-  validateBody(resetPasswordSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    await passwordResetService.resetPassword(req.body.token, req.body.newPassword);
-    res.status(200).json({ message: 'Mot de passe réinitialisé' });
-  })
-);
-
-router.post(
-  '/logout',
-  asyncHandler(async (req: Request, res: Response) => {
-    const refreshToken = req.cookies?.refresh_token;
-    if (refreshToken) {
-      try {
-        await authService.logout(refreshToken);
-      } catch {
-        // Toujours effacer le cookie côté client
-      }
-    }
-    clearRefreshTokenCookie(res);
-    res.status(204).send();
-  })
-);
-
+// ---- Profile Medecin ----
 router.get(
   '/me',
-  verifyAccessToken,
+  verifySession,
   asyncHandler(async (req: Request, res: Response) => {
-    const medecin = await authService.getMe(requireMedecinId(req));
+    const medecin = await profileService.getMedecin(requireMedecinId(req));
     res.status(200).json(medecin);
   })
 );
 
 router.patch(
-  '/password',
-  verifyAccessToken,
-  validateBody(changePasswordSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const result = await authService.changePassword(requireMedecinId(req), req.body);
-    res.status(200).json(result);
-  })
-);
-
-router.patch(
   '/me',
-  verifyAccessToken,
+  verifySession,
   validateBody(updateProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const medecin = await authService.updateProfile(requireMedecinId(req), req.body);
+    const medecin = await profileService.updateMedecin(requireMedecinId(req), req.body);
     res.status(200).json(medecin);
   })
 );
 
 router.patch(
   '/avatar',
-  verifyAccessToken,
+  verifySession,
   validateBody(updateAvatarSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const medecin = await authService.updateAvatar(requireMedecinId(req), req.body);
+    const medecin = await profileService.updateAvatar(requireMedecinId(req), req.body);
     res.status(200).json(medecin);
   })
 );
 
-// ---- Patient (auto-inscription + portail de réservation) ----
-
+// ---- Patient Profile & Portal ----
 router.get(
   '/address/search',
   validateQuery(addressSearchSchema),
@@ -176,7 +63,7 @@ router.get(
   '/medecins',
   asyncHandler(async (_req: Request, res: Response) => {
     const medecins = await prisma.medecin.findMany({
-      where: { isActive: true, role: 'MEDECIN' },
+      where: { isActive: true },
       select: { id: true, nom: true, prenom: true, specialite: true },
       orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
     });
@@ -184,61 +71,22 @@ router.get(
   })
 );
 
-router.post(
-  '/patient/register',
-  authRateLimiter,
-  validateBody(patientRegisterSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const { accessToken, refreshToken, patient } = await patientAuthService.registerPatient(req.body, emailBaseUrl(req));
-    setRefreshTokenCookie(res, refreshToken);
-    res.status(201).json({ accessToken, role: patient.role, user: patient });
-  })
-);
-
 router.get(
   '/patient/me',
-  verifyPatientAccessToken,
+  verifySession,
   asyncHandler(async (req: Request, res: Response) => {
-    const patient = await patientAuthService.getMe(requirePatientId(req));
+    const patient = await profileService.getPatient(requirePatientId(req));
     res.status(200).json(patient);
-  })
-);
-
-router.post(
-  '/verify-email',
-  validateBody(verifyEmailSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    await patientAuthService.verifyEmail(req.body.token);
-    res.status(200).json({ message: 'Adresse email vérifiée' });
-  })
-);
-
-router.post(
-  '/patient/resend-verification',
-  verifyPatientAccessToken,
-  asyncHandler(async (req: Request, res: Response) => {
-    await patientAuthService.resendVerification(requirePatientId(req), emailBaseUrl(req));
-    res.status(200).json({ message: 'Email de vérification renvoyé' });
   })
 );
 
 router.patch(
   '/patient/me',
-  verifyPatientAccessToken,
+  verifySession,
   validateBody(updateProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const patient = await patientAuthService.updateProfile(requirePatientId(req), req.body);
+    const patient = await profileService.updatePatient(requirePatientId(req), req.body);
     res.status(200).json(patient);
-  })
-);
-
-router.patch(
-  '/patient/password',
-  verifyPatientAccessToken,
-  validateBody(changePasswordSchema),
-  asyncHandler(async (req: Request, res: Response) => {
-    const result = await patientAuthService.changePassword(requirePatientId(req), req.body);
-    res.status(200).json(result);
   })
 );
 
