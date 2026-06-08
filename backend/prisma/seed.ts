@@ -204,8 +204,12 @@ async function main() {
     await prisma.vacation.deleteMany();
     await prisma.site.deleteMany();
     await prisma.patient.deleteMany();
-    await prisma.authSession.deleteMany();
+    await prisma.authSession?.deleteMany({});
+    await prisma.session.deleteMany();
+    await prisma.account.deleteMany();
     await prisma.auditLog.deleteMany();
+    await prisma.medecin.deleteMany();
+    await prisma.user.deleteMany();
     await prisma.medecin.deleteMany();
     await prisma.modaliteConfig.deleteMany();
     console.log('✅ Base de données nettoyée\n');
@@ -214,18 +218,61 @@ async function main() {
   }
 
   console.log('👨‍⚕️ Création des médecins...');
-  const passwordHash = await argon2.hash('Azertyuiop1!');
+  const { hashPassword } = await import('better-auth/crypto');
+  const passwordHash = await hashPassword('Azertyuiop1!');
+
+  const user1 = await prisma.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: 'Secrétariat Demo',
+      email: 'secretaire@demo.demo',
+      emailVerified: true,
+      role: Role.SECRETAIRE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      accounts: {
+        create: {
+          id: crypto.randomUUID(),
+          accountId: 'secretaire@demo.demo',
+          providerId: 'credential',
+          password: passwordHash,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      }
+    }
+  });
 
   const medecin1 = await prisma.medecin.create({
     data: {
       nom: 'Secrétariat',
       prenom: 'Demo',
       specialite: '',
-      email: 'secretaire@demo.demo',
-      passwordHash,
-      role: Role.SECRETAIRE,
+      userId: user1.id,
       isActive: true,
     },
+  });
+
+  const user2 = await prisma.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: 'User Test',
+      email: 'user@user.user',
+      emailVerified: true,
+      role: Role.MEDECIN,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      accounts: {
+        create: {
+          id: crypto.randomUUID(),
+          accountId: 'user@user.user',
+          providerId: 'credential',
+          password: passwordHash,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      }
+    }
   });
 
   const medecin2 = await prisma.medecin.create({
@@ -233,11 +280,31 @@ async function main() {
       nom: 'User',
       prenom: 'Test',
       specialite: 'Radiologie',
-      email: 'user@user.user',
-      passwordHash,
-      role: Role.MEDECIN,
+      userId: user2.id,
       isActive: true,
     },
+  });
+
+  const user3 = await prisma.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: 'User2 Test',
+      email: 'user2@user.user',
+      emailVerified: true,
+      role: Role.MEDECIN,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      accounts: {
+        create: {
+          id: crypto.randomUUID(),
+          accountId: 'user2@user.user',
+          providerId: 'credential',
+          password: passwordHash,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      }
+    }
   });
 
   const medecin3 = await prisma.medecin.create({
@@ -245,9 +312,7 @@ async function main() {
       nom: 'User2',
       prenom: 'Test',
       specialite: 'Imagerie médicale',
-      email: 'user2@user.user',
-      passwordHash,
-      role: Role.MEDECIN,
+      userId: user3.id,
       isActive: true,
     },
   });
@@ -586,19 +651,38 @@ async function main() {
     vacations.find((v) => v.medecinId === medecin2.id && toUtcDateKey(v.date) >= todayKey) ??
     vacations.find((v) => v.medecinId === medecin2.id);
 
+  const demoUser = await prisma.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: 'Patient Demo',
+      email: 'patient@patient.patient',
+      emailVerified: true,
+      role: Role.PATIENT,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      accounts: {
+        create: {
+          id: crypto.randomUUID(),
+          accountId: 'patient@patient.patient',
+          providerId: 'credential',
+          password: passwordHash,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+      }
+    }
+  });
+
   const demoPatient = await prisma.patient.create({
     data: {
       nom: 'Patient',
       prenom: 'Demo',
-      email: 'patient@patient.patient',
-      passwordHash,
+      userId: demoUser.id,
       medecinId: medecin2.id,
       // Adresse vérifiée (Bordeaux) → les lieux seront triés par distance.
       adresse: 'Place de la Bourse 33000 Bordeaux',
       latitude: 44.8412,
       longitude: -0.5700,
-      // Compte de démo : email déjà vérifié pour pouvoir réserver directement.
-      emailVerified: true,
     },
   });
 
