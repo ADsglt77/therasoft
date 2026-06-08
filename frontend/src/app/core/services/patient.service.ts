@@ -55,29 +55,24 @@ export class PatientService extends ApiClientService {
     super(http);
   }
 
-  getDossier(patientId: number, rdvId: number): Observable<Dossier> {
-    return this.http.get<Dossier>(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier`
-    );
+  /** Base d'URL du dossier d'un RDV patient (+ suffixe optionnel). */
+  private dossierUrl(patientId: number, rdvId: number, suffix = ''): string {
+    return `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier${suffix}`;
   }
 
-  updateObservations(
-    patientId: number,
-    rdvId: number,
-    observations: string
-  ): Observable<Dossier> {
+  getDossier(patientId: number, rdvId: number): Observable<Dossier> {
+    return this.http.get<Dossier>(this.dossierUrl(patientId, rdvId));
+  }
+
+  updateObservations(patientId: number, rdvId: number, observations: string): Observable<Dossier> {
     const observationsValue = observations.trim() === '' ? null : observations.trim();
-    return this.http.patch<Dossier>(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/observations`,
-      { observations: observationsValue }
-    );
+    return this.http.patch<Dossier>(this.dossierUrl(patientId, rdvId, '/observations'), {
+      observations: observationsValue,
+    });
   }
 
   setVerified(patientId: number, rdvId: number, verified: boolean): Observable<Dossier> {
-    return this.http.patch<Dossier>(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/verified`,
-      { verified }
-    );
+    return this.http.patch<Dossier>(this.dossierUrl(patientId, rdvId, '/verified'), { verified });
   }
 
   uploadDossierFiles(
@@ -88,7 +83,7 @@ export class PatientService extends ApiClientService {
     const formData = new FormData();
     files.forEach((f) => formData.append('files', f));
     return this.http.post<DossierFileUploadResponse>(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files`,
+      this.dossierUrl(patientId, rdvId, '/files'),
       formData
     );
   }
@@ -99,15 +94,14 @@ export class PatientService extends ApiClientService {
     fileId: number
   ): Observable<DossierOperationStatus> {
     return this.http.delete<DossierOperationStatus>(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files/${fileId}`
+      this.dossierUrl(patientId, rdvId, `/files/${fileId}`)
     );
   }
 
   downloadDossierFile(patientId: number, rdvId: number, fileId: number): Observable<Blob> {
-    return this.http.get(
-      `${this.baseUrl}/patients/${patientId}/rdv/${rdvId}/dossier/files/${fileId}/download`,
-      { responseType: 'blob' }
-    );
+    return this.http.get(this.dossierUrl(patientId, rdvId, `/files/${fileId}/download`), {
+      responseType: 'blob',
+    });
   }
 }
 
