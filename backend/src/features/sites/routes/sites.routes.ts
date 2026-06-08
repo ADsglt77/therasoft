@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { sitesService } from '../services/sites.service';
-import { verifyAccessToken } from '../../../middlewares/jwt.middleware';
-import { requireMedecinId } from '../../../middlewares/requireMedecin';
+import { verifySession } from '../../../middlewares/session.middleware';
+import { requireMedecinId } from '../../../middlewares/requireProfile';
 import { validateQuery } from '../../../middlewares/validate';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { getSitesQuerySchema, GetSitesQuery } from '../schemas/sites.schemas';
@@ -10,7 +10,7 @@ const router = Router();
 
 router.get(
   '/',
-  verifyAccessToken,
+  verifySession,
   validateQuery(getSitesQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
