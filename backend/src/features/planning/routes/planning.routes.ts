@@ -6,8 +6,8 @@ import {
   GetPlanningQuery,
   GetRdvsMeQuery,
 } from '../schemas/planning.schemas';
-import { verifyAccessToken } from '../../../middlewares/jwt.middleware';
-import { requireMedecinId } from '../../../middlewares/requireMedecin';
+import { verifySession } from '../../../middlewares/session.middleware';
+import { requireMedecinId } from '../../../middlewares/requireProfile';
 import { validateQuery } from '../../../middlewares/validate';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 
@@ -15,7 +15,7 @@ const router = Router();
 
 router.get(
   '/',
-  verifyAccessToken,
+  verifySession,
   validateQuery(getPlanningQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
@@ -27,7 +27,7 @@ router.get(
 
 router.get(
   '/rdvs/me',
-  verifyAccessToken,
+  verifySession,
   validateQuery(getRdvsMeQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
@@ -39,7 +39,7 @@ router.get(
 
 router.get(
   '/rdvs',
-  verifyAccessToken,
+  verifySession,
   validateQuery(getPlanningQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecinId = requireMedecinId(req);
