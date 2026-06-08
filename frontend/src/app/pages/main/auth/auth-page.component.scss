@@ -14,10 +14,11 @@
 
   .auth-page-content {
     position: relative;
-    max-width: 90%;
-    width: fit-content;
-    max-height: 90vh;
-    overflow-y: auto;
+    width: 50vw;
+    max-width: 90vw;
+    // overflow visible : un dropdown (select, autocomplétion) peut dépasser la
+    // dialogue sans être tronqué à son bord.
+    overflow: visible;
     animation: slideUp $duration-slow $ease-out;
 
     .close-button {
