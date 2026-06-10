@@ -36,7 +36,6 @@ model Medecin {
   id         Int     @id @default(autoincrement())
   nom        String
   prenom     String
-  specialite String?
 
   isActive       Boolean   @default(true) @map("is_active")
 
@@ -76,6 +75,7 @@ model Vacation {
   @@index([medecinId])
   @@index([date])
   @@index([medecinId, date])
+  @@index([medecinId, siteId, modalite, date])
   @@index([siteId])
   @@map("vacation")
 }
@@ -164,6 +164,8 @@ model Rdv {
   @@index([date])
   @@index([patientId, date])
   @@index([medecinId])
+  @@index([medecinId, date])
+  @@index([siteId, date])
   @@map("rdv")
 }
 
@@ -224,6 +226,7 @@ model DossierFile {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([dossierId])
+  @@unique([storedName])
   @@map("dossier_file")
 }
 
@@ -242,6 +245,7 @@ model AuditLog {
 
   @@index([medecinId])
   @@index([createdAt])
+  @@index([resource, resourceId])
   @@map("audit_log")
 }
 
@@ -276,6 +280,7 @@ model Session {
   userId    String   @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("session")
 }
 
@@ -295,6 +300,8 @@ model Account {
   createdAt             DateTime  @map("created_at")
   updatedAt             DateTime  @map("updated_at")
 
+  @@index([userId])
+  @@index([providerId, accountId])
   @@map("account")
 }
 
@@ -306,6 +313,7 @@ model Verification {
   createdAt  DateTime? @map("created_at")
   updatedAt  DateTime? @map("updated_at")
 
+  @@index([identifier])
   @@map("verification")
 }
 
@@ -317,4 +325,3 @@ model ModaliteConfig {
 
   @@map("modalite_config")
 }
-

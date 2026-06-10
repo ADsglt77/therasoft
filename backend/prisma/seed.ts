@@ -4,7 +4,9 @@ import { Pool } from 'pg';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.error('❌ DATABASE_URL manquant. Lancez le seed via Docker : docker compose exec backend npm run prisma:seed');
+  console.error(
+    '❌ DATABASE_URL manquant. Lancez le seed via Docker : docker compose exec backend npm run prisma:seed'
+  );
   process.exit(1);
 }
 
@@ -19,20 +21,62 @@ const prisma = new PrismaClient({ adapter });
 
 /** Médecins de démonstration (les seuls comptes pré-créés). */
 const MEDECINS = [
-  { name: 'User Test', email: 'user@user.user', nom: 'User', prenom: 'Test', specialite: 'Radiologie' },
-  { name: 'User2 Test', email: 'user2@user.user', nom: 'User2', prenom: 'Test', specialite: 'Imagerie médicale' },
+  { name: 'User Test', email: 'user@user.user', nom: 'User', prenom: 'Test' },
+  { name: 'User2 Test', email: 'user2@user.user', nom: 'User2', prenom: 'Test' },
 ];
 
 /** Un site par ville. Horaires lun–ven 08:00–18:00. */
 const STANDARD_HOURS = [1, 2, 3, 4, 5].map((day) => ({ day, open: '08:00', close: '18:00' }));
 const SITES = [
-  { nom: 'Centre d’imagerie de Limoges', ville: 'Limoges', adresse: 'Limoges', latitude: 45.8336, longitude: 1.2611 },
-  { nom: 'Centre d’imagerie de Bordeaux', ville: 'Bordeaux', adresse: 'Bordeaux', latitude: 44.8378, longitude: -0.5792 },
-  { nom: 'Centre d’imagerie de Lyon', ville: 'Lyon', adresse: 'Lyon', latitude: 45.764, longitude: 4.8357 },
-  { nom: 'Centre d’imagerie de Marseille', ville: 'Marseille', adresse: 'Marseille', latitude: 43.2965, longitude: 5.3698 },
-  { nom: 'Centre d’imagerie de Paris', ville: 'Paris', adresse: 'Paris', latitude: 48.8566, longitude: 2.3522 },
-  { nom: 'Centre d’imagerie de Nantes', ville: 'Nantes', adresse: 'Nantes', latitude: 47.2184, longitude: -1.5536 },
-  { nom: 'Centre d’imagerie de Toulouse', ville: 'Toulouse', adresse: 'Toulouse', latitude: 43.6047, longitude: 1.4442 },
+  {
+    nom: 'Centre d’imagerie de Limoges',
+    ville: 'Limoges',
+    adresse: 'Limoges',
+    latitude: 45.8336,
+    longitude: 1.2611,
+  },
+  {
+    nom: 'Centre d’imagerie de Bordeaux',
+    ville: 'Bordeaux',
+    adresse: 'Bordeaux',
+    latitude: 44.8378,
+    longitude: -0.5792,
+  },
+  {
+    nom: 'Centre d’imagerie de Lyon',
+    ville: 'Lyon',
+    adresse: 'Lyon',
+    latitude: 45.764,
+    longitude: 4.8357,
+  },
+  {
+    nom: 'Centre d’imagerie de Marseille',
+    ville: 'Marseille',
+    adresse: 'Marseille',
+    latitude: 43.2965,
+    longitude: 5.3698,
+  },
+  {
+    nom: 'Centre d’imagerie de Paris',
+    ville: 'Paris',
+    adresse: 'Paris',
+    latitude: 48.8566,
+    longitude: 2.3522,
+  },
+  {
+    nom: 'Centre d’imagerie de Nantes',
+    ville: 'Nantes',
+    adresse: 'Nantes',
+    latitude: 47.2184,
+    longitude: -1.5536,
+  },
+  {
+    nom: 'Centre d’imagerie de Toulouse',
+    ville: 'Toulouse',
+    adresse: 'Toulouse',
+    latitude: 43.6047,
+    longitude: 1.4442,
+  },
 ];
 
 /** Durée (minutes) d'un rendez-vous selon la modalité. */
@@ -57,7 +101,8 @@ async function waitForDatabase(maxRetries = 10, delay = 2000): Promise<void> {
       console.log('✅ Base de données connectée\n');
       return;
     } catch {
-      if (i === maxRetries - 1) throw new Error(`Connexion impossible après ${maxRetries} tentatives`);
+      if (i === maxRetries - 1)
+        throw new Error(`Connexion impossible après ${maxRetries} tentatives`);
       console.log(`⏳ Attente de la base de données... (${i + 1}/${maxRetries})`);
       await new Promise((r) => setTimeout(r, delay));
     }
@@ -171,7 +216,7 @@ async function main(): Promise<void> {
     });
     medecins.push(
       await prisma.medecin.create({
-        data: { nom: m.nom, prenom: m.prenom, specialite: m.specialite, userId: user.id, isActive: true },
+        data: { nom: m.nom, prenom: m.prenom, userId: user.id, isActive: true },
       })
     );
   }
@@ -183,7 +228,9 @@ async function main(): Promise<void> {
   let vacationCount = 0;
 
   for (let i = 0; i < VACATION_DAYS; i++) {
-    const date = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + i, 0, 0, 0, 0));
+    const date = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + i, 0, 0, 0, 0)
+    );
     if (!isWeekdayUtc(date)) continue;
 
     const weekIndex = Math.floor(i / 7);
