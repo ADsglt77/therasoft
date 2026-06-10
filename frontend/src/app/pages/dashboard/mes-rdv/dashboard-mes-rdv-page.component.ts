@@ -6,7 +6,12 @@ import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { BookingService, Booking } from '../../../core/services/booking.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { formatDateLong, formatTime } from '../../../core/utils/date.utils';
+import {
+  appointmentDateTimeKey,
+  formatDateLong,
+  formatTime,
+  parisDateTimeKey,
+} from '../../../core/utils/date.utils';
 import { getModaliteUi } from '../../../core/constants/modalite.constants';
 
 interface BookingView {
@@ -15,7 +20,7 @@ interface BookingView {
   timeLabel: string;
   modaliteLabel: string;
   isPast: boolean;
-  startMs: number;
+  startKey: string;
 }
 
 /**
@@ -65,8 +70,12 @@ export class DashboardMesRdvPageComponent implements OnInit {
     this.bookingService.getMyBookings().subscribe({
       next: ({ rdvs }) => {
         const views = rdvs.map((r) => this.toView(r));
-        this.upcoming = views.filter((v) => !v.isPast).sort((a, b) => a.startMs - b.startMs);
-        this.past = views.filter((v) => v.isPast).sort((a, b) => b.startMs - a.startMs);
+        this.upcoming = views
+          .filter((v) => !v.isPast)
+          .sort((a, b) => a.startKey.localeCompare(b.startKey));
+        this.past = views
+          .filter((v) => v.isPast)
+          .sort((a, b) => b.startKey.localeCompare(a.startKey));
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -79,17 +88,14 @@ export class DashboardMesRdvPageComponent implements OnInit {
   }
 
   private toView(rdv: Booking): BookingView {
-    const start = new Date(rdv.date);
-    const time = new Date(rdv.heureDebut);
-    start.setHours(time.getHours(), time.getMinutes(), 0, 0);
-    const startMs = start.getTime();
+    const startKey = appointmentDateTimeKey(rdv.date, rdv.heureDebut);
     return {
       data: rdv,
       dateLabel: formatDateLong(rdv.date),
       timeLabel: `${formatTime(rdv.heureDebut)} – ${formatTime(rdv.heureFin)}`,
       modaliteLabel: getModaliteUi(rdv.modalite).label,
-      isPast: startMs < Date.now(),
-      startMs,
+      isPast: startKey <= parisDateTimeKey(),
+      startKey,
     };
   }
 }
