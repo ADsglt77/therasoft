@@ -7,7 +7,7 @@ import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/
 import { TimetableComponent } from '../../../components/timetable/timetable.component';
 import { PlanningService, Rdv } from '../../../core/services/planning.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { formatTime, formatDateKey } from '../../../core/utils/date.utils';
+import { formatTime, formatDateKey, parseDateKey } from '../../../core/utils/date.utils';
 import { forkJoin } from 'rxjs';
 import {
   CalendarDayStatus,
@@ -63,6 +63,7 @@ export class DashboardPlanningDayPageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly timelinePxPerMinute = 0.45;
   private readonly timelineMinGapPx = 16;
+  private loadVersion = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -74,34 +75,35 @@ export class DashboardPlanningDayPageComponent {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       this.day = params.get('date');
       if (this.day) {
-        this.parseDate(this.day);
-        this.loadRdvs();
+        if (this.parseDate(this.day)) {
+          this.loadRdvs();
+        } else {
+          void this.router.navigate(['/calendar']);
+        }
       }
       this.cdr.markForCheck();
     });
   }
 
-  parseDate(dateStr: string): void {
-    // Format attendu: YYYY-MM-DD
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Les mois sont 0-indexés
-      const day = parseInt(parts[2], 10);
-      
-      this.date = new Date(year, month, day);
-      this.formattedDate = this.date.toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+  private parseDate(dateStr: string): boolean {
+    this.date = parseDateKey(dateStr);
+    if (!this.date) {
+      this.formattedDate = '';
+      return false;
     }
+    this.formattedDate = this.date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    return true;
   }
 
-  loadRdvs(): void {
+  private loadRdvs(): void {
     if (!this.date) return;
 
+    const version = ++this.loadVersion;
     this.isLoadingRdvs = true;
     this.timetableSlots = [];
     this.vacationSite = null;
@@ -118,6 +120,9 @@ export class DashboardPlanningDayPageComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
       next: ({ rdvs, vacations }) => {
+        if (version !== this.loadVersion) {
+          return;
+        }
         this.vacationSite = vacations.vacations?.[0]?.site ?? null;
         this.timetableSlots = (rdvs.rdvs || []).map((rdv: Rdv) => {
           const ui = getModaliteUi(rdv.modalite);
@@ -139,8 +144,10 @@ export class DashboardPlanningDayPageComponent {
         this.isLoadingRdvs = false;
         this.cdr.markForCheck();
       },
-      error: (error) => {
-        console.error('Erreur lors du chargement du planning:', error);
+      error: () => {
+        if (version !== this.loadVersion) {
+          return;
+        }
         this.notificationService.show('danger', 'Erreur lors du chargement du planning');
         this.timetableSlots = [];
         this.vacationSite = null;
@@ -153,9 +160,13 @@ export class DashboardPlanningDayPageComponent {
   onTimetableActionClick(slotId: string): void {
     const slot = this.timetableSlots.find((s) => s.id === slotId);
     if (slot && this.day) {
-      this.router.navigate(['/calendar', this.day, slot.rdvId], {
-        state: { patientId: slot.patientId },
-      });
+      this.router.navigate([
+        '/calendar',
+        this.day,
+        slot.rdvId,
+        'patient',
+        slot.patientId,
+      ]);
     }
   }
 
@@ -192,16 +203,6 @@ export class DashboardPlanningDayPageComponent {
     }
 
     return items;
-  }
-
-  goBack(): void {
-    this.router.navigate(['/calendar']);
-  }
-
-  get isToday(): boolean {
-    if (!this.date) return false;
-    const today = new Date();
-    return this.date.toDateString() === today.toDateString();
   }
 
   get isWeekend(): boolean {
@@ -271,39 +272,22 @@ export class DashboardPlanningDayPageComponent {
 
   previousDay(): void {
     if (!this.date || !this.day) return;
-    this.navigateToDate(this.findPreviousWorkingDay(this.date));
+    this.navigateToDate(this.findWorkingDay(this.date, -1));
   }
 
   nextDay(): void {
     if (!this.date || !this.day) return;
-    this.navigateToDate(this.findNextWorkingDay(this.date));
+    this.navigateToDate(this.findWorkingDay(this.date, 1));
   }
 
-  /**
-   * Retourne le prochain jour ouvré (lundi-vendredi)
-   */
-  private findNextWorkingDay(from: Date): Date {
+  private findWorkingDay(from: Date, direction: -1 | 1): Date {
     const date = new Date(from);
     do {
-      date.setDate(date.getDate() + 1);
+      date.setDate(date.getDate() + direction);
     } while (this.isRestDay(date));
     return date;
   }
 
-  /**
-   * Retourne le précédent jour ouvré (lundi-vendredi)
-   */
-  private findPreviousWorkingDay(from: Date): Date {
-    const date = new Date(from);
-    do {
-      date.setDate(date.getDate() - 1);
-    } while (this.isRestDay(date));
-    return date;
-  }
-
-  /**
-   * Jour de repos: samedi (6) ou dimanche (0)
-   */
   private isRestDay(date: Date): boolean {
     const dayOfWeek = date.getDay();
     return dayOfWeek === 0 || dayOfWeek === 6;
@@ -312,7 +296,6 @@ export class DashboardPlanningDayPageComponent {
   private navigateToDate(date: Date): void {
     const dateStr = formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
     this.router.navigate(['/calendar', dateStr]);
-    // Le chargement des rendez-vous sera déclenché automatiquement via paramMap
   }
 }
 

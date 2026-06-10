@@ -28,7 +28,6 @@ export class NavCalendarComponent {
   @Output() previous = new EventEmitter<void>();
   @Output() next = new EventEmitter<void>();
   @Output() yearChange = new EventEmitter<Event>();
-  @Output() goBack = new EventEmitter<void>();
 
   /**
    * Retourne le format de date complet pour le mode day : "Lundi 19 Janvier"
@@ -66,8 +65,5 @@ export class NavCalendarComponent {
     this.yearChange.emit(event);
   }
 
-  onGoBack(): void {
-    this.goBack.emit();
-  }
 }
 
