@@ -3,7 +3,7 @@ import { Router, CanActivateFn } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
-/** Réserve une route au personnel médical (rôle MEDECIN / SECRETAIRE). */
+/** Réserve une route au personnel médical (rôle MEDECIN). */
 export const medecinGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);

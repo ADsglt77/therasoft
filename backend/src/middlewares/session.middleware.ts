@@ -36,7 +36,7 @@ export const verifySession = async (
     let medecinId: number | undefined;
     let patientId: number | undefined;
 
-    if (session.user.role === 'MEDECIN' || session.user.role === 'SECRETAIRE') {
+    if (session.user.role === 'MEDECIN') {
       const medecin = await prisma.medecin.findUnique({ where: { userId: session.user.id } });
       if (!medecin || !medecin.isActive) {
         throw new ApiError('Compte invalide ou désactivé', 'AUTH_ACCOUNT_INVALID', 401);

@@ -1,6 +1,6 @@
 import { Role } from '@prisma/client';
 
-const STAFF_ROLES: readonly Role[] = [Role.MEDECIN, Role.SECRETAIRE];
+const STAFF_ROLES: readonly Role[] = [Role.MEDECIN];
 
 /** Convertit une valeur quelconque en `Role` connu, sinon `null`. */
 export function parseRole(value: unknown): Role | null {
