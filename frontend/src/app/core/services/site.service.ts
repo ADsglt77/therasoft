@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ApiClientService } from '../../api/api-client.service';
+import { environment } from '../../../environments/environment';
 
 /** Créneau d'ouverture (jour 1 = lundi … 7 = dimanche). */
-export interface OpeningHour {
+interface OpeningHour {
   day: number;
   open: string; // "HH:mm"
   close: string; // "HH:mm"
@@ -41,10 +41,10 @@ export interface SitesResponse {
 @Injectable({
   providedIn: 'root',
 })
-export class SiteService extends ApiClientService {
-  constructor(http: HttpClient) {
-    super(http);
-  }
+export class SiteService {
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  constructor(private http: HttpClient) {}
 
   /**
    * Récupère les sites du médecin connecté avec leurs statistiques.
