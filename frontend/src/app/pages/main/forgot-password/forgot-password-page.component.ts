@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { UiInputComponent, InputMessageType } from '../../../components/input/ui-input.component';
@@ -17,6 +17,7 @@ import { FormUtils } from '../../../core/utils/form-utils';
   imports: [ReactiveFormsModule, RouterLink, UiInputComponent, UiButtonComponent, FeedbackCardComponent],
   templateUrl: './forgot-password-page.component.html',
   styleUrl: './forgot-password-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ForgotPasswordPageComponent {
   sent = false;
@@ -25,7 +26,8 @@ export class ForgotPasswordPageComponent {
 
   constructor(
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -60,10 +62,12 @@ export class ForgotPasswordPageComponent {
       next: () => {
         this.isLoading = false;
         this.sent = true;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.isLoading = false;
         this.sent = true;
+        this.cdr.markForCheck();
       },
     });
   }
