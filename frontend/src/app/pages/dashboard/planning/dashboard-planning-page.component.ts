@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { DayCardComponent, DayType } from '../../../components/calendar/month/day-card/day-card.component';
 import { NavCalendarComponent } from '../../../components/calendar/nav-calendar/nav-calendar.component';
@@ -36,6 +36,7 @@ const YEAR_RANGE = 5; // Années avant/après l'année actuelle
   imports: [DayCardComponent, NavCalendarComponent],
   templateUrl: './dashboard-planning-page.component.html',
   styleUrl: './dashboard-planning-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPlanningPageComponent implements OnInit {
   // Constantes publiques
