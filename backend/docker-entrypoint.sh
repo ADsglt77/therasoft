@@ -16,10 +16,6 @@ if [ "$RESET_DB_ON_SEED" = "true" ]; then
   echo "Demo mode: force-reset database schema (all tables dropped)..."
   npx prisma db push --force-reset
 else
-  # Bases déjà déployées : renommer ADMIN → SECRETAIRE avant db push (évite l'échec enum)
-  echo "Preparing existing database (role enum)..."
-  printf '%s\n' 'ALTER TYPE "Role" RENAME VALUE '"'"'ADMIN'"'"' TO '"'"'SECRETAIRE'"'"';' \
-    | npx prisma db execute --stdin 2>/dev/null || true
   npx prisma db push --accept-data-loss
 fi
 echo "Running Prisma seed (RESET_DB_ON_SEED=${RESET_DB_ON_SEED})..."
