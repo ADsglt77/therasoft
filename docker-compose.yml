@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -18,6 +19,7 @@ services:
       args:
         DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
     image: therasoft-backend
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -28,7 +30,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       NODE_ENV: ${NODE_ENV:-production}
-      RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-true}
+      RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-false}
+      BASELINE_EXISTING_DB: ${BASELINE_EXISTING_DB:-false}
       # Liens des emails (vérification) + SMTP (vérification d'email)
       APP_URL: ${APP_URL:-http://localhost}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -39,9 +42,16 @@ services:
       MAIL_FROM: ${MAIL_FROM:-TsXcare <no-reply@tsxcare.local>}
     volumes:
       - uploads_data:/app/uploads
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     depends_on:
       - backend
 
@@ -50,8 +60,10 @@ services:
     # Pas de ports ici : Dokploy (et autres reverse proxy) route vers nginx:80 en interne.
     # En local, docker-compose.override.yml publie HTTP_PORT sur l'hôte.
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
     restart: unless-stopped
 
   studio:

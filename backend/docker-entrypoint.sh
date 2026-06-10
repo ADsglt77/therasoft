@@ -7,10 +7,8 @@ until pg_isready -h db -p 5432 -U "$DB_USER"; do
   sleep 2
 done
 
-export RESET_DB_ON_SEED="${RESET_DB_ON_SEED:-true}"
-
-echo "Generating Prisma client..."
-npx prisma generate
+export RESET_DB_ON_SEED="${RESET_DB_ON_SEED:-false}"
+export BASELINE_EXISTING_DB="${BASELINE_EXISTING_DB:-false}"
 
 if [ "$RESET_DB_ON_SEED" = "true" ]; then
   echo "Demo mode: reset schema, apply migrations and seed..."
@@ -23,13 +21,20 @@ if [ "$RESET_DB_ON_SEED" = "true" ]; then
   npx prisma db seed
 else
   echo "Production: applying migrations..."
-  # Base pré-migrations (tables présentes mais pas de _prisma_migrations) : on la baseline.
+  # Une base historique doit être baselinée explicitement après vérification humaine.
   if [ "$(psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.\"user\"') IS NOT NULL AND to_regclass('public._prisma_migrations') IS NULL" 2>/dev/null)" = "t" ]; then
-    echo "Existing pre-migration schema detected; baselining 0_init..."
+    if [ "$BASELINE_EXISTING_DB" != "true" ]; then
+      echo "Existing pre-migration schema detected."
+      echo "Set BASELINE_EXISTING_DB=true once, only after verifying it matches migration 0_init."
+      exit 1
+    fi
+    echo "Explicit baseline enabled; marking 0_init as applied..."
     npx prisma migrate resolve --applied 0_init
   fi
   npx prisma migrate deploy
 fi
 
 echo "Starting application..."
-npm run start
+mkdir -p /app/uploads/dossiers
+chown -R node:node /app/uploads
+exec su-exec node:node npm run start

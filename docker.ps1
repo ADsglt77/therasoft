@@ -11,7 +11,10 @@ param(
   [switch]$Detach,
 
   [Parameter(Mandatory = $false)]
-  [switch]$IncludeBuild = $true
+  [switch]$IncludeBuild = $true,
+
+  [Parameter(Mandatory = $false)]
+  [switch]$PurgeData
 )
 
 # Script de confort pour lancer la stack en dev/prod sans recopier les -f compose.
@@ -51,10 +54,16 @@ if ($Action -eq 'up') {
 }
 
 if ($Action -eq 'down') {
-  # Supprime conteneurs, réseau, volumes (PostgreSQL + uploads) et orphelins.
-  $downArgs = @('--profile', 'studio', 'down', '-v', '--remove-orphans')
+  $downArgs = @('--profile', 'studio', 'down', '--remove-orphans')
+  if ($PurgeData) {
+    $downArgs += '-v'
+  }
   Write-Host ("Running: docker compose {0} {1}" -f ($composeFiles -join ' '), ($downArgs -join ' ')) -ForegroundColor Yellow
-  Write-Host 'Volumes supprimés : base PostgreSQL et fichiers uploadés seront recréés au prochain up.' -ForegroundColor Yellow
+  if ($PurgeData) {
+    Write-Host 'Purge explicite : la base PostgreSQL et les uploads seront supprimés.' -ForegroundColor Red
+  } else {
+    Write-Host 'Les volumes PostgreSQL et uploads sont conservés.' -ForegroundColor Yellow
+  }
   docker compose @composeArgs @downArgs
   exit $LASTEXITCODE
 }
