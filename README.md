@@ -20,7 +20,7 @@ Dans Dokploy :
 1. **Compose file** : `docker-compose.yml` seulement
 2. **Domaine** → service **nginx**, port conteneur **80**
 3. Variables obligatoires :
-   - `RESET_DB_ON_SEED=true` — à chaque déploiement, le backend refait `db push` + reset + seed (données démo fraîches)
+   - `RESET_DB_ON_SEED=true` — à chaque déploiement, le backend réinitialise la base (drop schema), applique les migrations puis reseed (données démo fraîches)
    - `FRONTEND_ORIGIN=https://ton-domaine.fr`
    - `AUTH_SECRET` ≥ 32 caractères
    - `DB_PASSWORD`, `DB_NAME`, `DB_USER`
@@ -28,7 +28,7 @@ Dans Dokploy :
 À chaque push / redémarrage du conteneur **backend**, l’entrypoint exécute automatiquement :
 
 ```text
-prisma generate → prisma db push --force-reset → prisma db seed (données démo)
+prisma generate → (drop schema) → prisma migrate deploy → prisma db seed (données démo)
 ```
 
 Les comptes démo (voir tableau ci-dessous) sont recréés à chaque fois.
@@ -48,17 +48,17 @@ Si l’erreur `port is already allocated` revient, un autre service occupe encor
 
 ## Base de données (Prisma)
 
-Le schéma est synchronisé avec **`prisma db push`** au démarrage du backend (pas de fichiers SQL dans le dépôt).
+Le schéma est versionné via des **migrations Prisma** (`backend/prisma/migrations/`), appliquées au démarrage du backend avec `prisma migrate deploy`.
 
-Modifier `backend/prisma/schema.prisma`, puis :
+Après avoir modifié `backend/prisma/schema.prisma`, générer une migration :
 
 ```bash
-docker compose up -d --build
-# ou, conteneur déjà lancé :
-docker compose exec backend npx prisma db push --accept-data-loss
+# en local (crée le fichier SQL + applique + regénère le client)
+docker compose exec backend npx prisma migrate dev --name <description>
+# puis committer le dossier généré dans prisma/migrations/
 ```
 
-Au démarrage, l’entrypoint exécute `prisma db push`. Avec `RESET_DB_ON_SEED=true` (défaut), la base et les uploads sont vidés puis reseedés (2 médecins, sites et vacations de démonstration).
+Au démarrage, l’entrypoint exécute `prisma migrate deploy`. Avec `RESET_DB_ON_SEED=true` (défaut), le schéma est d'abord réinitialisé (drop) puis les migrations sont rejouées et la base reseedée (2 médecins, sites et vacations de démonstration). Sur une base pré-migrations existante, l’entrypoint la *baseline* automatiquement (`migrate resolve --applied 0_init`) avant d’appliquer les éventuelles migrations suivantes.
 
 ## Commandes
 
