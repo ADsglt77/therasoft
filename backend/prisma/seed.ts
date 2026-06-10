@@ -1,8 +1,6 @@
-import { PrismaClient, Role, Sexe, ModaliteType, Vacation, Rdv } from '@prisma/client';
+import { PrismaClient, Role, ModaliteType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import argon2 from 'argon2';
-import { SEED_SITES_BY_CITY, toVillesAvecSites } from './seed-sites.data';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -10,45 +8,65 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-console.log(`🔌 Connexion à la base de données...`);
+console.log('🔌 Connexion à la base de données...');
 console.log(`   URL: ${databaseUrl.replace(/:[^:@]+@/, ':****@')}`);
 
 const pool = new Pool({ connectionString: databaseUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-async function waitForDatabase(maxRetries = 10, delay = 2000) {
+// --- Données de démonstration (volontairement minimales) ---
+
+/** Médecins de démonstration (les seuls comptes pré-créés). */
+const MEDECINS = [
+  { name: 'User Test', email: 'user@user.user', nom: 'User', prenom: 'Test', specialite: 'Radiologie' },
+  { name: 'User2 Test', email: 'user2@user.user', nom: 'User2', prenom: 'Test', specialite: 'Imagerie médicale' },
+];
+
+/** Un site par ville. Horaires lun–ven 08:00–18:00. */
+const STANDARD_HOURS = [1, 2, 3, 4, 5].map((day) => ({ day, open: '08:00', close: '18:00' }));
+const SITES = [
+  { nom: 'Centre d’imagerie de Limoges', ville: 'Limoges', adresse: 'Limoges', latitude: 45.8336, longitude: 1.2611 },
+  { nom: 'Centre d’imagerie de Bordeaux', ville: 'Bordeaux', adresse: 'Bordeaux', latitude: 44.8378, longitude: -0.5792 },
+  { nom: 'Centre d’imagerie de Lyon', ville: 'Lyon', adresse: 'Lyon', latitude: 45.764, longitude: 4.8357 },
+  { nom: 'Centre d’imagerie de Marseille', ville: 'Marseille', adresse: 'Marseille', latitude: 43.2965, longitude: 5.3698 },
+  { nom: 'Centre d’imagerie de Paris', ville: 'Paris', adresse: 'Paris', latitude: 48.8566, longitude: 2.3522 },
+  { nom: 'Centre d’imagerie de Nantes', ville: 'Nantes', adresse: 'Nantes', latitude: 47.2184, longitude: -1.5536 },
+  { nom: 'Centre d’imagerie de Toulouse', ville: 'Toulouse', adresse: 'Toulouse', latitude: 43.6047, longitude: 1.4442 },
+];
+
+/** Durée (minutes) d'un rendez-vous selon la modalité. */
+const MODALITE_DUREES: Record<ModaliteType, number> = {
+  [ModaliteType.XRAY]: 15,
+  [ModaliteType.CT]: 20,
+  [ModaliteType.MRI]: 30,
+  [ModaliteType.US]: 20,
+  [ModaliteType.MAMMO]: 15,
+  [ModaliteType.PET]: 45,
+  [ModaliteType.OTHER]: 30,
+};
+const MODALITES = Object.keys(MODALITE_DUREES) as ModaliteType[];
+
+/** Fenêtre de génération des vacations : ~3 mois à partir du 1er du mois courant. */
+const VACATION_DAYS = 90;
+
+async function waitForDatabase(maxRetries = 10, delay = 2000): Promise<void> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       await pool.query('SELECT 1');
       console.log('✅ Base de données connectée\n');
       return;
-    } catch (error) {
-      if (i < maxRetries - 1) {
-        console.log(`⏳ Attente de la base de données... (${i + 1}/${maxRetries})`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      } else {
-        throw new Error(`Impossible de se connecter à la base de données après ${maxRetries} tentatives`);
-      }
+    } catch {
+      if (i === maxRetries - 1) throw new Error(`Connexion impossible après ${maxRetries} tentatives`);
+      console.log(`⏳ Attente de la base de données... (${i + 1}/${maxRetries})`);
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
 }
 
-function toUtcDateKey(date: Date): string {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function toUtcMidnightDateFromYmd(dateKey: string): Date {
-  const [y, m, d] = dateKey.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
-}
-
-function isWeekendUtc(date: Date): boolean {
-  const dow = date.getUTCDay();
-  return dow === 0 || dow === 6;
+function isWeekdayUtc(date: Date): boolean {
+  const d = date.getUTCDay();
+  return d >= 1 && d <= 5;
 }
 
 function withUtcTime(base: Date, hours: number, minutes: number): Date {
@@ -57,138 +75,31 @@ function withUtcTime(base: Date, hours: number, minutes: number): Date {
   return d;
 }
 
-const SEED_YEAR = 2026;
-
-type VilleAvecSites = { ville: string; sites: string[] };
-type DayAssignment = { ville: string; site: string };
-type WeekSchedule = Map<number, DayAssignment>; // 1 = lundi … 5 = vendredi (ISO)
-type CongesRange = { start: string; end: string };
-
-/** Jours fériés France (tous médecins en repos) */
-const JOURS_FERIES: Set<string> = new Set([
-  `${SEED_YEAR}-01-01`,
-  `${SEED_YEAR}-04-06`,
-  `${SEED_YEAR}-05-01`,
-  `${SEED_YEAR}-05-08`,
-  `${SEED_YEAR}-05-14`,
-  `${SEED_YEAR}-05-25`,
-  `${SEED_YEAR}-07-14`,
-  `${SEED_YEAR}-08-15`,
-  `${SEED_YEAR}-11-01`,
-  `${SEED_YEAR}-11-11`,
-  `${SEED_YEAR}-12-25`,
-]);
-
-/** Clé ISO semaine (ex. 2026-W12) */
-function getIsoWeekKey(date: Date): string {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+async function cleanDatabase(): Promise<void> {
+  console.log('🧹 Nettoyage de la base de données...');
+  await prisma.dossierFile.deleteMany();
+  await prisma.dossier.deleteMany();
+  await prisma.rdvVacation.deleteMany();
+  await prisma.rdv.deleteMany();
+  await prisma.vacation.deleteMany();
+  await prisma.site.deleteMany();
+  await prisma.patient.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.account.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.medecin.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.modaliteConfig.deleteMany();
+  console.log('✅ Base de données nettoyée\n');
 }
 
-function getUtcIsoWeekday(date: Date): number {
-  const d = date.getUTCDay();
-  return d === 0 ? 7 : d;
-}
-
-function isJourFerie(dateKey: string): boolean {
-  return JOURS_FERIES.has(dateKey);
-}
-
-function isJourOuvre(date: Date): boolean {
-  const wd = getUtcIsoWeekday(date);
-  if (wd > 5) return false;
-  return !isJourFerie(toUtcDateKey(date));
-}
-
-/** Congés annuels par médecin (été décalé, printemps / Toussaint / Noël) */
-function getCongesRanges(medecinSlot: number): CongesRange[] {
-  const y = SEED_YEAR;
-  if (medecinSlot === 0) {
-    return [
-      { start: `${y}-04-06`, end: `${y}-04-10` },
-      { start: `${y}-07-06`, end: `${y}-07-31` },
-      { start: `${y}-10-26`, end: `${y}-10-30` },
-      { start: `${y}-12-21`, end: `${y}-12-31` },
-    ];
-  }
-  return [
-    { start: `${y}-04-20`, end: `${y}-04-24` },
-    { start: `${y}-07-20`, end: `${y}-08-14` },
-    { start: `${y}-11-02`, end: `${y}-11-06` },
-    { start: `${y}-12-21`, end: `${y}-12-31` },
-  ];
-}
-
-function isConges(dateKey: string, ranges: CongesRange[]): boolean {
-  return ranges.some((r) => dateKey >= r.start && dateKey <= r.end);
-}
-
-function seededIndex(seed: string, max: number): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) % max;
-}
-
-/**
- * Planning hebdomadaire : 1 ville toute la semaine OU 2 villes en 2 blocs contigus
- * (ex. lun–mer Paris, jeu–ven Lyon) — jamais d’alternance jour par jour.
- */
-function buildWeekSchedule(
-  cache: Map<string, WeekSchedule>,
-  villesAvecSites: VilleAvecSites[],
-  medecinId: number,
-  weekKey: string
-): WeekSchedule {
-  const cacheKey = `${weekKey}_${medecinId}`;
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey)!;
-  }
-
-  const pool = [...villesAvecSites].sort(() => Math.random() - 0.5);
-  const twoCities = Math.random() < 0.28;
-  const schedule: WeekSchedule = new Map();
-
-  if (!twoCities) {
-    const city = pool[0];
-    const site = city.sites[seededIndex(`${cacheKey}_site`, city.sites.length)];
-    const assignment = { ville: city.ville, site };
-    for (let wd = 1; wd <= 5; wd++) {
-      schedule.set(wd, assignment);
-    }
-  } else {
-    const cityA = pool[0];
-    const cityB = pool[1];
-    const siteA = cityA.sites[seededIndex(`${cacheKey}_sa`, cityA.sites.length)];
-    const siteB = cityB.sites[seededIndex(`${cacheKey}_sb`, cityB.sites.length)];
-    const splitAfter = seededIndex(`${cacheKey}_split`, 2) === 0 ? 2 : 3;
-    for (let wd = 1; wd <= 5; wd++) {
-      schedule.set(
-        wd,
-        wd <= splitAfter
-          ? { ville: cityA.ville, site: siteA }
-          : { ville: cityB.ville, site: siteB }
-      );
-    }
-  }
-
-  cache.set(cacheKey, schedule);
-  return schedule;
-}
-
-// Source unique de vérité pour le type de RDV (icône Lucide + libellé)
-async function main() {
+async function main(): Promise<void> {
   await waitForDatabase();
 
   const resetOnSeed = process.env.RESET_DB_ON_SEED === 'true';
   const existingMedecins = await prisma.medecin.count();
 
-  // Seed idempotent : si on ne force pas le reset et que des données existent déjà,
-  // on ne touche à rien (cas production / redémarrage normal).
+  // Seed idempotent : en production (reset désactivé), on ne touche pas à des données existantes.
   if (!resetOnSeed && existingMedecins > 0) {
     console.log('⏭️  Seed ignoré : médecins déjà présents et RESET_DB_ON_SEED=false.\n');
     return;
@@ -196,548 +107,116 @@ async function main() {
 
   if (resetOnSeed) {
     console.log('🌱 Seed forcé (RESET_DB_ON_SEED=true) : reset complet puis recréation...\n');
-    console.log('🧹 Nettoyage de la base de données...');
-    await prisma.dossierFile.deleteMany();
-    await prisma.dossier.deleteMany();
-    await prisma.rdvVacation.deleteMany();
-    await prisma.rdv.deleteMany();
-    await prisma.vacation.deleteMany();
-    await prisma.site.deleteMany();
-    await prisma.patient.deleteMany();
-    await prisma.authSession?.deleteMany({});
-    await prisma.session.deleteMany();
-    await prisma.account.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.medecin.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.medecin.deleteMany();
-    await prisma.modaliteConfig.deleteMany();
-    console.log('✅ Base de données nettoyée\n');
+    await cleanDatabase();
   } else {
     console.log('🌱 Base vide : initialisation des données de démonstration...\n');
   }
 
-  console.log('👨‍⚕️ Création des médecins...');
-  const { hashPassword } = await import('better-auth/crypto');
-  const passwordHash = await hashPassword('Azertyuiop1!');
-
-  const user1 = await prisma.user.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: 'Secrétariat Demo',
-      email: 'secretaire@demo.demo',
-      emailVerified: true,
-      role: Role.SECRETAIRE,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      accounts: {
-        create: {
-          id: crypto.randomUUID(),
-          accountId: 'secretaire@demo.demo',
-          providerId: 'credential',
-          password: passwordHash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      }
-    }
-  });
-
-  const medecin1 = await prisma.medecin.create({
-    data: {
-      nom: 'Secrétariat',
-      prenom: 'Demo',
-      specialite: '',
-      userId: user1.id,
-      isActive: true,
-    },
-  });
-
-  const user2 = await prisma.user.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: 'User Test',
-      email: 'user@user.user',
-      emailVerified: true,
-      role: Role.MEDECIN,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      accounts: {
-        create: {
-          id: crypto.randomUUID(),
-          accountId: 'user@user.user',
-          providerId: 'credential',
-          password: passwordHash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      }
-    }
-  });
-
-  const medecin2 = await prisma.medecin.create({
-    data: {
-      nom: 'User',
-      prenom: 'Test',
-      specialite: 'Radiologie',
-      userId: user2.id,
-      isActive: true,
-    },
-  });
-
-  const user3 = await prisma.user.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: 'User2 Test',
-      email: 'user2@user.user',
-      emailVerified: true,
-      role: Role.MEDECIN,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      accounts: {
-        create: {
-          id: crypto.randomUUID(),
-          accountId: 'user2@user.user',
-          providerId: 'credential',
-          password: passwordHash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      }
-    }
-  });
-
-  const medecin3 = await prisma.medecin.create({
-    data: {
-      nom: 'User2',
-      prenom: 'Test',
-      specialite: 'Imagerie médicale',
-      userId: user3.id,
-      isActive: true,
-    },
-  });
-
-  console.log(`✅ ${3} médecins créés\n`);
-
+  // 1) Durées par modalité
   console.log('⏱️  Configuration des durées par modalité...');
-  const modaliteDurees: Record<ModaliteType, number> = {
-    [ModaliteType.XRAY]: 15,
-    [ModaliteType.CT]: 20,
-    [ModaliteType.MRI]: 30,
-    [ModaliteType.US]: 20,
-    [ModaliteType.MAMMO]: 15,
-    [ModaliteType.PET]: 45,
-    [ModaliteType.OTHER]: 30,
-  };
   await Promise.all(
-    (Object.keys(modaliteDurees) as ModaliteType[]).map((modalite) =>
-      prisma.modaliteConfig.create({ data: { modalite, dureeMinutes: modaliteDurees[modalite] } })
+    MODALITES.map((modalite) =>
+      prisma.modaliteConfig.create({ data: { modalite, dureeMinutes: MODALITE_DUREES[modalite] } })
     )
   );
   console.log('✅ Durées par modalité configurées\n');
 
-  console.log('👤 Création des patients...');
-  const patients = [
-    { nom: 'Lefebvre', prenom: 'Marie', dateNaissance: new Date('1985-03-15'), sexe: Sexe.F },
-    { nom: 'Moreau', prenom: 'Paul', dateNaissance: new Date('1978-07-22'), sexe: Sexe.M },
-    { nom: 'Petit', prenom: 'Julie', dateNaissance: new Date('1992-11-08'), sexe: Sexe.F },
-    { nom: 'Garcia', prenom: 'Lucas', dateNaissance: new Date('1980-05-30'), sexe: Sexe.M },
-    { nom: 'Roux', prenom: 'Emma', dateNaissance: new Date('1995-09-12'), sexe: Sexe.F },
-    { nom: 'Simon', prenom: 'Thomas', dateNaissance: new Date('1987-01-25'), sexe: Sexe.M },
-    { nom: 'Laurent', prenom: 'Camille', dateNaissance: new Date('1990-06-18'), sexe: Sexe.X },
-    { nom: 'Michel', prenom: 'Antoine', dateNaissance: new Date('1975-12-03'), sexe: Sexe.M },
-    { nom: 'Bernard', prenom: 'Sophie', dateNaissance: new Date('1988-04-20'), sexe: Sexe.F },
-    { nom: 'Dubois', prenom: 'Pierre', dateNaissance: new Date('1982-09-14'), sexe: Sexe.M },
-    { nom: 'Leroy', prenom: 'Claire', dateNaissance: new Date('1993-12-05'), sexe: Sexe.F },
-    { nom: 'Morel', prenom: 'David', dateNaissance: new Date('1979-06-28'), sexe: Sexe.M },
-    { nom: 'Girard', prenom: 'Isabelle', dateNaissance: new Date('1986-02-11'), sexe: Sexe.F },
-    { nom: 'Bonnet', prenom: 'Nicolas', dateNaissance: new Date('1984-08-23'), sexe: Sexe.M },
-    { nom: 'Dupont', prenom: 'Amélie', dateNaissance: new Date('1991-10-07'), sexe: Sexe.F },
-    { nom: 'Lambert', prenom: 'Julien', dateNaissance: new Date('1983-05-19'), sexe: Sexe.M },
-    { nom: 'Martin', prenom: 'Céline', dateNaissance: new Date('1989-07-30'), sexe: Sexe.F },
-    { nom: 'Robert', prenom: 'François', dateNaissance: new Date('1977-11-16'), sexe: Sexe.M },
-    { nom: 'Richard', prenom: 'Valérie', dateNaissance: new Date('1994-03-22'), sexe: Sexe.F },
-    { nom: 'Petit', prenom: 'Marc', dateNaissance: new Date('1981-01-08'), sexe: Sexe.M },
-    { nom: 'Durand', prenom: 'Nathalie', dateNaissance: new Date('1987-09-13'), sexe: Sexe.F },
-    { nom: 'Leroy', prenom: 'Sébastien', dateNaissance: new Date('1985-12-25'), sexe: Sexe.M },
-    { nom: 'Moreau', prenom: 'Caroline', dateNaissance: new Date('1990-04-17'), sexe: Sexe.F },
-    { nom: 'Simon', prenom: 'Olivier', dateNaissance: new Date('1976-08-04'), sexe: Sexe.M },
-    { nom: 'Laurent', prenom: 'Patricia', dateNaissance: new Date('1988-06-21'), sexe: Sexe.F },
-    { nom: 'Lefebvre', prenom: 'Stéphane', dateNaissance: new Date('1982-02-14'), sexe: Sexe.M },
-    { nom: 'Michel', prenom: 'Véronique', dateNaissance: new Date('1992-10-29'), sexe: Sexe.F },
-    { nom: 'Garcia', prenom: 'Romain', dateNaissance: new Date('1984-07-06'), sexe: Sexe.M },
-    { nom: 'David', prenom: 'Sandrine', dateNaissance: new Date('1989-05-12'), sexe: Sexe.F },
-    { nom: 'Bertrand', prenom: 'Guillaume', dateNaissance: new Date('1983-11-18'), sexe: Sexe.M },
-  ];
-
-  const createdPatients = await Promise.all(
-    patients.map((patient) => prisma.patient.create({ data: patient }))
-  );
-  console.log(`✅ ${createdPatients.length} patients créés\n`);
-
-  console.log('📅 Création des vacations...');
-  const villesAvecSites = toVillesAvecSites();
-
-  console.log('🏥 Création des sites (établissements réels)...');
-  const siteIdByKey = new Map<string, number>();
-  let siteIndex = 0;
-  for (const { ville, sites } of SEED_SITES_BY_CITY) {
-    for (const siteData of sites) {
-      const site = await prisma.site.create({
+  // 2) Sites (un par ville)
+  console.log('🏥 Création des sites...');
+  const sites = [];
+  for (const s of SITES) {
+    sites.push(
+      await prisma.site.create({
         data: {
-          nom: siteData.nom,
-          ville,
-          adresse: siteData.adresse,
-          latitude: siteData.latitude,
-          longitude: siteData.longitude,
-          websiteUrl: siteData.websiteUrl,
-          openingHours: siteData.openingHours,
+          nom: s.nom,
+          ville: s.ville,
+          adresse: s.adresse,
+          latitude: s.latitude,
+          longitude: s.longitude,
+          openingHours: STANDARD_HOURS,
         },
-      });
-      siteIdByKey.set(`${ville}||${siteData.nom}`, site.id);
-      siteIndex++;
-    }
+      })
+    );
   }
-  console.log(`✅ ${siteIndex} sites créés (${SEED_SITES_BY_CITY.length} villes)\n`);
-  
-  const modalites: ModaliteType[] = [ModaliteType.XRAY, ModaliteType.CT, ModaliteType.MRI, ModaliteType.US, ModaliteType.MAMMO];
-  // Seulement les médecins (pas admin)
-  const medecinsActifs = [medecin2, medecin3];
-  const horaires = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+  console.log(`✅ ${sites.length} sites créés\n`);
 
-  console.log(`📅 Création des vacations pour toute l'année ${SEED_YEAR}...`);
-  console.log('   • Jours ouvrés : lun–ven, hors jours fériés FR');
-  console.log('   • Congés : été, printemps, Toussaint, fin d\'année (décalés par médecin)');
-  console.log('   • Déplacements : max 2 villes/semaine en blocs (ex. lun–mer puis jeu–ven), 1 site/jour');
-  const vacations: Vacation[] = [];
-  const weekScheduleCache = new Map<string, WeekSchedule>();
-  const startDate = new Date(Date.UTC(SEED_YEAR, 0, 1, 0, 0, 0, 0));
-  const endDate = new Date(Date.UTC(SEED_YEAR, 11, 31, 0, 0, 0, 0));
+  // 3) Médecins (compte Better Auth + profil)
+  console.log('👨‍⚕️ Création des médecins...');
+  const { hashPassword } = await import('better-auth/crypto');
+  const passwordHash = await hashPassword('Azertyuiop1!');
+  const now = new Date();
 
-  let joursOuvres = 0;
-  let joursConges = 0;
-
-  for (let date = new Date(startDate); date <= endDate; date = new Date(date.getTime() + 24 * 60 * 60 * 1000)) {
-    if (!isJourOuvre(date)) continue;
-
-    joursOuvres++;
-    const currentDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
-    const dateKey = toUtcDateKey(currentDate);
-    const weekKey = getIsoWeekKey(currentDate);
-    const weekday = getUtcIsoWeekday(currentDate);
-    const vacationsPerMedecin = Math.floor(Math.random() * 3) + 2;
-
-    for (let slot = 0; slot < medecinsActifs.length; slot++) {
-      const medecin = medecinsActifs[slot];
-      const congesRanges = getCongesRanges(slot);
-
-      if (isConges(dateKey, congesRanges)) {
-        joursConges++;
-        continue;
-      }
-
-      const schedule = buildWeekSchedule(weekScheduleCache, villesAvecSites, medecin.id, weekKey);
-      const assignment = schedule.get(weekday);
-      if (!assignment) continue;
-
-      const shuffledHoraires = [...horaires].sort(() => Math.random() - 0.5);
-
-      for (let i = 0; i < vacationsPerMedecin && i < shuffledHoraires.length; i++) {
-        const [hours, minutes] = shuffledHoraires[i].split(':');
-        const horaire = withUtcTime(currentDate, parseInt(hours), parseInt(minutes));
-
-        const siteId = siteIdByKey.get(`${assignment.ville}||${assignment.site}`)!;
-        const vacation = await prisma.vacation.create({
-          data: {
-            date: currentDate,
-            horaire,
-            siteId,
-            modalite: modalites[Math.floor(Math.random() * modalites.length)],
-            medecinId: medecin.id,
-          },
-        });
-        vacations.push(vacation);
-      }
-    }
-
-    if (joursOuvres % 50 === 0) {
-      console.log(`   Progression: ${joursOuvres} jours ouvrés, ${vacations.length} vacations...`);
-    }
-  }
-  console.log(
-    `✅ ${vacations.length} vacations sur ${joursOuvres} jours ouvrés (${joursConges} créneaux congés/médecin ignorés)\n`
-  );
-
-  console.log('📋 Création des rendez-vous pour chaque jour avec vacations...');
-  const rdvs: Rdv[] = [];
-  const rdvHoraires = ['08:15', '08:45', '09:15', '09:45', '10:15', '10:45', '11:15', '11:45', 
-                       '13:15', '13:45', '14:15', '14:45', '15:15', '15:45', '16:15', '16:45', '17:15'];
-  
-  // Grouper les vacations par date et médecin
-  const vacationsByDateAndMedecin = new Map<string, Vacation[]>();
-  for (const vacation of vacations) {
-    const key = `${toUtcDateKey(vacation.date)}_${vacation.medecinId}`;
-    if (!vacationsByDateAndMedecin.has(key)) {
-      vacationsByDateAndMedecin.set(key, []);
-    }
-    vacationsByDateAndMedecin.get(key)!.push(vacation);
-  }
-
-  let rdvCount = 0;
-  for (const [key, dayVacations] of vacationsByDateAndMedecin.entries()) {
-    const [dateStr] = key.split('_');
-    const date = toUtcMidnightDateFromYmd(dateStr);
-
-    if (!isJourOuvre(date)) {
-      continue;
-    }
-
-    const dayModalites = [...new Set(dayVacations.map((v) => v.modalite))];
-    const rdvsPerDay = Math.floor(Math.random() * 6) + 5;
-    const shuffledPatients = [...createdPatients].sort(() => Math.random() - 0.5);
-    const shuffledHoraires = [...rdvHoraires].sort(() => Math.random() - 0.5);
-
-    for (let i = 0; i < rdvsPerDay && i < shuffledPatients.length && i < shuffledHoraires.length; i++) {
-      const patient = shuffledPatients[i % shuffledPatients.length];
-      const [hours, minutes] = shuffledHoraires[i].split(':');
-      
-      const heureDebut = withUtcTime(date, parseInt(hours), parseInt(minutes));
-      
-      const dureeMinutes = [20, 30, 45][Math.floor(Math.random() * 3)];
-      const heureFin = new Date(heureDebut);
-      heureFin.setUTCMinutes(heureFin.getUTCMinutes() + dureeMinutes);
-
-      const modalite = dayModalites[Math.floor(Math.random() * dayModalites.length)];
-      const rdv = await prisma.rdv.create({
-        data: {
-          date,
-          heureDebut,
-          heureFin,
-          modalite: modalite,
-          patientId: patient.id,
-        },
-      });
-      rdvs.push(rdv);
-      rdvCount++;
-    }
-    
-    if (rdvCount % 500 === 0) {
-      console.log(`   Progression: ${rdvCount} rendez-vous créés...`);
-    }
-  }
-  console.log(`✅ ${rdvs.length} rendez-vous créés\n`);
-
-  console.log('🔗 Création des liaisons RDV ↔ vacation (même modalité / machine)...');
-  let modaliteCount = 0;
-  
-  // Grouper les vacations par date et modalité pour optimisation
-  const vacationsByDateAndModalite = new Map<string, Vacation[]>();
-  for (const vacation of vacations) {
-    const key = `${toUtcDateKey(vacation.date)}_${vacation.modalite}`;
-    if (!vacationsByDateAndModalite.has(key)) {
-      vacationsByDateAndModalite.set(key, []);
-    }
-    vacationsByDateAndModalite.get(key)!.push(vacation);
-  }
-  
-  for (const rdv of rdvs) {
-    const dateKey = toUtcDateKey(rdv.date);
-    const key = `${dateKey}_${rdv.modalite}`;
-    const compatibleVacations = vacationsByDateAndModalite.get(key) || [];
-    
-    if (compatibleVacations.length > 0) {
-      // Filtrer par proximité horaire (dans un créneau de 2h)
-      const rdvStartMinutes = rdv.heureDebut.getHours() * 60 + rdv.heureDebut.getMinutes();
-      
-      const nearbyVacations = compatibleVacations.filter((v) => {
-        const vMinutes = v.horaire.getHours() * 60 + v.horaire.getMinutes();
-        const diffMinutes = Math.abs(vMinutes - rdvStartMinutes);
-        return diffMinutes < 120; // 2 heures
-      });
-      
-      if (nearbyVacations.length > 0) {
-        // Prendre une vacation aléatoire parmi les compatibles
-        const vacation = nearbyVacations[Math.floor(Math.random() * nearbyVacations.length)];
-        
-        try {
-          await prisma.rdvVacation.create({
-            data: {
-              rdvId: rdv.id,
-              vacationId: vacation.id,
-            },
-          });
-          modaliteCount++;
-        } catch {
-          // Ignorer les doublons (contrainte unique)
-        }
-      }
-    }
-    
-    if (modaliteCount % 500 === 0 && modaliteCount > 0) {
-      console.log(`   Progression: ${modaliteCount} liens créés...`);
-    }
-  }
-  console.log(`✅ ${modaliteCount} liaisons RDV-vacation créées\n`);
-
-  console.log('📁 Création des dossiers médicaux pour chaque RDV...');
-  let dossierCount = 0;
-  
-  // Templates d'observations et résultats selon la modalité
-  const observationsTemplates: Record<ModaliteType, string[]> = {
-    [ModaliteType.XRAY]: [
-      'Examen radiographique standard réalisé sans injection de produit de contraste.',
-      'Clichés réalisés en incidence antéro-postérieure et latérale.',
-      'Examen réalisé selon les protocoles standards de radiologie conventionnelle.',
-    ],
-    [ModaliteType.CT]: [
-      'Scanner réalisé avec injection de produit de contraste iodé.',
-      'Acquisition volumique en coupes fines avec reconstruction multiplanaire.',
-      'Examen réalisé selon le protocole standard avec injection de contraste.',
-    ],
-    [ModaliteType.MRI]: [
-      'IRM réalisée avec séquences T1, T2 et FLAIR.',
-      'Examen réalisé sans injection de gadolinium.',
-      'IRM avec injection de produit de contraste pour étude de la rehaussement.',
-    ],
-    [ModaliteType.US]: [
-      'Échographie réalisée avec sonde haute fréquence.',
-      'Examen échographique doppler couleur réalisé.',
-      'Échographie avec mesure des flux vasculaires.',
-    ],
-    [ModaliteType.MAMMO]: [
-      'Mammographie réalisée en incidence cranio-caudale et oblique médio-latérale.',
-      'Examen de dépistage réalisé selon les recommandations en vigueur.',
-      'Mammographie avec compression optimale des tissus.',
-    ],
-    [ModaliteType.PET]: [
-      'TEP réalisée avec injection de FDG.',
-      'Examen TEP-TDM avec fusion d\'images.',
-      'TEP réalisée selon le protocole standard oncologique.',
-    ],
-    [ModaliteType.OTHER]: [
-      'Examen réalisé selon le protocole standard.',
-      'Examen complémentaire réalisé.',
-    ],
-  };
-
-  for (const rdv of rdvs) {
-    const observationsList = observationsTemplates[rdv.modalite] || observationsTemplates[ModaliteType.OTHER];
-    const observation = observationsList[Math.floor(Math.random() * observationsList.length)];
-
-    try {
-      await prisma.dossier.create({
-        data: {
-          rdvId: rdv.id,
-          observations: observation,
-          // Démo : dossiers des RDV passés marqués « vérifiés » par le médecin.
-          verified: rdv.date.getTime() < Date.now(),
-        },
-      });
-      dossierCount++;
-    } catch (error) {
-      // Ignorer les erreurs (doublons possibles si contrainte unique)
-    }
-
-    if (dossierCount % 500 === 0 && dossierCount > 0) {
-      console.log(`   Progression: ${dossierCount} dossiers créés...`);
-    }
-  }
-  console.log(`✅ ${dossierCount} dossiers médicaux créés\n`);
-
-  console.log('🧑‍🤝‍🧑 Création d\'un compte patient de démonstration...');
-  // Réservation sur une vacation future de medecin2 (visible aussi côté médecin).
-  const todayKey = toUtcDateKey(new Date());
-  const refVacation =
-    vacations.find((v) => v.medecinId === medecin2.id && toUtcDateKey(v.date) >= todayKey) ??
-    vacations.find((v) => v.medecinId === medecin2.id);
-
-  const demoUser = await prisma.user.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: 'Patient Demo',
-      email: 'patient@patient.patient',
-      emailVerified: true,
-      role: Role.PATIENT,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      accounts: {
-        create: {
-          id: crypto.randomUUID(),
-          accountId: 'patient@patient.patient',
-          providerId: 'credential',
-          password: passwordHash,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }
-      }
-    }
-  });
-
-  const demoPatient = await prisma.patient.create({
-    data: {
-      nom: 'Patient',
-      prenom: 'Demo',
-      userId: demoUser.id,
-      medecinId: medecin2.id,
-      // Adresse vérifiée (Bordeaux) → les lieux seront triés par distance.
-      adresse: 'Place de la Bourse 33000 Bordeaux',
-      latitude: 44.8412,
-      longitude: -0.5700,
-    },
-  });
-
-  if (refVacation) {
-    await prisma.rdv.create({
+  const medecins = [];
+  for (const m of MEDECINS) {
+    const user = await prisma.user.create({
       data: {
-        date: refVacation.date,
-        heureDebut: withUtcTime(refVacation.date, 10, 0),
-        heureFin: withUtcTime(refVacation.date, 10, 30),
-        modalite: ModaliteType.OTHER,
-        motif: 'Consultation de suivi',
-        patientId: demoPatient.id,
-        medecinId: medecin2.id,
-        siteId: refVacation.siteId,
-        dossier: { create: {} },
+        id: crypto.randomUUID(),
+        name: m.name,
+        email: m.email,
+        emailVerified: true,
+        role: Role.MEDECIN,
+        createdAt: now,
+        updatedAt: now,
+        accounts: {
+          create: {
+            id: crypto.randomUUID(),
+            accountId: m.email,
+            providerId: 'credential',
+            password: passwordHash,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
       },
     });
+    medecins.push(
+      await prisma.medecin.create({
+        data: { nom: m.nom, prenom: m.prenom, specialite: m.specialite, userId: user.id, isActive: true },
+      })
+    );
   }
-  console.log('✅ Compte patient : patient@patient.patient / Azertyuiop1!\n');
+  console.log(`✅ ${medecins.length} médecins créés\n`);
+
+  // 4) Vacations : 1 par médecin et par jour ouvré, site tournant chaque semaine.
+  console.log('📅 Création des vacations (jours ouvrés, site tournant par semaine)...');
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+  let vacationCount = 0;
+
+  for (let i = 0; i < VACATION_DAYS; i++) {
+    const date = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + i, 0, 0, 0, 0));
+    if (!isWeekdayUtc(date)) continue;
+
+    const weekIndex = Math.floor(i / 7);
+    for (let m = 0; m < medecins.length; m++) {
+      const site = sites[(weekIndex + m) % sites.length];
+      const modalite = MODALITES[(i + m) % MODALITES.length];
+      await prisma.vacation.create({
+        data: {
+          date,
+          horaire: withUtcTime(date, 8, 0),
+          siteId: site.id,
+          modalite,
+          medecinId: medecins[m].id,
+        },
+      });
+      vacationCount++;
+    }
+  }
+  console.log(`✅ ${vacationCount} vacations créées\n`);
 
   console.log('✨ Seed terminé avec succès !\n');
-  console.log('📊 Résumé:');
-  console.log(`   - ${3} comptes (1 secrétaire, 2 médecins actifs)`);
-  console.log(`   - ${createdPatients.length} patients`);
-  console.log(`   - ${vacations.length} vacations (année 2026 complète)`);
-  console.log(`   - ${rdvs.length} rendez-vous`);
-  console.log(`   - ${modaliteCount} liaisons RDV-vacation (${Math.round(modaliteCount / rdvs.length * 100)}% des rdv liés)`);
-  console.log(`   - ${dossierCount} dossiers médicaux (${Math.round(dossierCount / rdvs.length * 100)}% des rdv avec dossier)\n`);
-  console.log('🔑 Identifiants:');
-  console.log('   Secrétaire:');
-  console.log('     Email: secretaire@demo.demo');
-  console.log('     Password: Azertyuiop1!');
-  console.log('   Médecin 1:');
-  console.log('     Email: user@user.user');
-  console.log('     Password: Azertyuiop1!');
-  console.log('   Médecin 2:');
-  console.log('     Email: user2@user.user');
-  console.log('     Password: Azertyuiop1!\n');
+  console.log('📊 Résumé :');
+  console.log(`   - ${medecins.length} médecins (aucun patient pré-créé)`);
+  console.log(`   - ${sites.length} sites`);
+  console.log(`   - ${vacationCount} vacations`);
+  console.log('🔑 Identifiants médecins (mot de passe : Azertyuiop1!) :');
+  MEDECINS.forEach((m) => console.log(`   - ${m.email}`));
+  console.log('   Les patients s’inscrivent eux-mêmes via /register.\n');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erreur lors du seed:', e);
-    
-    if (e.code === 'ECONNREFUSED') {
-      console.error('\n💡 Vérifications:');
-      console.error('   1. La base de données est-elle démarrée ?');
-      console.error('   2. DATABASE_URL est-elle correctement configurée ?');
-      console.error('   3. Dans Docker, vérifiez: docker compose ps db');
-      console.error('   4. Attendez quelques secondes que la DB soit prête après le démarrage');
-    } else if (e.code === 'P1001') {
-      console.error('\n💡 La base de données n\'est pas accessible');
-      console.error('   Vérifiez que le service db est démarré: docker compose ps');
-    }
-    
+    console.error('❌ Erreur lors du seed :', e);
     process.exit(1);
   })
   .finally(async () => {
