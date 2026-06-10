@@ -26,6 +26,7 @@ uploads/
 
 # Logs
 *.log
+reports/
 
 .claude/*
 .codex/
