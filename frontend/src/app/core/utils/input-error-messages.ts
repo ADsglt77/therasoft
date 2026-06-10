@@ -45,7 +45,7 @@ export class InputErrorMessages {
       case 'email':
         return this.getEmailMessage();
       
-      case 'minlength':
+      case 'minlength': {
         const minLength = control.errors['minlength']?.requiredLength || params?.['minLength'];
         const currentLength = control.value?.length || 0;
         if (minLength) {
@@ -57,13 +57,15 @@ export class InputErrorMessages {
           return this.getMinLengthMessage(minLength);
         }
         return '';
-      
-      case 'maxlength':
+      }
+
+      case 'maxlength': {
         const maxLength = control.errors['maxlength']?.requiredLength || params?.['maxLength'];
         if (maxLength) {
           return this.getMaxLengthMessage(maxLength);
         }
         return '';
+      }
       
       case 'passwordMismatch':
         return this.getPasswordMismatchMessage();
