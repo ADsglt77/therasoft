@@ -81,16 +81,20 @@
     .dropdown-option {
       padding: $spacing-8 $spacing-12;
       background: transparent;
+      border: 1px solid transparent;
       color: var(--text);
       text-align: left;
+      font: inherit;
       cursor: pointer;
       border-radius: $radius-4;
-      @include transition(background-color color, 150ms);
+      box-sizing: border-box;
+      @include transition(background-color border-color color, 150ms);
       width: 100%;
       display: block;
 
       &:hover {
-        @include glass-panel(60%, var(--glass-border-alpha), var(--glass-blur));
+        background: color-mix(in srgb, var(--glass-color) 60%, transparent);
+        border-color: color-mix(in srgb, var(--glass-color) var(--glass-border-alpha), transparent);
         color: var(--text);
       }
 
@@ -108,6 +112,10 @@
     cursor: pointer;
     background: none;
     border: none;
+    padding: $spacing-4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-muted);
     @include transition(color, 150ms);
     

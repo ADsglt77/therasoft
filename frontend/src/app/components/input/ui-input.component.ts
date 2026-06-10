@@ -1,4 +1,17 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostBinding,
+  HostListener,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppIconComponent } from '../icon/app-icon.component';
 
@@ -35,7 +48,7 @@ interface DisplayFile {
   styleUrl: './ui-input.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
+export class UiInputComponent implements OnChanges {
   @Input() type: InputType = 'text';
   @Input() placeholder: string = '';
   @Input() value: string = '';
@@ -62,7 +75,6 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Output() input = new EventEmitter<Event>();
   @Output() valueChange = new EventEmitter<string>();
   @Output() blur = new EventEmitter<Event>();
-  @Output() change = new EventEmitter<Event>();
   @Output() filesSelected = new EventEmitter<File[]>();
   @Output() fileError = new EventEmitter<{ file: File; error: string }>();
   @Output() fileRemoved = new EventEmitter<File[]>();
@@ -71,7 +83,6 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Output() existingFileRemoved = new EventEmitter<ExistingFile>();
 
   @ViewChild('fileInput', { static: false }) fileInput?: ElementRef<HTMLInputElement>;
-  @ViewChild('dropZone', { static: false }) dropZone?: ElementRef<HTMLDivElement>;
   @ViewChild('dropdownList', { static: false }) dropdownList?: ElementRef<HTMLDivElement>;
 
   showPassword: boolean = false; // État pour afficher/masquer le mot de passe
@@ -79,17 +90,15 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   isDragging: boolean = false; // État de drag (pour file)
   isDropdownOpen: boolean = false; // État pour le dropdown select
   
-  // Références aux listeners pour pouvoir les supprimer
-  private dragOverHandler?: (e: DragEvent) => void;
-  private dragLeaveHandler?: (e: DragEvent) => void;
-  private dropHandler?: (e: DragEvent) => void;
-  private dragEnterHandler?: (e: DragEvent) => void;
   private dragCounter: number = 0; // Compteur pour gérer les événements dragleave sur les enfants
 
   private computedMessage: string = '';
   private computedMessageType: InputMessageType | '' = '';
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private hostElement: ElementRef<HTMLElement>
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     // Recalculer le message automatique si la valeur, le type, ou les contraintes changent
@@ -138,37 +147,11 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     );
   }
 
-  ngAfterViewInit(): void {
-    if (this.type === 'select') {
-      document.addEventListener('click', this.handleClickOutside.bind(this));
-    }
-    if (this.type === 'file' && this.dropZone) {
-      this.setupDragAndDrop();
-      if (this.selectedFiles.length === 0 && this.initialFiles?.length > 0) {
-        this.selectedFiles = [...this.initialFiles];
-        this.computeAutoMessage();
-        setTimeout(() => this.cdr.markForCheck(), 0);
-      }
-    }
-  }
-
-
-  ngOnDestroy(): void {
-    if (this.type === 'select') {
-      document.removeEventListener('click', this.handleClickOutside.bind(this));
-    }
-    if (this.type === 'file' && this.dropZone) {
-      this.removeDragAndDropListeners();
-    }
-  }
-
-  private handleClickOutside(event: MouseEvent): void {
-    if (this.isDropdownOpen) {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.input-wrapper')) {
-        this.isDropdownOpen = false;
-        this.cdr.markForCheck();
-      }
+  @HostListener('document:click', ['$event'])
+  handleDocumentClick(event: MouseEvent): void {
+    if (this.isDropdownOpen && !this.hostElement.nativeElement.contains(event.target as Node)) {
+      this.isDropdownOpen = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -211,10 +194,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     this.computeAutoMessage();
     this.cdr.markForCheck();
     
-    // Émettre la valeur sélectionnée + l'événement change
     this.valueChange.emit(this.value);
-    const changeEvent = new Event('change', { bubbles: true });
-    this.change.emit(changeEvent);
   }
 
   get selectedLabel(): string {
@@ -281,10 +261,11 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
    * Valide le champ password
    */
   private validatePassword(isTouched: boolean): void {
+      const requiredLength = this.minLength || 12;
       const length = this.value?.length || 0;
-      if (length > 0 && length < 10) {
-        const missing = 10 - length;
-        this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait 10 caractères`;
+      if (length > 0 && length < requiredLength) {
+        const missing = requiredLength - length;
+        this.computedMessage = `Il manque ${missing} caractère${missing > 1 ? 's' : ''} pour que votre mot de passe ait ${requiredLength} caractères`;
         this.computedMessageType = 'warning';
         return;
       }
@@ -440,53 +421,9 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   // ============================================
 
   /**
-   * Configure les événements drag & drop
-   */
-  private setupDragAndDrop(): void {
-    if (!this.dropZone) return;
-    
-    const element = this.dropZone.nativeElement;
-    
-    // Créer les handlers avec bind pour pouvoir les supprimer
-    this.dragOverHandler = this.handleDragOver.bind(this);
-    this.dragLeaveHandler = this.handleDragLeave.bind(this);
-    this.dropHandler = this.handleDrop.bind(this);
-    this.dragEnterHandler = this.handleDragEnter.bind(this);
-    
-    // Ajouter les listeners
-    element.addEventListener('dragenter', this.dragEnterHandler);
-    element.addEventListener('dragover', this.dragOverHandler);
-    element.addEventListener('dragleave', this.dragLeaveHandler);
-    element.addEventListener('drop', this.dropHandler);
-  }
-
-  /**
-   * Supprime les listeners drag & drop
-   */
-  private removeDragAndDropListeners(): void {
-    if (!this.dropZone) return;
-    
-    const element = this.dropZone.nativeElement;
-    
-    // Supprimer les listeners
-    if (this.dragOverHandler) {
-      element.removeEventListener('dragover', this.dragOverHandler);
-    }
-    if (this.dragLeaveHandler) {
-      element.removeEventListener('dragleave', this.dragLeaveHandler);
-    }
-    if (this.dropHandler) {
-      element.removeEventListener('drop', this.dropHandler);
-    }
-    if (this.dragEnterHandler) {
-      element.removeEventListener('dragenter', this.dragEnterHandler);
-    }
-  }
-
-  /**
    * Gère l'événement dragenter
    */
-  private handleDragEnter(event: DragEvent): void {
+  onDragEnter(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.dragCounter++;
@@ -496,7 +433,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   /**
    * Gère l'événement dragover (nécessaire pour permettre le drop)
    */
-  private handleDragOver(event: DragEvent): void {
+  onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.setDraggingState(true);
@@ -515,7 +452,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   /**
    * Gère l'événement dragleave
    */
-  private handleDragLeave(event: DragEvent): void {
+  onDragLeave(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.dragCounter--;
@@ -529,7 +466,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   /**
    * Gère l'événement drop
    */
-  private handleDrop(event: DragEvent): void {
+  onDrop(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.isDragging = false;
@@ -568,7 +505,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       const error = this.validateFile(file);
       if (error) {
         errors.push({ file, error });
-      } else {
+      } else if (!this.isDuplicateFile(file, validFiles)) {
         validFiles.push(file);
       }
     });
@@ -584,6 +521,15 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
       this.computeAutoMessage();
       this.cdr.markForCheck();
     }
+  }
+
+  private isDuplicateFile(file: File, pending: File[]): boolean {
+    return [...this.selectedFiles, ...pending].some(
+      (candidate) =>
+        candidate.name === file.name &&
+        candidate.size === file.size &&
+        candidate.lastModified === file.lastModified
+    );
   }
 
   /**
@@ -608,6 +554,9 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
     
     return this.accept.split(',').some(type => {
       const trimmed = type.trim();
+      if (trimmed.startsWith('.')) {
+        return file.name.toLowerCase().endsWith(trimmed.toLowerCase());
+      }
       if (trimmed.endsWith('/*')) {
         return file.type.startsWith(trimmed.split('/')[0] + '/');
       }
@@ -648,6 +597,14 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   openFileSelector(): void {
     if (this.disabled || !this.fileInput) return;
     this.fileInput.nativeElement.click();
+  }
+
+  onFileZoneKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+    event.preventDefault();
+    this.openFileSelector();
   }
 
   /**

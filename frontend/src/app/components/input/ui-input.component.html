@@ -1,11 +1,23 @@
-@if (label && type !== 'file') {
-  <label [for]="controlId" class="label">{{ label }}</label>
+@if (label) {
+  <label [for]="controlId" class="label">
+    {{ label }}@if (required) {<span aria-hidden="true"> *</span>}
+  </label>
 }
 @if (type === 'file') {
-<div #dropZone class="file-drop-zone" [class.file-drop-zone--dragging]="isDragging"
+<div
+  class="file-drop-zone"
+  role="button"
+  [attr.tabindex]="disabled ? -1 : 0"
+  [attr.aria-disabled]="disabled"
+  [class.file-drop-zone--dragging]="isDragging"
   [class.file-drop-zone--disabled]="disabled" [class.file-drop-zone--has-files]="displayFiles.length > 0"
-  (click)="openFileSelector()">
-  <input #fileInput type="file" [accept]="accept" [multiple]="multiple" [disabled]="disabled" style="display: none;"
+  (click)="openFileSelector()"
+  (keydown)="onFileZoneKeydown($event)"
+  (dragenter)="onDragEnter($event)"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)">
+  <input #fileInput [id]="controlId" type="file" [accept]="accept" [multiple]="multiple" [disabled]="disabled" style="display: none;"
     (change)="onFileInputChange($event)" />
   <div class="file-drop-zone-content">
     <app-icon [name]="fileTypeIcon" [size]="32" [color]="'var(--color-gray-500)'"></app-icon>
@@ -19,31 +31,32 @@
       <span class="file-item-name">{{ file.name }}</span>
       <span class="file-item-size">({{ formatFileSize(file.size) }})</span>
       <div class="file-item-actions">
-        <app-icon
+        <button
+          type="button"
           class="file-item-action"
-          name="eye"
-          [size]="14"
           (click)="file.isExisting && file.existingFile ? onExistingFilePreview(file.existingFile, $event) : onSelectedFilePreview(file.selectedIndex!, $event)"
           [attr.aria-label]="'Voir ' + file.name"
-          style="cursor: pointer;">
-        </app-icon>
-        <app-icon
+        >
+          <app-icon name="eye" [size]="14"></app-icon>
+        </button>
+        <button
+          type="button"
           class="file-item-action"
-          name="download"
-          [size]="14"
           (click)="file.isExisting && file.existingFile ? onExistingFileDownload(file.existingFile, $event) : onSelectedFileDownload(file.selectedIndex!, $event)"
           [attr.aria-label]="'Télécharger ' + file.name"
-          style="cursor: pointer;">
-        </app-icon>
-        <app-icon
+        >
+          <app-icon name="download" [size]="14"></app-icon>
+        </button>
+        <button
+          type="button"
           class="file-item-action file-item-action--danger"
-          name="x"
-          [size]="14"
           (click)="file.isExisting && file.existingFile ? onExistingFileRemove(file.existingFile, $event) : removeFile(file.selectedIndex!); $event.stopPropagation()"
           [attr.aria-label]="'Supprimer ' + file.name"
+          [disabled]="disabled"
           [style.cursor]="disabled ? 'not-allowed' : 'pointer'"
           [style.opacity]="disabled ? '0.5' : '1'">
-        </app-icon>
+          <app-icon name="x" [size]="14"></app-icon>
+        </button>
       </div>
     </div>
     }
@@ -57,8 +70,12 @@
       type="button"
       [disabled]="disabled"
       class="input input--select"
+      [id]="controlId"
       [ngClass]="getInputStateClasses()"
       [class.input--select-open]="isDropdownOpen"
+      [attr.aria-expanded]="isDropdownOpen"
+      [attr.aria-controls]="controlId + '-options'"
+      aria-haspopup="listbox"
       (click)="toggleDropdown()"
     >
       {{ selectedLabel || placeholder || 'Sélectionner...' }}
@@ -70,15 +87,18 @@
       [class.select-icon--open]="isDropdownOpen">
     </app-icon>
     @if (isDropdownOpen) {
-      <div #dropdownList class="dropdown-list">
+      <div #dropdownList [id]="controlId + '-options'" class="dropdown-list" role="listbox">
         @for (option of options; track option.value) {
-          <span
+          <button
+            type="button"
             class="dropdown-option"
             [class.dropdown-option--selected]="isSelected(option.value)"
+            role="option"
+            [attr.aria-selected]="isSelected(option.value)"
             (click)="selectOption(option)"
           >
             {{ option.label }}
-          </span>
+          </button>
         }
       </div>
     }
@@ -114,16 +134,18 @@
       (blur)="blur.emit($event)"
     />
     @if (showPasswordToggle) {
-      <app-icon 
+      <button
+        type="button"
         class="password-toggle"
-        [name]="passwordToggleIcon" 
-        [size]="20" 
-        [color]="'var(--color-gray-500)'"
         (click)="togglePasswordVisibility()"
         [attr.aria-label]="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-        tabindex="0"
-        style="cursor: pointer;">
-      </app-icon>
+      >
+        <app-icon
+          [name]="passwordToggleIcon"
+          [size]="20"
+          [color]="'var(--color-gray-500)'">
+        </app-icon>
+      </button>
     }
   }
 </div>
