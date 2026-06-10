@@ -23,7 +23,7 @@
     @if (!isPatient) {
       <ui-input type="file" accept="image/*" [multiple]="false" [maxSize]="5242880"
         placeholder="Glissez-déposez votre photo de profil ou cliquez pour sélectionner"
-        [initialFiles]="getInitialFiles()"
+        [initialFiles]="avatarFiles"
         (filesSelected)="onAvatarSelected($event)" (fileError)="onAvatarError($event)" (fileRemoved)="onAvatarRemoved($event)">
       </ui-input>
     }
@@ -61,8 +61,8 @@
       (input)="updateFormControl(passwordForm, 'confirmPassword', $any($event.target).value)"
       placeholder="Confirmez votre nouveau mot de passe" id="confirmPassword" [required]="true"
       [touched]="passwordForm.get('confirmPassword')?.touched || false"
-      [dirty]="passwordForm.get('confirmPassword')?.dirty || false" [message]="getConfirmPasswordMessage()"
-      [messageType]="getConfirmPasswordMessageType()">
+      [dirty]="passwordForm.get('confirmPassword')?.dirty || false" [message]="confirmPasswordMessage.message"
+      [messageType]="confirmPasswordMessage.type">
     </ui-input>
   </div>
   <div class="form-actions">

@@ -1,16 +1,20 @@
 import { ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { AuthService, MeResponse } from '../../../core/services/auth.service';
+import { AuthService, AuthUser } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { InputMessageType, UiInputComponent } from '../../../components/input/ui-input.component';
 import { PasswordStrengthIndicatorComponent } from '../../../components/password-strength-indicator/password-strength-indicator.component';
-import { InputErrorMessages } from '../../../core/utils/input-error-messages';
-import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
-import { applyServerValidationErrors } from '../../../core/utils/form-error.utils';
-import { NotificationMessages } from '../../../core/constants/notification-messages';
-import { FormUtils } from '../../../core/utils/form-utils';
+import {
+  applyServerValidationErrors,
+  extractApiError,
+  getBusinessErrorMessage,
+  getInputMessage,
+  isNetworkError,
+} from '../../../core/utils/errors';
+import { clearServerErrors, markFormTouched, updateControl } from '../../../core/utils/form-utils';
 import { PasswordValidator } from '../../../core/validators/password.validator';
+import { matchingFieldsValidator } from '../../../core/validators/matching-fields.validator';
 
 @Component({
   selector: 'app-dashboard-settings-page',
@@ -21,12 +25,13 @@ import { PasswordValidator } from '../../../core/validators/password.validator';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardSettingsPageComponent implements OnInit {
-  currentUser: MeResponse | null = null;
+  currentUser: AuthUser | null = null;
   isLoading = false;
   isProfileLoading = false;
   isPasswordLoading = false;
   isAvatarLoading = false;
   selectedAvatarFile: File | null = null;
+  avatarFiles: File[] = [];
 
   profileForm: FormGroup;
   passwordForm: FormGroup;
@@ -47,7 +52,7 @@ export class DashboardSettingsPageComponent implements OnInit {
       newPassword: ['', [Validators.required, PasswordValidator.strong()]],
       confirmPassword: ['', [Validators.required]],
     }, {
-      validators: this.passwordMatchValidator,
+      validators: matchingFieldsValidator('newPassword', 'confirmPassword'),
     });
   }
 
@@ -57,7 +62,7 @@ export class DashboardSettingsPageComponent implements OnInit {
 
   /** Le patient n'a pas de photo de profil : la section avatar est masquée. */
   get isPatient(): boolean {
-    return this.authService.isPatient();
+    return this.currentUser?.role === 'PATIENT';
   }
 
   loadUserInfo(): void {
@@ -78,27 +83,11 @@ export class DashboardSettingsPageComponent implements OnInit {
       },
       error: (error) => {
         this.isLoading = false;
-        const extracted = ApiErrorHandler.extractError(error);
-        this.notificationService.show('danger', extracted.message || NotificationMessages.PROFILE_LOAD_ERROR);
+        const extracted = extractApiError(error);
+        this.notificationService.show('danger', extracted.message || 'Erreur lors du chargement du profil');
         this.cdr.markForCheck();
       },
     });
-  }
-
-  passwordMatchValidator(form: FormGroup) {
-    const newPassword = form.get('newPassword');
-    const confirmPassword = form.get('confirmPassword');
-
-    if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
-      confirmPassword.setErrors({ passwordMismatch: true });
-      return { passwordMismatch: true };
-    }
-
-    if (confirmPassword && confirmPassword.hasError('passwordMismatch')) {
-      confirmPassword.setErrors(null);
-    }
-
-    return null;
   }
 
   onUpdateProfile(): void {
@@ -106,14 +95,12 @@ export class DashboardSettingsPageComponent implements OnInit {
       return;
     }
     if (this.profileForm.invalid) {
-      FormUtils.markFormGroupTouched(this.profileForm);
+      markFormTouched(this.profileForm);
       return;
     }
 
     this.isProfileLoading = true;
-    // Réinitialiser les erreurs serveur
-    this.profileForm.get('nom')?.setErrors(null);
-    this.profileForm.get('prenom')?.setErrors(null);
+    clearServerErrors(this.profileForm);
 
     const { nom, prenom } = this.profileForm.value;
 
@@ -121,12 +108,12 @@ export class DashboardSettingsPageComponent implements OnInit {
       next: (updatedUser) => {
         this.currentUser = updatedUser;
         this.isProfileLoading = false;
-        this.notificationService.show('success', NotificationMessages.PROFILE_UPDATE_SUCCESS);
+        this.notificationService.show('success', 'Profil mis à jour avec succès');
         this.cdr.markForCheck();
       },
       error: (error) => {
         this.isProfileLoading = false;
-        this.handleFormError(this.profileForm, error, NotificationMessages.PROFILE_UPDATE_ERROR);
+        this.handleFormError(this.profileForm, error, 'Erreur lors de la mise à jour du profil');
       },
     });
   }
@@ -136,29 +123,26 @@ export class DashboardSettingsPageComponent implements OnInit {
       return;
     }
     if (this.passwordForm.invalid) {
-      FormUtils.markFormGroupTouched(this.passwordForm);
+      markFormTouched(this.passwordForm);
       return;
     }
 
     this.isPasswordLoading = true;
-    // Réinitialiser les erreurs serveur
-    this.passwordForm.get('currentPassword')?.setErrors(null);
-    this.passwordForm.get('newPassword')?.setErrors(null);
-    this.passwordForm.get('confirmPassword')?.setErrors(null);
+    clearServerErrors(this.passwordForm);
 
     const { currentPassword, newPassword } = this.passwordForm.value;
 
     this.authService.changePassword({ currentPassword, newPassword }).subscribe({
       next: () => {
         this.isPasswordLoading = false;
-        this.notificationService.show('success', NotificationMessages.PASSWORD_CHANGE_SUCCESS);
+        this.notificationService.show('success', 'Mot de passe modifié avec succès');
         this.passwordForm.reset();
         this.cdr.markForCheck();
       },
       error: (error) => {
         this.isPasswordLoading = false;
 
-        const extracted = ApiErrorHandler.extractError(error);
+        const extracted = extractApiError(error);
 
         // Gérer les erreurs métier spécifiques aux champs
         const fieldErrorMappings: Record<string, string> = {
@@ -171,7 +155,7 @@ export class DashboardSettingsPageComponent implements OnInit {
           const control = this.passwordForm.get(targetField);
           if (control) {
             const message = extracted.code
-              ? InputErrorMessages.getBusinessErrorMessage(extracted.code) || extracted.message
+              ? getBusinessErrorMessage(extracted.code) || extracted.message
               : extracted.message;
             control.setErrors({ serverError: message });
             control.markAsTouched();
@@ -180,7 +164,7 @@ export class DashboardSettingsPageComponent implements OnInit {
           return;
         }
 
-        this.handleFormError(this.passwordForm, error, NotificationMessages.PASSWORD_CHANGE_ERROR);
+        this.handleFormError(this.passwordForm, error, 'Erreur lors du changement de mot de passe');
       },
     });
   }
@@ -188,18 +172,18 @@ export class DashboardSettingsPageComponent implements OnInit {
   /**
    * Gestion commune des erreurs de formulaire (réseau, validation Zod, erreurs générales)
    */
-  private handleFormError(form: FormGroup, error: any, fallbackMessage: string): void {
-    const extracted = ApiErrorHandler.extractError(error);
+  private handleFormError(form: FormGroup, error: unknown, fallbackMessage: string): void {
+    const extracted = extractApiError(error);
 
     // Gérer les erreurs réseau en premier
-    if (ApiErrorHandler.isNetworkError(error)) {
+    if (isNetworkError(error)) {
       this.notificationService.show('danger', extracted.message, 5000);
       this.cdr.markForCheck();
       return;
     }
 
     // Réinitialiser les erreurs serveur précédentes sur tous les champs
-    this.clearServerErrors(form);
+    clearServerErrors(form);
 
     // Gérer les erreurs de validation Zod
     if (applyServerValidationErrors(form, error)) {
@@ -213,29 +197,11 @@ export class DashboardSettingsPageComponent implements OnInit {
   }
 
   /**
-   * Supprime les erreurs 'serverError' de tous les contrôles du formulaire
-   */
-  private clearServerErrors(form: FormGroup): void {
-    Object.keys(form.controls).forEach((key) => {
-      const control = form.get(key);
-      if (control?.hasError('serverError')) {
-        control.setErrors(null);
-        control.updateValueAndValidity();
-      }
-    });
-  }
-
-  hasError(form: FormGroup, fieldName: string, errorType: string): boolean {
-    const field = form.get(fieldName);
-    return !!(field && field.hasError(errorType) && (field.touched || field.dirty));
-  }
-
-  /**
    * Obtient le message et le type pour un champ du formulaire
    * Utilise la classe centralisée InputErrorMessages
    */
   getInputMessage(form: FormGroup, fieldName: string): { message: string; type: InputMessageType | '' } {
-    return InputErrorMessages.getInputMessage(form, fieldName, {
+    return getInputMessage(form, fieldName, {
       showWarningForPassword: fieldName === 'newPassword',
       passwordMinLength: 12
     });
@@ -245,17 +211,7 @@ export class DashboardSettingsPageComponent implements OnInit {
    * Met à jour la valeur d'un formControl
    */
   updateFormControl(form: FormGroup, fieldName: string, value: string): void {
-    const control = form.get(fieldName);
-    if (control) {
-      control.setValue(value);
-      control.markAsTouched();
-      // Réinitialiser les erreurs serveur lors de la saisie
-      if (control.hasError('serverError')) {
-        const errors = { ...control.errors };
-        delete errors['serverError'];
-        control.setErrors(Object.keys(errors).length > 0 ? errors : null);
-      }
-    }
+    updateControl(form, fieldName, value);
   }
 
   // Getters pour les messages des champs du formulaire de profil
@@ -281,22 +237,6 @@ export class DashboardSettingsPageComponent implements OnInit {
   }
 
   /**
-   * Obtient le message pour le champ de confirmation de mot de passe
-   */
-  getConfirmPasswordMessage(): string {
-    const result = this.getInputMessage(this.passwordForm, 'confirmPassword');
-    return result.message;
-  }
-
-  /**
-   * Obtient le type de message pour le champ de confirmation de mot de passe
-   */
-  getConfirmPasswordMessageType(): InputMessageType | '' {
-    const result = this.getInputMessage(this.passwordForm, 'confirmPassword');
-    return result.type;
-  }
-
-  /**
    * Obtient la valeur du nouveau mot de passe pour l'indicateur de force
    */
   get newPasswordValue(): string {
@@ -311,12 +251,13 @@ export class DashboardSettingsPageComponent implements OnInit {
 
     const file = files[0];
     this.selectedAvatarFile = file;
+    this.avatarFiles = [file];
     this.isAvatarLoading = true;
 
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       const avatarUrl = e.target?.result as string;
-      this.uploadAvatar(avatarUrl, file.name);
+      this.uploadAvatar(avatarUrl);
     };
 
     reader.onerror = () => {
@@ -331,8 +272,8 @@ export class DashboardSettingsPageComponent implements OnInit {
   /**
    * Upload l'avatar vers le serveur
    */
-  private uploadAvatar(avatarUrl: string, fileName: string): void {
-    this.authService.updateAvatar({ avatarUrl, avatarFileName: fileName }).subscribe({
+  private uploadAvatar(avatarUrl: string): void {
+    this.authService.updateAvatar({ avatarUrl }).subscribe({
       next: (updatedUser) => {
         this.currentUser = updatedUser;
         this.isAvatarLoading = false;
@@ -356,10 +297,12 @@ export class DashboardSettingsPageComponent implements OnInit {
   onAvatarRemoved(remainingFiles: File[]): void {
     if (remainingFiles.length === 0) {
       this.selectedAvatarFile = null;
+      this.avatarFiles = [];
       this.cdr.detectChanges();
       this.deleteAvatar();
     } else {
       this.selectedAvatarFile = remainingFiles[0];
+      this.avatarFiles = [...remainingFiles];
       this.cdr.markForCheck();
     }
   }
@@ -383,19 +326,11 @@ export class DashboardSettingsPageComponent implements OnInit {
   /**
    * Gère les erreurs liées à l'avatar
    */
-  private handleAvatarError(error: any, defaultMessage: string): void {
+  private handleAvatarError(error: unknown, defaultMessage: string): void {
     this.isAvatarLoading = false;
-    const extracted = ApiErrorHandler.extractError(error);
+    const extracted = extractApiError(error);
     this.notificationService.show('danger', extracted.message || defaultMessage);
     this.cdr.markForCheck();
-  }
-
-  /**
-   * Retourne les fichiers initiaux pour l'input file
-   * Crée toujours un nouveau tableau pour forcer la détection de changement
-   */
-  getInitialFiles(): File[] {
-    return this.selectedAvatarFile ? [this.selectedAvatarFile] : [];
   }
 
   /**
@@ -411,15 +346,13 @@ export class DashboardSettingsPageComponent implements OnInit {
       // Pour les URLs HTTP, créer un File placeholder
       this.selectedAvatarFile = new File([new Blob([''], { type: 'image/png' })], fileName, { type: 'image/png' });
     }
+    this.avatarFiles = this.selectedAvatarFile ? [this.selectedAvatarFile] : [];
   }
 
   /**
    * Récupère le nom de fichier de l'avatar (depuis la base ou l'URL)
    */
   private getAvatarFileName(avatarUrl: string): string {
-    if (this.currentUser?.avatarFileName) {
-      return this.currentUser.avatarFileName;
-    }
     return avatarUrl.includes('/') 
       ? avatarUrl.split('/').pop()?.split('?')[0] || 'avatar.png'
       : 'avatar.png';
