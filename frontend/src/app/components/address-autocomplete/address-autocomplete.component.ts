@@ -2,15 +2,17 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   ElementRef,
   EventEmitter,
   HostListener,
   Input,
-  OnDestroy,
   OnInit,
   Output,
+  inject,
 } from '@angular/core';
-import { Subject, Subscription, debounceTime, distinctUntilChanged, of, switchMap, catchError } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime, distinctUntilChanged, of, switchMap, catchError } from 'rxjs';
 import { AppIconComponent } from '../icon/app-icon.component';
 import { InputMessageType } from '../input/ui-input.component';
 import { AuthService, AddressSuggestion } from '../../core/services/auth.service';
@@ -27,7 +29,8 @@ import { AuthService, AddressSuggestion } from '../../core/services/auth.service
   styleUrl: './address-autocomplete.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AddressAutocompleteComponent implements OnInit, OnDestroy {
+export class AddressAutocompleteComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   @Input() value = '';
   @Input() label = '';
   @Input() id = 'address';
@@ -42,7 +45,6 @@ export class AddressAutocompleteComponent implements OnInit, OnDestroy {
   isOpen = false;
 
   private readonly query$ = new Subject<string>();
-  private sub?: Subscription;
 
   constructor(
     private readonly authService: AuthService,
@@ -51,7 +53,7 @@ export class AddressAutocompleteComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.sub = this.query$
+    this.query$
       .pipe(
         debounceTime(300),
         distinctUntilChanged(),
@@ -59,17 +61,14 @@ export class AddressAutocompleteComponent implements OnInit, OnDestroy {
           q.trim().length < 3
             ? of([] as AddressSuggestion[])
             : this.authService.searchAddresses(q).pipe(catchError(() => of([] as AddressSuggestion[])))
-        )
+        ),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((list) => {
         this.suggestions = list;
         this.isOpen = list.length > 0;
         this.cdr.markForCheck();
       });
-  }
-
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
   }
 
   onInput(event: Event): void {

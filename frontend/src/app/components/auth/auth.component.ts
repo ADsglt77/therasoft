@@ -15,31 +15,33 @@ import { PasswordStrengthIndicatorComponent } from '../password-strength-indicat
 import { UiStepperComponent, StepperStep } from '../stepper/ui-stepper.component';
 import { AddressSuggestion, AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { InputErrorMessages } from '../../core/utils/input-error-messages';
-import { ApiErrorHandler } from '../../core/utils/api-error-handler';
-import { applyServerValidationErrors } from '../../core/utils/form-error.utils';
-import { NotificationMessages } from '../../core/constants/notification-messages';
-import { FormUtils } from '../../core/utils/form-utils';
+import {
+  applyServerValidationErrors,
+  extractApiError,
+  getBusinessErrorMessage,
+  getInputMessage,
+  isNetworkError,
+} from '../../core/utils/errors';
+import {
+  clearServerErrors,
+  markFormTouched,
+  setServerError,
+  updateControl,
+} from '../../core/utils/form-utils';
 import { PasswordValidator } from '../../core/validators/password.validator';
-
-function localDateKey(date = new Date()): string {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-');
-}
+import { matchingFieldsValidator } from '../../core/validators/matching-fields.validator';
+import { take } from 'rxjs';
+import { parisDateKey, parseDateKey } from '../../core/utils/date.utils';
 
 function dateNotInFuture(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
   if (!value) return null;
 
-  const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+  if (!parseDateKey(value)) {
     return { invalidDate: true };
   }
 
-  return value > localDateKey() ? { futureDate: true } : null;
+  return value > parisDateKey() ? { futureDate: true } : null;
 }
 
 @Component({
@@ -62,7 +64,7 @@ export class AuthComponent implements OnInit {
     { value: 'F', label: 'Féminin' },
     { value: 'X', label: 'Autre' },
   ];
-  readonly maxDateNaissance = localDateKey();
+  readonly maxDateNaissance = parisDateKey();
 
   // Wizard d'inscription : étape courante + champs validés par étape.
   registerStep = 0;
@@ -102,10 +104,8 @@ export class AuthComponent implements OnInit {
       confirmPassword: ['', [Validators.required]],
       medecinId: ['', [Validators.required]],
       adresse: ['', [Validators.required, Validators.minLength(3)]],
-      latitude: [null],
-      longitude: [null],
     }, {
-      validators: this.passwordMatchValidator
+      validators: matchingFieldsValidator('password', 'confirmPassword')
     });
   }
 
@@ -122,17 +122,22 @@ export class AuthComponent implements OnInit {
     // Déterminer le mode selon l'URL
     this.isLoginMode = currentPath === '/login';
     
-    // Si l'utilisateur est déjà authentifié, rediriger selon son rôle
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate([this.authService.isPatient() ? '/prendre-rendez-vous' : '/calendar']);
-      return;
-    }
+    this.authService
+      .restoreSession()
+      .pipe(take(1))
+      .subscribe((user) => {
+        if (user) {
+          void this.router.navigate([
+            user.role === 'PATIENT' ? '/prendre-rendez-vous' : '/calendar',
+          ]);
+        }
+      });
 
     // Charger la liste des médecins pour le select d'inscription patient
     this.loadMedecins();
 
     // Pré-remplir l'email si passé en query param (après inscription)
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(take(1)).subscribe(params => {
       if (params['email'] && this.isLoginMode) {
         this.loginForm.patchValue({ email: params['email'] });
       }
@@ -144,43 +149,13 @@ export class AuthComponent implements OnInit {
       next: ({ medecins }) => {
         this.medecinOptions = medecins.map((m) => ({
           value: m.id,
-          label: `Dr ${m.prenom} ${m.nom}${m.specialite ? ' — ' + m.specialite : ''}`,
+          label: `Dr ${m.prenom} ${m.nom}`,
         }));
       },
       error: () => {
         this.medecinOptions = [];
       },
     });
-  }
-
-  /**
-   * Validateur personnalisé pour vérifier que les mots de passe correspondent
-   */
-  passwordMatchValidator(form: FormGroup) {
-    const password = form.get('password');
-    const confirmPassword = form.get('confirmPassword');
-    
-    if (password && confirmPassword && password.value !== confirmPassword.value) {
-      confirmPassword.setErrors({ passwordMismatch: true });
-      return { passwordMismatch: true };
-    }
-    
-    if (confirmPassword && confirmPassword.hasError('passwordMismatch')) {
-      confirmPassword.setErrors(null);
-    }
-    
-    return null;
-  }
-
-  toggleMode(): void {
-    this.isLoginMode = !this.isLoginMode;
-    // Réinitialiser les formulaires
-    this.loginForm.reset();
-    this.registerForm.reset();
-
-    // Naviguer vers l'autre route
-    const targetRoute = this.isLoginMode ? '/login' : '/register';
-    this.router.navigate([targetRoute]);
   }
 
   // --- Wizard d'inscription (étapes) ---
@@ -244,20 +219,20 @@ export class AuthComponent implements OnInit {
 
   private handleLogin(): void {
     if (this.loginForm.invalid) {
-      FormUtils.markFormGroupTouched(this.loginForm);
+      markFormTouched(this.loginForm);
       return;
     }
 
     const fields = ['email', 'password'];
     this.isLoading = true;
-    this.clearServerErrors(this.loginForm, fields);
+    clearServerErrors(this.loginForm, fields);
 
     const { email, password } = this.loginForm.value;
 
     this.authService.login({ email, password }).subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.notificationService.show('success', NotificationMessages.AUTH_LOGIN_SUCCESS);
+        this.notificationService.show('success', 'Connexion réussie !');
         this.router.navigate([res.role === 'PATIENT' ? '/prendre-rendez-vous' : '/calendar']);
       },
       error: (error) => {
@@ -272,7 +247,7 @@ export class AuthComponent implements OnInit {
 
   private handleRegister(): void {
     if (this.registerForm.invalid) {
-      FormUtils.markFormGroupTouched(this.registerForm);
+      markFormTouched(this.registerForm);
       return;
     }
 
@@ -287,7 +262,7 @@ export class AuthComponent implements OnInit {
       'adresse',
     ];
     this.isLoading = true;
-    this.clearServerErrors(this.registerForm, fields);
+    clearServerErrors(this.registerForm, fields);
 
     const {
       nom,
@@ -298,8 +273,6 @@ export class AuthComponent implements OnInit {
       password,
       medecinId,
       adresse,
-      latitude,
-      longitude,
     } = this.registerForm.value;
 
     this.authService
@@ -312,13 +285,11 @@ export class AuthComponent implements OnInit {
         password,
         medecinId: Number(medecinId),
         adresse,
-        latitude: Number(latitude),
-        longitude: Number(longitude),
       })
       .subscribe({
         next: () => {
           this.isLoading = false;
-          this.notificationService.show('success', NotificationMessages.AUTH_REGISTER_SUCCESS, 5000);
+          this.notificationService.show('success', 'Compte créé avec succès !', 5000);
           this.router.navigate(['/prendre-rendez-vous']);
         },
         error: (error) => {
@@ -329,20 +300,6 @@ export class AuthComponent implements OnInit {
           });
         },
       });
-  }
-
-  /** Réinitialise les erreurs des champs donnés (avant un nouvel envoi). */
-  private clearServerErrors(form: FormGroup, fields: string[]): void {
-    fields.forEach((field) => form.get(field)?.setErrors(null));
-  }
-
-  /** Applique une erreur serveur à un champ et le marque comme touché. */
-  private setFieldServerError(form: FormGroup, fieldName: string, message: string): void {
-    const control = form.get(fieldName);
-    if (control) {
-      control.setErrors({ serverError: message });
-      control.markAsTouched();
-    }
   }
 
   /**
@@ -356,14 +313,14 @@ export class AuthComponent implements OnInit {
     fields: string[],
     businessErrorFields: Record<string, string>
   ): void {
-    const extracted = ApiErrorHandler.extractError(error);
+    const extracted = extractApiError(error);
 
-    if (ApiErrorHandler.isNetworkError(error)) {
+    if (isNetworkError(error)) {
       this.notificationService.show('danger', extracted.message, 5000);
       return;
     }
 
-    this.clearServerErrors(form, fields);
+    clearServerErrors(form, fields);
 
     if (applyServerValidationErrors(form, error)) {
       return;
@@ -372,8 +329,7 @@ export class AuthComponent implements OnInit {
     const code = extracted.code;
     const businessField = code ? businessErrorFields[code] : undefined;
     if (code && businessField) {
-      const message = InputErrorMessages.getBusinessErrorMessage(code) || extracted.message;
-      this.setFieldServerError(form, businessField, message);
+      setServerError(form, businessField, getBusinessErrorMessage(code) || extracted.message);
     } else {
       this.notificationService.show('danger', extracted.message);
     }
@@ -381,19 +337,11 @@ export class AuthComponent implements OnInit {
 
 
   /**
-   * Vérifie si un champ a une erreur
-   */
-  hasError(form: FormGroup, fieldName: string, errorType: string): boolean {
-    const field = form.get(fieldName);
-    return !!(field && field.hasError(errorType) && (field.touched || field.dirty));
-  }
-
-  /**
    * Obtient le message et le type pour un champ du formulaire
    * Utilise la classe centralisée InputErrorMessages
    */
   getInputMessage(form: FormGroup, fieldName: string): { message: string; type: InputMessageType | '' } {
-    return InputErrorMessages.getInputMessage(form, fieldName, {
+    return getInputMessage(form, fieldName, {
       showWarningForPassword: true,
       passwordMinLength: 12
     });
@@ -403,17 +351,7 @@ export class AuthComponent implements OnInit {
    * Met à jour la valeur d'un formControl
    */
   updateFormControl(form: FormGroup, fieldName: string, value: string): void {
-    const control = form.get(fieldName);
-    if (control) {
-      control.setValue(value);
-      control.markAsTouched();
-      // Réinitialiser les erreurs serveur lors de la saisie
-      if (control.hasError('serverError')) {
-        const errors = { ...control.errors };
-        delete errors['serverError'];
-        control.setErrors(Object.keys(errors).length > 0 ? errors : null);
-      }
-    }
+    updateControl(form, fieldName, value);
   }
 
   // Getters pour les messages du formulaire de connexion
@@ -436,7 +374,6 @@ export class AuthComponent implements OnInit {
 
   updateRegisterAddress(value: string): void {
     this.updateFormControl(this.registerForm, 'adresse', value);
-    this.registerForm.patchValue({ latitude: null, longitude: null });
     const control = this.registerForm.get('adresse');
     if (value.trim().length >= 3) {
       control?.setErrors({ addressNotSelected: true });
@@ -446,8 +383,6 @@ export class AuthComponent implements OnInit {
   selectRegisterAddress(suggestion: AddressSuggestion): void {
     this.registerForm.patchValue({
       adresse: suggestion.label,
-      latitude: suggestion.latitude,
-      longitude: suggestion.longitude,
     });
     const control = this.registerForm.get('adresse');
     control?.setErrors(null);
@@ -476,10 +411,6 @@ export class AuthComponent implements OnInit {
 
   get registerPasswordMessage() {
     return this.getInputMessage(this.registerForm, 'password');
-  }
-
-  get registerConfirmPasswordMessage() {
-    return this.getInputMessage(this.registerForm, 'confirmPassword');
   }
 
   /**

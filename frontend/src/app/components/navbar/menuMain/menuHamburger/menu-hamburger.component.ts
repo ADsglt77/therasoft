@@ -23,28 +23,16 @@ export class MenuHamburgerComponent {
   ) {}
 
   onLogout(): void {
-    // Éviter les appels multiples
     if (this.isLoggingOut) {
       return;
     }
 
     this.isLoggingOut = true;
 
-    this.authService.logout().subscribe({
-      next: () => {
-        this.notificationService.show('information', 'Déconnexion réussie');
-        // Émettre l'événement de logout pour notifier le parent
-        this.logout.emit();
-        this.isLoggingOut = false;
-      },
-      error: (err) => {
-        console.error('Erreur lors de la déconnexion:', err);
-        // En cas d'erreur, le token est déjà nettoyé et la redirection est gérée dans AuthService
-        // On affiche quand même une notification de déconnexion réussie
-        this.notificationService.show('information', 'Déconnexion réussie');
-        this.logout.emit();
-        this.isLoggingOut = false;
-      },
+    this.authService.logout().subscribe(() => {
+      this.notificationService.show('information', 'Déconnexion réussie');
+      this.logout.emit();
+      this.isLoggingOut = false;
     });
   }
 }

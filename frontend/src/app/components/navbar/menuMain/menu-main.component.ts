@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostBinding, HostListener, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, HostBinding, HostListener, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { UiButtonComponent } from '../../button/ui-button.component';
@@ -6,7 +7,7 @@ import { UiAvatarComponent } from '../../avatar/ui-avatar.component';
 import { AppIconComponent } from '../../icon/app-icon.component';
 import { MenuHamburgerComponent } from './menuHamburger/menu-hamburger.component';
 import { NavbarLinksComponent } from '../navbar-links/navbar-links.component';
-import { AuthService, MeResponse } from '../../../core/services/auth.service';
+import { AuthService, AuthUser } from '../../../core/services/auth.service';
 import { navLinksForRole, NavLink } from '../../../core/constants/nav-links';
 import { ThemeService } from '../../../shared/theme/theme.service';
 
@@ -25,8 +26,9 @@ import { ThemeService } from '../../../shared/theme/theme.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MenuMainComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   isAuthenticated = false;
-  currentUser: MeResponse | null = null;
+  currentUser: AuthUser | null = null;
   showHamburgerMenu = false;
   mobileMenuOpen = false;
 
@@ -49,7 +51,10 @@ export class MenuMainComponent implements OnInit {
     this.currentTheme = this.themeService.getTheme();
 
     this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe(() => {
         this.checkAuthentication();
         this.closeMobileMenu();
@@ -64,24 +69,14 @@ export class MenuMainComponent implements OnInit {
   }
 
   checkAuthentication(): void {
-    this.isAuthenticated = this.authService.isAuthenticated();
-
-    if (this.isAuthenticated) {
-      this.authService.getMe().subscribe({
-        next: (user) => {
-          this.currentUser = user;
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.isAuthenticated = false;
-          this.currentUser = null;
-          this.cdr.markForCheck();
-        },
+    this.authService
+      .restoreSession()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((user) => {
+        this.currentUser = user;
+        this.isAuthenticated = user !== null;
+        this.cdr.markForCheck();
       });
-    } else {
-      this.currentUser = null;
-      this.cdr.markForCheck();
-    }
   }
 
   /** Liens de navigation selon le rôle (source unique partagée avec le dashboard). */
@@ -99,10 +94,6 @@ export class MenuMainComponent implements OnInit {
   onLoginClick(): void {
     this.closeMobileMenu();
     this.router.navigate(['/login']);
-  }
-
-  refreshAuthState(): void {
-    this.checkAuthentication();
   }
 
   onAvatarMouseEnter(): void {
@@ -127,10 +118,7 @@ export class MenuMainComponent implements OnInit {
 
   onMobileLogout(): void {
     this.closeMobileMenu();
-    this.authService.logout().subscribe({
-      next: () => this.checkAuthentication(),
-      error: () => this.checkAuthentication(),
-    });
+    this.authService.logout().subscribe(() => this.checkAuthentication());
   }
 
   toggleMobileMenu(): void {

@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap, BehaviorSubject, shareReplay, catchError, finalize, of, map, from, switchMap } from 'rxjs';
-import { ApiClientService } from '../../api/api-client.service';
-import { RoleStorageService } from './role-storage.service';
 import { Router } from '@angular/router';
 import { authClient } from './auth.client';
+import { environment } from '../../../environments/environment';
 
 export interface LoginRequest {
   email: string;
@@ -20,8 +19,6 @@ export interface PatientRegisterRequest {
   password: string;
   medecinId: number;
   adresse: string;
-  latitude: number;
-  longitude: number;
 }
 
 export interface AddressSuggestion {
@@ -36,7 +33,6 @@ export interface MedecinOption {
   id: number;
   nom: string;
   prenom: string;
-  specialite?: string | null;
 }
 
 export interface AuthUser {
@@ -46,15 +42,12 @@ export interface AuthUser {
   role: string;
   email?: string;
   avatarUrl?: string | null;
-  avatarFileName?: string | null;
   adresse?: string | null;
   dateNaissance?: string | null;
   sexe?: string | null;
   emailVerified?: boolean;
   medecin?: MedecinOption | null;
 }
-
-export type MeResponse = AuthUser;
 
 export interface AuthResponse {
   role: string;
@@ -64,30 +57,19 @@ export interface AuthResponse {
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService extends ApiClientService {
-  constructor(
-    http: HttpClient,
-    private roleStorage: RoleStorageService,
-    private router: Router
-  ) {
-    super(http);
-  }
-
-  private currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable().pipe(shareReplay(1));
-
-  /** Requête de restauration de session en cours (partagée entre guards concurrents). */
+export class AuthService {
+  private readonly baseUrl = environment.apiBaseUrl;
+  private readonly currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
+  readonly currentUser$ = this.currentUserSubject.asObservable();
   private restoreRequest$?: Observable<AuthUser | null>;
+
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) {}
 
   private setCurrentUser(user: AuthUser | null): void {
     this.currentUserSubject.next(user);
-    if (user) {
-      this.roleStorage.setRole(user.role);
-    }
-  }
-
-  getCurrentUser(): Observable<AuthUser | null> {
-    return this.currentUser$;
   }
 
   login(data: LoginRequest): Observable<AuthResponse> {
@@ -109,22 +91,31 @@ export class AuthService extends ApiClientService {
       })
     ).pipe(
       switchMap((res) => {
-        if (res.error) throw new Error(res.error.message || "Erreur d'inscription");
-        // Complète le profil patient (adresse + médecin choisi) créé par Better Auth.
-        this.roleStorage.setRole('PATIENT');
-        return this.http.patch<AuthUser>(`${this.baseUrl}/auth/patient/me`, {
-          nom: data.nom,
-          prenom: data.prenom,
-          dateNaissance: data.dateNaissance,
-          sexe: data.sexe,
-          adresse: data.adresse,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          medecinId: data.medecinId,
-        });
+        if (!res.error) {
+          return this.completePatientRegistration(data);
+        }
+        return from(authClient.getSession()).pipe(
+          switchMap((session) => {
+            if (session.data?.user.email === data.email) {
+              return this.completePatientRegistration(data);
+            }
+            throw new Error(res.error.message || "Erreur d'inscription");
+          })
+        );
       }),
       map((user) => this.applyAuth(user))
     );
+  }
+
+  private completePatientRegistration(data: PatientRegisterRequest): Observable<AuthUser> {
+    return this.http.patch<AuthUser>(`${this.baseUrl}/auth/patient/me`, {
+      nom: data.nom,
+      prenom: data.prenom,
+      dateNaissance: data.dateNaissance,
+      sexe: data.sexe,
+      adresse: data.adresse,
+      medecinId: data.medecinId,
+    });
   }
 
   getMedecins(): Observable<{ medecins: MedecinOption[] }> {
@@ -144,7 +135,6 @@ export class AuthService extends ApiClientService {
   }
 
   clearSession(): void {
-    this.roleStorage.clear();
     this.setCurrentUser(null);
   }
 
@@ -159,20 +149,14 @@ export class AuthService extends ApiClientService {
     );
   }
 
-  /**
-   * Charge le profil de l'utilisateur connecté. L'endpoint dépend du rôle ;
-   * si le rôle n'est pas connu localement (rechargement, storage vidé), on le
-   * récupère depuis la session Better Auth.
-   */
   getMe(): Observable<AuthUser> {
-    const role = this.roleStorage.getRole();
-    if (role) {
-      return this.fetchProfile(role === 'PATIENT');
-    }
     return from(authClient.getSession()).pipe(
       switchMap((session) => {
+        if (!session.data?.user) {
+          this.clearSession();
+          throw new Error('Session expirée');
+        }
         const sessionRole = (session.data?.user as { role?: string } | undefined)?.role ?? 'PATIENT';
-        this.roleStorage.setRole(sessionRole);
         return this.fetchProfile(sessionRole === 'PATIENT');
       })
     );
@@ -183,11 +167,6 @@ export class AuthService extends ApiClientService {
     return this.http.get<AuthUser>(url).pipe(tap((user) => this.setCurrentUser(user)));
   }
 
-  /**
-   * Restaure l'utilisateur courant à partir de la session Better Auth (cookie) :
-   * source de vérité pour les guards. Renvoie l'utilisateur, ou `null` si non
-   * authentifié. Les appels concurrents partagent la même requête réseau.
-   */
   restoreSession(): Observable<AuthUser | null> {
     const current = this.currentUserSubject.value;
     if (current) {
@@ -202,13 +181,18 @@ export class AuthService extends ApiClientService {
             return of(null);
           }
           const role = (sessionUser as { role?: string }).role ?? 'PATIENT';
-          this.roleStorage.setRole(role);
           return this.fetchProfile(role === 'PATIENT').pipe(
             map((user) => user as AuthUser | null),
-            catchError(() => of(null))
+            catchError(() => {
+              this.clearSession();
+              return of(null);
+            })
           );
         }),
-        catchError(() => of(null)),
+        catchError(() => {
+          this.clearSession();
+          return of(null);
+        }),
         finalize(() => {
           this.restoreRequest$ = undefined;
         }),
@@ -238,22 +222,14 @@ export class AuthService extends ApiClientService {
     );
   }
 
-  updateAvatar(data: { avatarUrl: string | null; avatarFileName?: string | null }): Observable<AuthUser> {
+  updateAvatar(data: { avatarUrl: string | null }): Observable<AuthUser> {
     return this.http
       .patch<AuthUser>(`${this.baseUrl}/auth/avatar`, data)
       .pipe(tap((updatedUser) => this.setCurrentUser(updatedUser)));
   }
 
-  isAuthenticated(): boolean {
-    return !!this.roleStorage.getRole();
-  }
-
-  getRole(): string | null {
-    return this.roleStorage.getRole();
-  }
-
-  isPatient(): boolean {
-    return this.getRole() === 'PATIENT';
+  private isPatient(): boolean {
+    return this.currentUserSubject.value?.role === 'PATIENT';
   }
 
   verifyEmail(token: string): Observable<{ message: string }> {
