@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { FeedbackCardComponent, FeedbackVariant } from '../../../components/feedback-card/feedback-card.component';
@@ -24,6 +24,7 @@ interface VerifyView {
   imports: [UiButtonComponent, RouterLink, FeedbackCardComponent],
   templateUrl: './verify-email-page.component.html',
   host: { style: 'display: block' },
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VerifyEmailPageComponent implements OnInit {
   state: VerifyState = 'loading';
@@ -31,7 +32,8 @@ export class VerifyEmailPageComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   get view(): VerifyView {
@@ -71,10 +73,14 @@ export class VerifyEmailPageComponent implements OnInit {
       return;
     }
     this.authService.verifyEmail(token).subscribe({
-      next: () => (this.state = 'success'),
+      next: () => {
+        this.state = 'success';
+        this.cdr.markForCheck();
+      },
       error: (err) => {
         this.state = 'error';
         this.errorMessage = err?.error?.error?.message || 'Lien de vérification invalide ou expiré.';
+        this.cdr.markForCheck();
       },
     });
   }
