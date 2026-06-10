@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
@@ -7,7 +8,7 @@ import { TimetableComponent } from '../../../components/timetable/timetable.comp
 import { PlanningService, Rdv } from '../../../core/services/planning.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { formatTime, formatDateKey } from '../../../core/utils/date.utils';
-import { forkJoin, Subscription } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import {
   CalendarDayStatus,
   dayStatusBadgeText,
@@ -49,16 +50,17 @@ type TimelineItem =
   imports: [AppIconComponent, UiBadgeComponent, NavCalendarComponent, TimetableComponent],
   templateUrl: './dashboard-planning-day-page.component.html',
   styleUrl: './dashboard-planning-day-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
+export class DashboardPlanningDayPageComponent {
   day: string | null = null;
   formattedDate: string = '';
   date: Date | null = null;
-  
+
   timetableSlots: TimetableSlot[] = [];
   vacationSite: string | null = null;
   isLoadingRdvs = false;
-  private subscriptions = new Subscription();
+  private readonly destroyRef = inject(DestroyRef);
   private readonly timelinePxPerMinute = 0.45;
   private readonly timelineMinGapPx = 16;
 
@@ -66,23 +68,17 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private planningService: PlanningService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private cdr: ChangeDetectorRef
   ) {
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       this.day = params.get('date');
       if (this.day) {
         this.parseDate(this.day);
         this.loadRdvs();
       }
+      this.cdr.markForCheck();
     });
-  }
-
-  ngOnInit(): void {
-    // Le chargement est déjà géré dans le constructeur via paramMap
-  }
-
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
   }
 
   parseDate(dateStr: string): void {
@@ -115,10 +111,12 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const sub = forkJoin({
+    forkJoin({
       rdvs: this.planningService.getMyRdvsForDate(this.date),
       vacations: this.planningService.getVacationsForDate(this.date),
-    }).subscribe({
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: ({ rdvs, vacations }) => {
         this.vacationSite = vacations.vacations?.[0]?.site ?? null;
         this.timetableSlots = (rdvs.rdvs || []).map((rdv: Rdv) => {
@@ -139,6 +137,7 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
           };
         });
         this.isLoadingRdvs = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Erreur lors du chargement du planning:', error);
@@ -146,9 +145,9 @@ export class DashboardPlanningDayPageComponent implements OnInit, OnDestroy {
         this.timetableSlots = [];
         this.vacationSite = null;
         this.isLoadingRdvs = false;
+        this.cdr.markForCheck();
       },
     });
-    this.subscriptions.add(sub);
   }
 
   onTimetableActionClick(slotId: string): void {
