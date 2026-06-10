@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
@@ -27,6 +27,7 @@ import { formatModalite as formatModaliteUtil } from '../../../core/constants/mo
   imports: [AppIconComponent, UiInputComponent, UiButtonComponent, UiBadgeComponent],
   templateUrl: './dashboard-patient-detail-page.component.html',
   styleUrl: './dashboard-patient-detail-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   patientId: number | null = null;
@@ -55,7 +56,8 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     private location: Location,
     private notificationService: NotificationService,
     private patientService: PatientService,
-    private voiceRecognitionService: VoiceRecognitionService
+    private voiceRecognitionService: VoiceRecognitionService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   @HostListener('window:resize')
@@ -78,10 +80,12 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           'success',
           newValue ? 'Dossier marqué comme vérifié' : 'Dossier marqué comme non vérifié'
         );
+        this.cdr.markForCheck();
       },
       error: () => {
         this.isSavingVerified = false;
         this.notificationService.show('danger', 'Impossible de mettre à jour le statut du dossier');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -122,6 +126,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       this.patientId = patientIdFromState;
       this.rdvId = rdvId;
       this.loadPatientData();
+      this.cdr.markForCheck();
     });
 
     this.subscriptions.add(sub);
@@ -155,11 +160,13 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           url: `/uploads/dossiers/${f.storedName}`,
         }));
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.isLoading = false;
         this.dossier = null;
         this.notificationService.show('danger', 'Impossible de charger le dossier médical');
+        this.cdr.markForCheck();
       },
     });
 
@@ -213,6 +220,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           } else {
             this.notificationService.show('success', 'Observations mises à jour avec succès');
           }
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.isSavingObservations = false;
@@ -220,6 +228,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           this.observationsValue = this.dossier?.observations || '';
           const extracted = ApiErrorHandler.extractError(error);
           this.notificationService.show('danger', extracted.message || NotificationMessages.GENERIC_ERROR);
+          this.cdr.markForCheck();
         },
       });
 
@@ -316,6 +325,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
               `${response.files.length} fichier(s) ajouté(s) avec succès`
             );
           }
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.isUploadingFiles = false;
@@ -324,6 +334,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
             'danger',
             extracted.message || 'Erreur lors de l\'upload'
           );
+          this.cdr.markForCheck();
         },
       });
     this.subscriptions.add(sub);
@@ -387,6 +398,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           this.applyOperationStatus(status);
           this.isDeletingFileId = null;
           this.notificationService.show('success', `${file.name} supprimé`);
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.isDeletingFileId = null;
@@ -395,6 +407,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
             'danger',
             extracted.message || 'Erreur lors de la suppression'
           );
+          this.cdr.markForCheck();
         },
       });
     this.subscriptions.add(sub);
@@ -417,6 +430,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
 
     this.transcriptSub = this.voiceRecognitionService.transcript$.subscribe((transcript) => {
       this.observationsValue = this.composeObservations(transcript.trim());
+      this.cdr.markForCheck();
     });
 
     this.notificationService.show('success', 'Transcription vocale démarrée. Parlez dans le micro.');
@@ -462,6 +476,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.isTranscribing = false;
     this.clearTranscriptSub();
     this.notificationService.show('danger', error?.message || 'Erreur de transcription vocale');
+    this.cdr.markForCheck();
   }
 
   private updateLayoutMode(): void {
