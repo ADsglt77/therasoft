@@ -1,0 +1,2 @@
+# Ne pas éditer ce fichier manuellement — il doit être versionné (Git).
+provider = "postgresql"
