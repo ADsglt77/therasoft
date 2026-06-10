@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { profileService } from '../services/profile.service';
 import {
-  updateProfileSchema,
+  updateMedecinProfileSchema,
+  updatePatientProfileSchema,
   updateAvatarSchema,
   addressSearchSchema,
   AddressSearchQuery,
@@ -12,8 +14,16 @@ import { requireMedecinId, requirePatientId } from '../../../middlewares/require
 import { validateBody, validateQuery } from '../../../middlewares/validate';
 import { asyncHandler } from '../../../middlewares/asyncHandler';
 import { prisma } from '../../../lib/prisma';
+import { createRateLimitHandler } from '../../../lib/rate-limit-handler';
 
 const router = Router();
+const publicLookupLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  handler: createRateLimitHandler('Trop de requêtes, veuillez réessayer dans une minute'),
+});
 
 // Better Auth handled in app.ts
 
@@ -30,7 +40,7 @@ router.get(
 router.patch(
   '/me',
   verifySession,
-  validateBody(updateProfileSchema),
+  validateBody(updateMedecinProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const medecin = await profileService.updateMedecin(requireMedecinId(req), req.body);
     res.status(200).json(medecin);
@@ -50,6 +60,7 @@ router.patch(
 // ---- Patient Profile & Portal ----
 router.get(
   '/address/search',
+  publicLookupLimiter,
   validateQuery(addressSearchSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const { q } = req.query as unknown as AddressSearchQuery;
@@ -59,10 +70,11 @@ router.get(
 
 router.get(
   '/medecins',
+  publicLookupLimiter,
   asyncHandler(async (_req: Request, res: Response) => {
     const medecins = await prisma.medecin.findMany({
       where: { isActive: true },
-      select: { id: true, nom: true, prenom: true, specialite: true },
+      select: { id: true, nom: true, prenom: true },
       orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
     });
     res.status(200).json({ medecins });
@@ -81,7 +93,7 @@ router.get(
 router.patch(
   '/patient/me',
   verifySession,
-  validateBody(updateProfileSchema),
+  validateBody(updatePatientProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const patient = await profileService.updatePatient(requirePatientId(req), req.body);
     res.status(200).json(patient);

@@ -18,7 +18,11 @@ function trustedOrigin(origin: string | null | undefined): string | null {
   }
   const clean = stripSlash(origin);
   const configuredIsLocal = env.frontendOrigin.startsWith('http://localhost');
-  if (configuredIsLocal || clean === stripSlash(env.frontendOrigin) || clean === stripSlash(env.appUrl)) {
+  if (
+    configuredIsLocal ||
+    clean === stripSlash(env.frontendOrigin) ||
+    clean === stripSlash(env.appUrl)
+  ) {
     return clean;
   }
   return null;
