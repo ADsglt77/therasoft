@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { NotificationVariant } from '../../components/notification/notification.component';
+import { BehaviorSubject } from 'rxjs';
+
+export type NotificationVariant = 'warning' | 'success' | 'danger' | 'information';
 
 export interface Notification {
   id: string;
@@ -12,35 +13,27 @@ export interface Notification {
   providedIn: 'root',
 })
 export class NotificationService {
-  private notifications$ = new BehaviorSubject<Notification[]>([]);
-
-  getNotifications(): Observable<Notification[]> {
-    return this.notifications$.asObservable();
-  }
+  private readonly notificationsSubject = new BehaviorSubject<Notification[]>([]);
+  readonly notifications$ = this.notificationsSubject.asObservable();
 
   show(variant: NotificationVariant, text: string, duration: number = 3000): void {
     const notification: Notification = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       variant,
       text,
     };
 
-    const current = this.notifications$.value;
-    this.notifications$.next([...current, notification]);
+    this.notificationsSubject.next([...this.notificationsSubject.value, notification]);
 
-    // Auto-remove after duration
     setTimeout(() => {
       this.remove(notification.id);
     }, duration);
   }
 
   remove(id: string): void {
-    const current = this.notifications$.value;
-    this.notifications$.next(current.filter((n) => n.id !== id));
-  }
-
-  clear(): void {
-    this.notifications$.next([]);
+    this.notificationsSubject.next(
+      this.notificationsSubject.value.filter((notification) => notification.id !== id)
+    );
   }
 }
 
