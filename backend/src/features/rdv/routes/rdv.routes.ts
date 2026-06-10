@@ -38,8 +38,10 @@ router.get(
   verifySession,
   validateQuery(availableDatesQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const { siteId, year, month } = req.query as unknown as AvailableDatesQuery;
-    res.json(await rdvService.getAvailableDates(requirePatientId(req), siteId, year, month));
+    const { siteId, modalite, year, month } = req.query as unknown as AvailableDatesQuery;
+    res.json(
+      await rdvService.getAvailableDates(requirePatientId(req), siteId, modalite, year, month)
+    );
   })
 );
 
@@ -68,7 +70,9 @@ router.post(
   verifySession,
   validateBody(createBookingSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    res.status(201).json(await rdvService.createBooking(requirePatientId(req), req.body, emailBaseUrl(req)));
+    res
+      .status(201)
+      .json(await rdvService.createBooking(requirePatientId(req), req.body, emailBaseUrl(req)));
   })
 );
 

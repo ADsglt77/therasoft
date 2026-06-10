@@ -1,29 +1,35 @@
-import { ModaliteType } from '@prisma/client';
+import { ModaliteType, Prisma } from '@prisma/client';
+import { env } from '../../../config/env';
+import {
+  bookingCancellationEmail,
+  bookingConfirmationEmail,
+  BookingEmailData,
+} from '../../../lib/email-templates';
+import { parisDateKey, parisTimeMinutes } from '../../../lib/dates';
+import { removeDossierFiles } from '../../../lib/dossier-storage';
+import { logoAttachment, sendMail } from '../../../lib/mailer';
+import { openingHoursForDay } from '../../../lib/opening-hours';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
-import { env } from '../../../config/env';
-import { sendMail, logoAttachment } from '../../../lib/mailer';
-import { bookingConfirmationEmail, bookingCancellationEmail, BookingEmailData } from '../../../lib/email-templates';
 import { CreateBookingInput } from '../schemas/rdv.schemas';
 import {
-  OpeningHour,
   DEFAULT_DURATION_MIN,
-  modaliteLabel,
-  toMinutes,
   fromMinutes,
+  haversineKm,
+  isoWeekdayUtc,
+  modaliteLabel,
   timeDateToMinutes,
   timeStrToDate,
-  isoWeekdayUtc,
+  toMinutes,
   utcDateKey,
-  haversineKm,
 } from '../rdv.utils';
 
-export interface Slot {
+interface Slot {
   heureDebut: string;
   heureFin: string;
 }
 
-export interface BookingResponse {
+interface BookingResponse {
   id: number;
   date: Date;
   heureDebut: Date;
@@ -33,6 +39,11 @@ export interface BookingResponse {
   site: { id: number; nom: string; ville: string } | null;
   medecin: { id: number; nom: string; prenom: string } | null;
 }
+
+type AvailabilityClient = Pick<
+  Prisma.TransactionClient,
+  'vacation' | 'site' | 'modaliteConfig' | 'rdv'
+>;
 
 const bookingSelect = {
   id: true,
@@ -45,47 +56,62 @@ const bookingSelect = {
   medecin: { select: { id: true, nom: true, prenom: true } },
 } as const;
 
-export class RdvService {
-  /** Types de RDV proposables (modalité + durée). */
+class RdvService {
   async getTypes() {
-    return prisma.modaliteConfig.findMany({
+    const configs = await prisma.modaliteConfig.findMany({
       select: { modalite: true, dureeMinutes: true },
       orderBy: { dureeMinutes: 'asc' },
     });
+    return configs.map((config) => ({
+      ...config,
+      dureeMinutes:
+        Number.isInteger(config.dureeMinutes) && config.dureeMinutes > 0
+          ? config.dureeMinutes
+          : DEFAULT_DURATION_MIN,
+    }));
   }
 
-  /** Médecin rattaché + ses sites, triés par distance depuis l'adresse du patient. */
   async getBookingSites(patientId: number) {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      select: { medecinId: true, latitude: true, longitude: true },
+      select: {
+        medecinId: true,
+        latitude: true,
+        longitude: true,
+        medecin: { select: { isActive: true } },
+      },
     });
-    if (!patient?.medecinId) {
+    if (!patient?.medecinId || !patient.medecin?.isActive) {
       return { medecin: null, sites: [] };
     }
+
+    const today = new Date(`${parisDateKey()}T00:00:00.000Z`);
     const [medecin, sites] = await Promise.all([
       prisma.medecin.findUnique({
         where: { id: patient.medecinId },
-        select: { id: true, nom: true, prenom: true, specialite: true },
+        select: { id: true, nom: true, prenom: true },
       }),
       prisma.site.findMany({
-        where: { vacations: { some: { medecinId: patient.medecinId } } },
+        where: {
+          vacations: { some: { medecinId: patient.medecinId, date: { gte: today } } },
+        },
         select: { id: true, nom: true, ville: true, latitude: true, longitude: true },
       }),
     ]);
 
     const hasPatientCoords = patient.latitude != null && patient.longitude != null;
-    const withDistance = sites.map((s) => ({
-      id: s.id,
-      nom: s.nom,
-      ville: s.ville,
+    const withDistance = sites.map((site) => ({
+      id: site.id,
+      nom: site.nom,
+      ville: site.ville,
       distanceKm:
-        hasPatientCoords && s.latitude != null && s.longitude != null
-          ? Math.round(haversineKm(patient.latitude!, patient.longitude!, s.latitude, s.longitude) * 10) / 10
+        hasPatientCoords && site.latitude != null && site.longitude != null
+          ? Math.round(
+              haversineKm(patient.latitude!, patient.longitude!, site.latitude, site.longitude) * 10
+            ) / 10
           : null,
     }));
 
-    // Tri par distance croissante ; les sites sans coordonnées (ou patient sans adresse) en alphabétique.
     withDistance.sort((a, b) => {
       if (a.distanceKm == null && b.distanceKm == null) {
         return a.ville.localeCompare(b.ville) || a.nom.localeCompare(b.nom);
@@ -98,26 +124,42 @@ export class RdvService {
     return { medecin, sites: withDistance };
   }
 
-  /** Dates du mois où le médecin a une vacation à ce lieu (jours réservables). */
-  async getAvailableDates(patientId: number, siteId: number, year: number, month: number) {
+  async getAvailableDates(
+    patientId: number,
+    siteId: number,
+    modalite: ModaliteType,
+    year: number,
+    month: number
+  ) {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      select: { medecinId: true },
+      select: { medecinId: true, medecin: { select: { isActive: true } } },
     });
-    if (!patient?.medecinId) {
+    if (!patient?.medecinId || !patient.medecin?.isActive) {
       return { dates: [] as string[] };
     }
-    const start = new Date(Date.UTC(year, month - 1, 1));
-    const end = new Date(Date.UTC(year, month, 0));
+
+    const monthStart = new Date(Date.UTC(year, month - 1, 1));
+    const monthEnd = new Date(Date.UTC(year, month, 0));
+    const today = new Date(`${parisDateKey()}T00:00:00.000Z`);
+    const start = monthStart > today ? monthStart : today;
+    if (start > monthEnd) {
+      return { dates: [] as string[] };
+    }
+
     const vacations = await prisma.vacation.findMany({
-      where: { medecinId: patient.medecinId, siteId, date: { gte: start, lte: end } },
+      where: {
+        medecinId: patient.medecinId,
+        siteId,
+        modalite,
+        date: { gte: start, lte: monthEnd },
+      },
       select: { date: true },
       distinct: ['date'],
     });
-    return { dates: vacations.map((v) => utcDateKey(v.date)) };
+    return { dates: vacations.map((vacation) => utcDateKey(vacation.date)) };
   }
 
-  /** Créneaux disponibles : horaires du site découpés par la durée, moins les RDV pris. */
   async getAvailableSlots(
     patientId: number,
     siteId: number,
@@ -126,120 +168,159 @@ export class RdvService {
   ): Promise<Slot[]> {
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
-      select: { medecinId: true },
+      select: { medecinId: true, medecin: { select: { isActive: true } } },
     });
-    if (!patient?.medecinId) {
+    if (!patient?.medecinId || !patient.medecin?.isActive) {
+      return [];
+    }
+    return this.findAvailableSlots(prisma, patient.medecinId, siteId, modalite, date);
+  }
+
+  private async findAvailableSlots(
+    db: AvailabilityClient,
+    medecinId: number,
+    siteId: number,
+    modalite: ModaliteType,
+    date: Date
+  ): Promise<Slot[]> {
+    const dateKey = utcDateKey(date);
+    if (dateKey < parisDateKey()) {
       return [];
     }
 
-    // Le médecin doit avoir une vacation à ce lieu ce jour-là.
-    const vacation = await prisma.vacation.findFirst({
-      where: { medecinId: patient.medecinId, siteId, date },
+    const vacation = await db.vacation.findFirst({
+      where: { medecinId, siteId, modalite, date },
       select: { id: true },
     });
     if (!vacation) {
       return [];
     }
 
-    const site = await prisma.site.findUnique({
+    const site = await db.site.findUnique({
       where: { id: siteId },
       select: { openingHours: true },
     });
-    const hours = (site?.openingHours as unknown as OpeningHour[] | null) ?? [];
-    const todayHours = hours.find((h) => h.day === isoWeekdayUtc(date));
+    const todayHours = openingHoursForDay(site?.openingHours, isoWeekdayUtc(date));
     if (!todayHours) {
       return [];
     }
 
-    const config = await prisma.modaliteConfig.findUnique({
+    const config = await db.modaliteConfig.findUnique({
       where: { modalite },
       select: { dureeMinutes: true },
     });
-    const duration = config?.dureeMinutes ?? DEFAULT_DURATION_MIN;
+    const duration =
+      config && Number.isInteger(config.dureeMinutes) && config.dureeMinutes > 0
+        ? config.dureeMinutes
+        : DEFAULT_DURATION_MIN;
 
-    // RDV existants du médecin ce jour (créneaux occupés).
-    const rdvs = await prisma.rdv.findMany({
+    const rdvs = await db.rdv.findMany({
       where: {
         date,
-        OR: [
-          { medecinId: patient.medecinId },
-          { vacationLinks: { some: { vacation: { medecinId: patient.medecinId } } } },
-        ],
+        OR: [{ medecinId }, { vacationLinks: { some: { vacation: { medecinId } } } }],
       },
       select: { heureDebut: true, heureFin: true },
     });
-    const busy = rdvs.map((r) => ({
-      start: timeDateToMinutes(r.heureDebut),
-      end: timeDateToMinutes(r.heureFin),
+    const busy = rdvs.map((rdv) => ({
+      start: timeDateToMinutes(rdv.heureDebut),
+      end: timeDateToMinutes(rdv.heureFin),
     }));
 
-    // Créneaux passés exclus si la date est aujourd'hui.
-    const now = new Date();
-    const isToday = utcDateKey(date) === utcDateKey(now);
-    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
-
-    const openMin = toMinutes(todayHours.open);
-    const closeMin = toMinutes(todayHours.close);
+    const isToday = dateKey === parisDateKey();
+    const currentMinutes = parisTimeMinutes();
+    const openMinutes = toMinutes(todayHours.open);
+    const closeMinutes = toMinutes(todayHours.close);
 
     const slots: Slot[] = [];
-    for (let s = openMin; s + duration <= closeMin; s += duration) {
-      const e = s + duration;
-      if (busy.some((b) => s < b.end && e > b.start)) {
+    for (let start = openMinutes; start + duration <= closeMinutes; start += duration) {
+      const end = start + duration;
+      if (busy.some((range) => start < range.end && end > range.start)) {
         continue;
       }
-      if (isToday && s < nowMin) {
+      if (isToday && start < currentMinutes) {
         continue;
       }
-      slots.push({ heureDebut: fromMinutes(s), heureFin: fromMinutes(e) });
+      slots.push({ heureDebut: fromMinutes(start), heureFin: fromMinutes(end) });
     }
     return slots;
   }
 
-  async createBooking(patientId: number, input: CreateBookingInput, baseUrl: string = env.appUrl): Promise<BookingResponse> {
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-      select: { medecinId: true, prenom: true, user: { select: { email: true, emailVerified: true } } },
-    });
-    if (!patient?.medecinId) {
-      throw new ApiError('Aucun médecin rattaché à votre compte', 'BOOKING_NO_MEDECIN', 400);
-    }
-    if (!patient.user?.emailVerified) {
-      throw new ApiError('Veuillez vérifier votre adresse email avant de réserver', 'AUTH_EMAIL_NOT_VERIFIED', 403);
-    }
+  async createBooking(
+    patientId: number,
+    input: CreateBookingInput,
+    baseUrl: string = env.appUrl
+  ): Promise<BookingResponse> {
+    const result = await prisma.$transaction(async (tx) => {
+      const patient = await tx.patient.findUnique({
+        where: { id: patientId },
+        select: {
+          medecinId: true,
+          medecin: { select: { isActive: true } },
+          prenom: true,
+          user: { select: { email: true, emailVerified: true } },
+        },
+      });
+      if (!patient?.medecinId || !patient.medecin?.isActive) {
+        throw new ApiError('Aucun medecin rattache a votre compte', 'BOOKING_NO_MEDECIN', 400);
+      }
+      if (!patient.user?.emailVerified) {
+        throw new ApiError(
+          'Veuillez verifier votre adresse email avant de reserver',
+          'AUTH_EMAIL_NOT_VERIFIED',
+          403
+        );
+      }
 
-    // Re-vérification serveur : le créneau doit toujours être disponible.
-    const slots = await this.getAvailableSlots(patientId, input.siteId, input.modalite, input.date);
-    const slot = slots.find((s) => s.heureDebut === input.heureDebut);
-    if (!slot) {
-      throw new ApiError("Ce créneau n'est plus disponible", 'BOOKING_SLOT_UNAVAILABLE', 409);
-    }
+      const dateLockKey = Number(utcDateKey(input.date).replaceAll('-', ''));
+      // $executeRaw (et non $queryRaw) : pg_advisory_xact_lock renvoie `void`, que
+      // l'adaptateur pg de Prisma ne sait pas désérialiser en colonne de résultat.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${patient.medecinId}, ${dateLockKey})`;
 
-    const booking = await prisma.rdv.create({
-      data: {
-        date: input.date,
-        heureDebut: timeStrToDate(slot.heureDebut),
-        heureFin: timeStrToDate(slot.heureFin),
-        modalite: input.modalite,
-        motif: input.motif || null,
-        patientId,
-        medecinId: patient.medecinId,
-        siteId: input.siteId,
-        // Dossier vide : le médecin pourra l'ouvrir depuis son planning.
-        dossier: { create: {} },
-      },
-      select: bookingSelect,
-    });
-
-    // Email de confirmation (ne bloque pas la réservation si l'envoi échoue).
-    if (patient.user?.email) {
-      const data = this.bookingEmailData(booking, patient.prenom, `${baseUrl}/mes-rendez-vous`);
-      const mail = bookingConfirmationEmail(data);
-      sendMail({ to: patient.user.email, ...mail, attachments: logoAttachment() }).catch((err) =>
-        console.error('Email de confirmation RDV échoué :', err)
+      const slots = await this.findAvailableSlots(
+        tx,
+        patient.medecinId,
+        input.siteId,
+        input.modalite,
+        input.date
       );
+      const slot = slots.find((candidate) => candidate.heureDebut === input.heureDebut);
+      if (!slot) {
+        throw new ApiError("Ce creneau n'est plus disponible", 'BOOKING_SLOT_UNAVAILABLE', 409);
+      }
+
+      const booking = await tx.rdv.create({
+        data: {
+          date: input.date,
+          heureDebut: timeStrToDate(slot.heureDebut),
+          heureFin: timeStrToDate(slot.heureFin),
+          modalite: input.modalite,
+          motif: input.motif || null,
+          patientId,
+          medecinId: patient.medecinId,
+          siteId: input.siteId,
+          dossier: { create: {} },
+        },
+        select: bookingSelect,
+      });
+
+      return { booking, patient };
+    });
+
+    if (result.patient.user?.email) {
+      const data = this.bookingEmailData(
+        result.booking,
+        result.patient.prenom,
+        `${baseUrl}/mes-rendez-vous`
+      );
+      const mail = bookingConfirmationEmail(data);
+      void sendMail({
+        to: result.patient.user.email,
+        ...mail,
+        attachments: logoAttachment(),
+      });
     }
 
-    return booking;
+    return result.booking;
   }
 
   async getMyBookings(patientId: number): Promise<BookingResponse[]> {
@@ -250,7 +331,11 @@ export class RdvService {
     });
   }
 
-  async cancelBooking(patientId: number, rdvId: number, baseUrl: string = env.appUrl): Promise<void> {
+  async cancelBooking(
+    patientId: number,
+    rdvId: number,
+    baseUrl: string = env.appUrl
+  ): Promise<void> {
     const rdv = await prisma.rdv.findUnique({
       where: { id: rdvId },
       select: {
@@ -263,24 +348,33 @@ export class RdvService {
         site: { select: { nom: true, ville: true } },
         medecin: { select: { nom: true, prenom: true } },
         patient: { select: { prenom: true, user: { select: { email: true } } } },
+        dossier: { select: { files: { select: { storedName: true } } } },
       },
     });
     if (!rdv || rdv.patientId !== patientId) {
       throw new ApiError('Rendez-vous introuvable', 'NOT_FOUND', 404);
     }
+    if (this.hasAppointmentStarted(rdv.date, rdv.heureDebut)) {
+      throw new ApiError(
+        'Un rendez-vous commencé ou passé ne peut plus être annulé',
+        'BOOKING_CANCELLATION_CLOSED',
+        409
+      );
+    }
     await prisma.rdv.delete({ where: { id: rdvId } });
+    await removeDossierFiles(rdv.dossier?.files.map((file) => file.storedName) ?? []);
 
-    // Email d'annulation (ne bloque pas l'annulation si l'envoi échoue).
     if (rdv.patient?.user?.email) {
       const data = this.bookingEmailData(rdv, rdv.patient.prenom, `${baseUrl}/prendre-rendez-vous`);
       const mail = bookingCancellationEmail(data);
-      sendMail({ to: rdv.patient.user.email, ...mail, attachments: logoAttachment() }).catch((err) =>
-        console.error("Email d'annulation RDV échoué :", err)
-      );
+      void sendMail({
+        to: rdv.patient.user.email,
+        ...mail,
+        attachments: logoAttachment(),
+      });
     }
   }
 
-  /** Construit les données d'email à partir d'un RDV (dates en UTC, libellés FR). */
   private bookingEmailData(
     booking: {
       date: Date;
@@ -293,11 +387,11 @@ export class RdvService {
     prenom: string,
     link: string
   ): BookingEmailData {
-    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
     return {
       prenom,
       modaliteLabel: modaliteLabel(booking.modalite),
-      dateLabel: cap(
+      dateLabel: capitalize(
         booking.date.toLocaleDateString('fr-FR', {
           weekday: 'long',
           day: 'numeric',
@@ -306,11 +400,22 @@ export class RdvService {
           timeZone: 'UTC',
         })
       ),
-      timeLabel: `${fromMinutes(timeDateToMinutes(booking.heureDebut))} – ${fromMinutes(timeDateToMinutes(booking.heureFin))}`,
-      siteLabel: booking.site ? `${booking.site.nom} — ${booking.site.ville}` : '—',
-      medecinLabel: booking.medecin ? `Dr ${booking.medecin.prenom} ${booking.medecin.nom}` : '—',
+      timeLabel: `${fromMinutes(timeDateToMinutes(booking.heureDebut))} - ${fromMinutes(
+        timeDateToMinutes(booking.heureFin)
+      )}`,
+      siteLabel: booking.site ? `${booking.site.nom} - ${booking.site.ville}` : '-',
+      medecinLabel: booking.medecin ? `Dr ${booking.medecin.prenom} ${booking.medecin.nom}` : '-',
       link,
     };
+  }
+
+  private hasAppointmentStarted(date: Date, startTime: Date, now = new Date()): boolean {
+    const appointmentDate = utcDateKey(date);
+    const today = parisDateKey(now);
+    if (appointmentDate !== today) {
+      return appointmentDate < today;
+    }
+    return timeDateToMinutes(startTime) <= parisTimeMinutes(now);
   }
 }
 

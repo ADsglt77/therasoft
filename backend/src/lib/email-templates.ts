@@ -107,7 +107,10 @@ export function verificationEmail({ prenom, link }: VerificationEmailData) {
     ${fallbackLink(link)}`;
   return {
     subject: 'Confirmez votre adresse email — TsXcare',
-    html: layout({ preheader: 'Confirmez votre adresse email pour activer la prise de rendez-vous.', content }),
+    html: layout({
+      preheader: 'Confirmez votre adresse email pour activer la prise de rendez-vous.',
+      content,
+    }),
     text: `Bonjour ${prenom},
 
 Merci de votre inscription sur TsXcare. Pour activer la prise de rendez-vous, confirmez votre adresse email :
@@ -159,7 +162,10 @@ export function bookingConfirmationEmail(d: BookingEmailData) {
     <p style="margin:20px 0 0;">${button('Voir mes rendez-vous', d.link)}</p>`;
   return {
     subject: 'Votre rendez-vous est confirmé — TsXcare',
-    html: layout({ preheader: `Rendez-vous confirmé le ${d.dateLabel} à ${d.timeLabel}.`, content }),
+    html: layout({
+      preheader: `Rendez-vous confirmé le ${d.dateLabel} à ${d.timeLabel}.`,
+      content,
+    }),
     text: `Bonjour ${d.prenom},
 
 Votre rendez-vous est confirmé :

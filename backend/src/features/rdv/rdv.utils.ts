@@ -2,18 +2,15 @@
  * Helpers purs de la feature RDV : conversions de temps (UTC), jour de semaine,
  * clés de date et distance GPS. Sans I/O ni dépendances — faciles à tester.
  */
+import { utcDateKey } from '../../lib/dates';
 
-export interface OpeningHour {
-  day: number; // 1 = lundi … 7 = dimanche
-  open: string; // "HH:mm"
-  close: string; // "HH:mm"
-}
+export { utcDateKey };
 
 /** Durée par défaut d'un créneau (minutes) si aucune config de modalité. */
 export const DEFAULT_DURATION_MIN = 30;
 
 /** Libellés FR des modalités (emails, affichage). */
-export const MODALITE_LABELS: Record<string, string> = {
+const MODALITE_LABELS: Record<string, string> = {
   XRAY: 'Radiographie',
   CT: 'Scanner (CT)',
   MRI: 'IRM',
@@ -57,20 +54,14 @@ export function isoWeekdayUtc(date: Date): number {
   return d === 0 ? 7 : d;
 }
 
-/** Date UTC → clé "YYYY-MM-DD". */
-export function utcDateKey(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 /** Distance à vol d'oiseau (km) entre deux points GPS (formule de haversine). */
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
