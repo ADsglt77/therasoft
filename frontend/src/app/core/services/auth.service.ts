@@ -14,10 +14,14 @@ export interface LoginRequest {
 export interface PatientRegisterRequest {
   nom: string;
   prenom: string;
+  dateNaissance: string;
+  sexe: 'M' | 'F' | 'X';
   email: string;
   password: string;
   medecinId: number;
   adresse: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface AddressSuggestion {
@@ -44,6 +48,8 @@ export interface AuthUser {
   avatarUrl?: string | null;
   avatarFileName?: string | null;
   adresse?: string | null;
+  dateNaissance?: string | null;
+  sexe?: string | null;
   emailVerified?: boolean;
   medecin?: MedecinOption | null;
 }
@@ -109,7 +115,11 @@ export class AuthService extends ApiClientService {
         return this.http.patch<AuthUser>(`${this.baseUrl}/auth/patient/me`, {
           nom: data.nom,
           prenom: data.prenom,
+          dateNaissance: data.dateNaissance,
+          sexe: data.sexe,
           adresse: data.adresse,
+          latitude: data.latitude,
+          longitude: data.longitude,
           medecinId: data.medecinId,
         });
       }),

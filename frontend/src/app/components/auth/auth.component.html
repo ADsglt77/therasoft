@@ -90,6 +90,41 @@
           </div>
         </div>
 
+        <div class="name-fields">
+          <div class="field-wrapper">
+            <ui-input
+              type="date"
+              label="Date de naissance"
+              [value]="registerForm.get('dateNaissance')?.value || ''"
+              [max]="maxDateNaissance"
+              (input)="updateFormControl(registerForm, 'dateNaissance', $any($event.target).value)"
+              id="register-date-naissance"
+              [required]="true"
+              [touched]="registerForm.get('dateNaissance')?.touched || false"
+              [dirty]="registerForm.get('dateNaissance')?.dirty || false"
+              [message]="registerDateNaissanceMessage.message"
+              [messageType]="registerDateNaissanceMessage.type">
+            </ui-input>
+          </div>
+
+          <div class="field-wrapper">
+            <ui-input
+              type="select"
+              label="Sexe"
+              [value]="registerForm.get('sexe')?.value || ''"
+              [options]="sexeOptions"
+              (valueChange)="updateFormControl(registerForm, 'sexe', $event)"
+              placeholder="Sélectionnez votre sexe"
+              id="register-sexe"
+              [required]="true"
+              [touched]="registerForm.get('sexe')?.touched || false"
+              [dirty]="registerForm.get('sexe')?.dirty || false"
+              [message]="registerSexeMessage.message"
+              [messageType]="registerSexeMessage.type">
+            </ui-input>
+          </div>
+        </div>
+
         <div class="field-wrapper">
           <app-address-autocomplete
             id="register-adresse"
@@ -97,7 +132,8 @@
             placeholder="Saisissez puis choisissez votre adresse"
             [value]="registerForm.get('adresse')?.value || ''"
             [required]="true"
-            (valueChange)="updateFormControl(registerForm, 'adresse', $event)"
+            (valueChange)="updateRegisterAddress($event)"
+            (selected)="selectRegisterAddress($event)"
             [message]="registerAdresseMessage.message"
             [messageType]="registerAdresseMessage.type">
           </app-address-autocomplete>

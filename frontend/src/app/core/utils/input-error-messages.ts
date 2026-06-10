@@ -11,6 +11,9 @@ export type InputErrorType =
   | 'passwordMismatch'
   | 'serverError'
   | 'pattern'
+  | 'futureDate'
+  | 'invalidDate'
+  | 'addressNotSelected'
   | 'custom';
 
 /**
@@ -75,7 +78,16 @@ export class InputErrorMessages {
       
       case 'pattern':
         return params?.['patternMessage'] || this.getPatternMessage();
-      
+
+      case 'futureDate':
+        return 'La date de naissance ne peut pas être dans le futur';
+
+      case 'invalidDate':
+        return 'Date de naissance invalide';
+
+      case 'addressNotSelected':
+        return 'Sélectionnez une adresse dans la liste proposée';
+
       case 'custom':
         return params?.['customMessage'] || '';
       
@@ -204,6 +216,27 @@ export class InputErrorMessages {
       };
     }
 
+    if (field.hasError('futureDate')) {
+      return {
+        message: 'La date de naissance ne peut pas être dans le futur',
+        type: 'error'
+      };
+    }
+
+    if (field.hasError('invalidDate')) {
+      return {
+        message: 'Date de naissance invalide',
+        type: 'error'
+      };
+    }
+
+    if (field.hasError('addressNotSelected')) {
+      return {
+        message: 'Sélectionnez une adresse dans la liste proposée',
+        type: 'error'
+      };
+    }
+
     return { message: '', type: '' };
   }
 
@@ -261,6 +294,8 @@ export class InputErrorMessages {
       password: 'Mot de passe invalide',
       nom: 'Nom invalide',
       prenom: 'Prénom invalide',
+      dateNaissance: 'Date de naissance invalide',
+      sexe: 'Sexe invalide',
       confirmPassword: 'Les mots de passe ne correspondent pas',
     };
 

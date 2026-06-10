@@ -1,12 +1,19 @@
 import { ChangeDetectionStrategy, Component, HostBinding, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { UiButtonComponent } from '../button/ui-button.component';
 import { UiInputComponent, InputMessageType, SelectOption } from '../input/ui-input.component';
 import { AddressAutocompleteComponent } from '../address-autocomplete/address-autocomplete.component';
 import { PasswordStrengthIndicatorComponent } from '../password-strength-indicator/password-strength-indicator.component';
 import { UiStepperComponent, StepperStep } from '../stepper/ui-stepper.component';
-import { AuthService } from '../../core/services/auth.service';
+import { AddressSuggestion, AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { InputErrorMessages } from '../../core/utils/input-error-messages';
 import { ApiErrorHandler } from '../../core/utils/api-error-handler';
@@ -14,6 +21,26 @@ import { applyServerValidationErrors } from '../../core/utils/form-error.utils';
 import { NotificationMessages } from '../../core/constants/notification-messages';
 import { FormUtils } from '../../core/utils/form-utils';
 import { PasswordValidator } from '../../core/validators/password.validator';
+
+function localDateKey(date = new Date()): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function dateNotInFuture(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (!value) return null;
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    return { invalidDate: true };
+  }
+
+  return value > localDateKey() ? { futureDate: true } : null;
+}
 
 @Component({
   selector: 'app-auth',
@@ -30,12 +57,18 @@ export class AuthComponent implements OnInit {
   loginForm: FormGroup;
   registerForm: FormGroup;
   medecinOptions: SelectOption[] = [];
+  readonly sexeOptions: SelectOption[] = [
+    { value: 'M', label: 'Masculin' },
+    { value: 'F', label: 'Féminin' },
+    { value: 'X', label: 'Autre' },
+  ];
+  readonly maxDateNaissance = localDateKey();
 
   // Wizard d'inscription : étape courante + champs validés par étape.
   registerStep = 0;
   registerMaxReachable = 0;
   private readonly registerStepFields: readonly (readonly string[])[] = [
-    ['nom', 'prenom', 'adresse'],
+    ['nom', 'prenom', 'dateNaissance', 'sexe', 'adresse'],
     ['medecinId'],
     ['email', 'password', 'confirmPassword'],
   ];
@@ -62,11 +95,15 @@ export class AuthComponent implements OnInit {
     this.registerForm = this.fb.group({
       nom: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]],
       prenom: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]],
+      dateNaissance: ['', [Validators.required, dateNotInFuture]],
+      sexe: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email, Validators.minLength(3), Validators.maxLength(100)]],
       password: ['', [Validators.required, PasswordValidator.strong()]],
       confirmPassword: ['', [Validators.required]],
       medecinId: ['', [Validators.required]],
       adresse: ['', [Validators.required, Validators.minLength(3)]],
+      latitude: [null],
+      longitude: [null],
     }, {
       validators: this.passwordMatchValidator
     });
@@ -239,14 +276,45 @@ export class AuthComponent implements OnInit {
       return;
     }
 
-    const fields = ['email', 'password', 'nom', 'prenom', 'medecinId', 'adresse'];
+    const fields = [
+      'email',
+      'password',
+      'nom',
+      'prenom',
+      'dateNaissance',
+      'sexe',
+      'medecinId',
+      'adresse',
+    ];
     this.isLoading = true;
     this.clearServerErrors(this.registerForm, fields);
 
-    const { nom, prenom, email, password, medecinId, adresse } = this.registerForm.value;
+    const {
+      nom,
+      prenom,
+      dateNaissance,
+      sexe,
+      email,
+      password,
+      medecinId,
+      adresse,
+      latitude,
+      longitude,
+    } = this.registerForm.value;
 
     this.authService
-      .registerPatient({ nom, prenom, email, password, medecinId: Number(medecinId), adresse })
+      .registerPatient({
+        nom,
+        prenom,
+        dateNaissance,
+        sexe,
+        email,
+        password,
+        medecinId: Number(medecinId),
+        adresse,
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+      })
       .subscribe({
         next: () => {
           this.isLoading = false;
@@ -364,6 +432,34 @@ export class AuthComponent implements OnInit {
 
   get registerPrenomMessage() {
     return this.getInputMessage(this.registerForm, 'prenom');
+  }
+
+  updateRegisterAddress(value: string): void {
+    this.updateFormControl(this.registerForm, 'adresse', value);
+    this.registerForm.patchValue({ latitude: null, longitude: null });
+    const control = this.registerForm.get('adresse');
+    if (value.trim().length >= 3) {
+      control?.setErrors({ addressNotSelected: true });
+    }
+  }
+
+  selectRegisterAddress(suggestion: AddressSuggestion): void {
+    this.registerForm.patchValue({
+      adresse: suggestion.label,
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+    });
+    const control = this.registerForm.get('adresse');
+    control?.setErrors(null);
+    control?.markAsTouched();
+  }
+
+  get registerDateNaissanceMessage() {
+    return this.getInputMessage(this.registerForm, 'dateNaissance');
+  }
+
+  get registerSexeMessage() {
+    return this.getInputMessage(this.registerForm, 'sexe');
   }
 
   get registerEmailMessage() {
