@@ -34,4 +34,17 @@ describe('GET /api/health', () => {
     expect(res.status).toBe(503);
     expect(res.body).toEqual({ status: 'degraded', db: 'error' });
   });
+
+  it('retourne une erreur JSON uniforme pour une route API inconnue', async () => {
+    const res = await request(createApp()).get('/api/inconnue');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Ressource API introuvable',
+      },
+    });
+    expect(res.body.requestId).toEqual(expect.any(String));
+  });
 });

@@ -37,13 +37,19 @@ export const verifySession = async (
     let patientId: number | undefined;
 
     if (session.user.role === 'MEDECIN') {
-      const medecin = await prisma.medecin.findUnique({ where: { userId: session.user.id } });
+      const medecin = await prisma.medecin.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true, isActive: true },
+      });
       if (!medecin || !medecin.isActive) {
         throw new ApiError('Compte invalide ou désactivé', 'AUTH_ACCOUNT_INVALID', 401);
       }
       medecinId = medecin.id;
     } else if (session.user.role === 'PATIENT') {
-      const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } });
+      const patient = await prisma.patient.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
       if (!patient) {
         throw new ApiError('Compte invalide', 'AUTH_ACCOUNT_INVALID', 401);
       }

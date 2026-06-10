@@ -31,7 +31,9 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return next(new ApiError('Paramètres de requête invalides', 'VALIDATION_ERROR', 422, error.errors));
+        return next(
+          new ApiError('Paramètres de requête invalides', 'VALIDATION_ERROR', 422, error.errors)
+        );
       }
       next(error);
     }

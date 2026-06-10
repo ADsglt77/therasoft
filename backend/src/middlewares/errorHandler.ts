@@ -9,7 +9,12 @@ export class ApiError extends Error {
   statusCode: number;
   details?: unknown;
 
-  constructor(message: string, code: string = 'INTERNAL_ERROR', statusCode: number = 500, details?: unknown) {
+  constructor(
+    message: string,
+    code: string = 'INTERNAL_ERROR',
+    statusCode: number = 500,
+    details?: unknown
+  ) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
@@ -29,7 +34,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): void => {
-  const requestId = req.headers['x-request-id'] as string || 'unknown';
+  const requestId = (req.headers['x-request-id'] as string) || 'unknown';
 
   if (err instanceof ApiError) {
     logger.warn({ requestId, code: err.code, statusCode: err.statusCode }, err.message);

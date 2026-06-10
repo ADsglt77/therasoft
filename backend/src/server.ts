@@ -9,17 +9,35 @@ const server = app.listen(env.port, () => {
   logger.info({ port: env.port }, 'Server started');
 });
 
+let shuttingDown = false;
+
 async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
   logger.info({ signal }, 'Shutdown signal received');
 
-  await new Promise<void>((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()));
-  });
+  const forceExit = setTimeout(() => {
+    logger.error({ signal }, 'Graceful shutdown timed out');
+    process.exit(1);
+  }, 10_000);
+  forceExit.unref();
 
-  await prisma.$disconnect();
-  await pool.end();
-  logger.info('HTTP server and database connections closed');
-  process.exit(0);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+      server.closeIdleConnections();
+    });
+    await prisma.$disconnect();
+    await pool.end();
+    logger.info('HTTP server and database connections closed');
+    clearTimeout(forceExit);
+    process.exit(0);
+  } catch (error) {
+    clearTimeout(forceExit);
+    throw error;
+  }
 }
 
 process.on('SIGTERM', () => {

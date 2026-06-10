@@ -6,7 +6,11 @@ import { env } from '../config/env';
 /**
  * Instance PrismaClient avec adaptateur PostgreSQL pour Prisma 7
  */
-export const pool = new Pool({ connectionString: env.databaseUrl });
+export const pool = new Pool({
+  connectionString: env.databaseUrl,
+  max: 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+});
 const adapter = new PrismaPg(pool);
 export const prisma = new PrismaClient({ adapter });
-
