@@ -16,6 +16,8 @@ const patientSelect = {
   id: true,
   nom: true,
   prenom: true,
+  dateNaissance: true,
+  sexe: true,
   adresse: true,
   user: { select: { email: true, emailVerified: true, role: true } },
   medecin: { select: { id: true, nom: true, prenom: true, specialite: true } },
@@ -99,7 +101,11 @@ export class ProfileService {
     const updateData: Prisma.PatientUncheckedUpdateInput = {};
     if (input.nom !== undefined) updateData.nom = input.nom;
     if (input.prenom !== undefined) updateData.prenom = input.prenom;
+    if (input.dateNaissance !== undefined) updateData.dateNaissance = input.dateNaissance;
+    if (input.sexe !== undefined) updateData.sexe = input.sexe;
     if (input.adresse !== undefined) updateData.adresse = input.adresse;
+    if (input.latitude !== undefined) updateData.latitude = input.latitude;
+    if (input.longitude !== undefined) updateData.longitude = input.longitude;
     if (input.medecinId !== undefined) updateData.medecinId = input.medecinId;
 
     if (Object.keys(updateData).length > 0) {

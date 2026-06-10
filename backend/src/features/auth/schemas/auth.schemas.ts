@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Sexe } from '@prisma/client';
 
 /**
  * Schémas de validation des routes profil/adresse.
@@ -13,14 +14,51 @@ export const addressSearchSchema = z.object({
 
 export type AddressSearchQuery = z.infer<typeof addressSearchSchema>;
 
+function parisDateKey(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+const dateNaissanceSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date de naissance invalide')
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }, 'Date de naissance invalide')
+  .refine((value) => value <= parisDateKey(), {
+    message: 'La date de naissance ne peut pas être dans le futur',
+  })
+  .transform((value) => new Date(`${value}T00:00:00.000Z`));
+
 /** Modification du profil (médecin ou patient). */
-export const updateProfileSchema = z.object({
-  nom: z.string().min(1, 'Le nom est requis').max(100).optional(),
-  prenom: z.string().min(1, 'Le prénom est requis').max(100).optional(),
-  adresse: z.string().optional(),
-  medecinId: z.coerce.number().optional(),
-  specialite: z.string().optional(),
-});
+export const updateProfileSchema = z
+  .object({
+    nom: z.string().min(1, 'Le nom est requis').max(100).optional(),
+    prenom: z.string().min(1, 'Le prénom est requis').max(100).optional(),
+    dateNaissance: dateNaissanceSchema.optional(),
+    sexe: z.nativeEnum(Sexe).optional(),
+    adresse: z.string().optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    medecinId: z.coerce.number().optional(),
+    specialite: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.latitude === undefined) !== (value.longitude === undefined)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['latitude'],
+        message: 'Latitude et longitude doivent être renseignées ensemble',
+      });
+    }
+  });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
