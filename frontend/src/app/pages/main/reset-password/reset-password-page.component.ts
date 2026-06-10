@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UiInputComponent, InputMessageType } from '../../../components/input/ui-input.component';
@@ -29,6 +29,7 @@ type ResetState = 'form' | 'success' | 'invalid';
   ],
   templateUrl: './reset-password-page.component.html',
   styleUrl: './reset-password-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ResetPasswordPageComponent implements OnInit {
   state: ResetState = 'form';
@@ -40,7 +41,8 @@ export class ResetPasswordPageComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group(
       {
@@ -112,6 +114,7 @@ export class ResetPasswordPageComponent implements OnInit {
       next: () => {
         this.isLoading = false;
         this.state = 'success';
+        this.cdr.markForCheck();
       },
       error: (err) => {
         this.isLoading = false;
@@ -122,6 +125,7 @@ export class ResetPasswordPageComponent implements OnInit {
           this.form.get('newPassword')?.setErrors({ serverError: extracted.message || 'Réinitialisation impossible' });
           this.form.get('newPassword')?.markAsTouched();
         }
+        this.cdr.markForCheck();
       },
     });
   }
