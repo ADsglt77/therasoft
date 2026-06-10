@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 
-export async function assertPatientOwnsRdv(patientId: number, rdvId: number): Promise<void> {
+async function assertPatientOwnsRdv(patientId: number, rdvId: number): Promise<void> {
   const rdv = await prisma.rdv.findUnique({
     where: { id: rdvId },
     select: { patientId: true },
@@ -47,7 +47,6 @@ export const dossierSelect = {
     select: {
       id: true,
       originalName: true,
-      storedName: true,
       mimeType: true,
       size: true,
       createdAt: true,

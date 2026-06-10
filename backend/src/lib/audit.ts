@@ -1,11 +1,10 @@
-import { Request } from 'express';
 import { prisma } from './prisma';
 import { logger } from './logger';
 
 /**
  * Actions tracées dans le journal d'accès (RGPD).
  */
-export type AuditAction =
+type AuditAction =
   | 'DOSSIER_READ'
   | 'DOSSIER_OBSERVATIONS_UPDATE'
   | 'DOSSIER_VERIFIED_UPDATE'
@@ -40,11 +39,4 @@ export function recordAudit(entry: AuditEntry): void {
     .catch((err: unknown) => {
       logger.error({ err }, 'Audit log write failed');
     });
-}
-
-/**
- * Extrait l'adresse IP du client en tenant compte du proxy nginx.
- */
-export function clientIp(req: Request): string | null {
-  return req.ip ?? null;
 }

@@ -4,13 +4,12 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from './errorHandler';
-
-const UPLOADS_ROOT = path.resolve('uploads', 'dossiers');
+import { DOSSIER_UPLOADS_ROOT, removeUploadedFilesSync } from '../lib/dossier-storage';
 
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
-    fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
-    cb(null, UPLOADS_ROOT);
+    fs.mkdirSync(DOSSIER_UPLOADS_ROOT, { recursive: true });
+    cb(null, DOSSIER_UPLOADS_ROOT);
   },
   filename(_req, file, cb) {
     const ext = path.extname(file.originalname);
@@ -32,11 +31,19 @@ const ALLOWED_MIMES = [
 ];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_TOTAL_UPLOAD_SIZE = 100 * 1024 * 1024; // 100 MB par requête
 
 export const uploadDossierFiles = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter(_req, file, cb) {
+    if (
+      file.mimetype === 'application/octet-stream' &&
+      path.extname(file.originalname).toLowerCase() !== '.dcm'
+    ) {
+      cb(new Error(`Type de fichier non autorisé : ${file.mimetype}`));
+      return;
+    }
     if (ALLOWED_MIMES.includes(file.mimetype)) {
       cb(null, true);
     } else {
@@ -46,18 +53,45 @@ export const uploadDossierFiles = multer({
 }).array('files', 10);
 
 /**
- * Signatures binaires ("magic bytes") par type MIME pour lequel un contrôle
- * fiable existe. Les types sans signature stable (DICOM brut, octet-stream,
- * texte) ne sont pas vérifiés ici.
+ * Signatures binaires utilisées contre le MIME spoofing. Les fichiers DICOM
+ * doivent contenir le marqueur DICM ; les formats texte n'ont pas de signature stable.
  */
-const MAGIC_SIGNATURES: Record<string, (buf: Buffer) => boolean> = {
-  'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
-  'image/png': (b) =>
-    b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
-  'image/gif': (b) => b.subarray(0, 4).toString('ascii') === 'GIF8',
-  'image/webp': (b) =>
-    b.subarray(0, 4).toString('ascii') === 'RIFF' && b.subarray(8, 12).toString('ascii') === 'WEBP',
-  'application/pdf': (b) => b.subarray(0, 5).toString('ascii') === '%PDF-',
+interface MagicSignature {
+  bytes: number;
+  check: (buffer: Buffer) => boolean;
+}
+
+const dicomSignature: MagicSignature = {
+  bytes: 132,
+  check: (buffer) => buffer.subarray(128, 132).toString('ascii') === 'DICM',
+};
+
+const MAGIC_SIGNATURES: Record<string, MagicSignature> = {
+  'image/jpeg': {
+    bytes: 3,
+    check: (buffer) => buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff,
+  },
+  'image/png': {
+    bytes: 8,
+    check: (buffer) =>
+      buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  },
+  'image/gif': {
+    bytes: 4,
+    check: (buffer) => buffer.subarray(0, 4).toString('ascii') === 'GIF8',
+  },
+  'image/webp': {
+    bytes: 12,
+    check: (buffer) =>
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WEBP',
+  },
+  'application/pdf': {
+    bytes: 5,
+    check: (buffer) => buffer.subarray(0, 5).toString('ascii') === '%PDF-',
+  },
+  'application/dicom': dicomSignature,
+  'application/octet-stream': dicomSignature,
 };
 
 /**
@@ -68,45 +102,54 @@ const MAGIC_SIGNATURES: Record<string, (buf: Buffer) => boolean> = {
 export function verifyUploadedMagicBytes(req: Request, _res: Response, next: NextFunction): void {
   const files = (req.files as Express.Multer.File[]) || [];
 
-  const cleanup = () => {
-    files.forEach((f) => {
-      try {
-        fs.unlinkSync(f.path);
-      } catch {
-        // déjà supprimé
-      }
-    });
+  if (files.reduce((total, file) => total + file.size, 0) > MAX_TOTAL_UPLOAD_SIZE) {
+    removeUploadedFilesSync(files);
+    next(
+      new ApiError(
+        'La taille totale des fichiers dépasse la limite de 100 Mo',
+        'UPLOAD_TOTAL_SIZE_EXCEEDED',
+        413
+      )
+    );
+    return;
+  }
+
+  const rejectInvalidContent = (file: Express.Multer.File): void => {
+    removeUploadedFilesSync(files);
+    next(
+      new ApiError(
+        `Le contenu du fichier ne correspond pas au type déclaré : ${file.originalname}`,
+        'UPLOAD_INVALID_CONTENT',
+        400
+      )
+    );
   };
 
   try {
     for (const file of files) {
-      const check = MAGIC_SIGNATURES[file.mimetype];
-      if (!check) continue;
+      const signature = MAGIC_SIGNATURES[file.mimetype];
+      if (!signature) continue;
 
-      const buffer = Buffer.alloc(12);
+      const buffer = Buffer.alloc(signature.bytes);
       const fd = fs.openSync(file.path, 'r');
       try {
-        fs.readSync(fd, buffer, 0, 12, 0);
+        const bytesRead = fs.readSync(fd, buffer, 0, signature.bytes, 0);
+        if (bytesRead < signature.bytes) {
+          rejectInvalidContent(file);
+          return;
+        }
       } finally {
         fs.closeSync(fd);
       }
 
-      if (!check(buffer)) {
-        cleanup();
-        return next(
-          new ApiError(
-            `Le contenu du fichier ne correspond pas au type déclaré : ${file.originalname}`,
-            'UPLOAD_INVALID_CONTENT',
-            400
-          )
-        );
+      if (!signature.check(buffer)) {
+        rejectInvalidContent(file);
+        return;
       }
     }
     next();
   } catch (err) {
-    cleanup();
+    removeUploadedFilesSync(files);
     next(err);
   }
 }
-
-export { UPLOADS_ROOT };

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-const numericParam = z.string().regex(/^\d+$/).transform((val) => parseInt(val, 10));
+const numericParam = z
+  .string()
+  .regex(/^\d+$/)
+  .transform((val) => parseInt(val, 10));
 
 export const patientRdvParamsSchema = z.object({
   patientId: numericParam,

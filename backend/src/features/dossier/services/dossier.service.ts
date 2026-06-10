@@ -4,16 +4,15 @@ import { ApiError } from '../../../middlewares/errorHandler';
 import { assertDossierAccess, dossierSelect } from './dossier.shared';
 import { syncDossierOperationReady } from './dossier-completion';
 
-export interface DossierFileInfo {
+interface DossierFileInfo {
   id: number;
   originalName: string;
-  storedName: string;
   mimeType: string;
   size: number;
   createdAt: Date;
 }
 
-export interface DossierResponse {
+interface DossierResponse {
   id: number;
   observations: string | null;
   operationReady: boolean;
@@ -57,7 +56,7 @@ function mapDossier(dossier: DossierRow): DossierResponse {
   };
 }
 
-export class DossierService {
+class DossierService {
   async getDossierByPatientAndRdv(
     patientId: number,
     rdvId: number,
@@ -75,8 +74,10 @@ export class DossierService {
     medecinId: number
   ): Promise<DossierResponse> {
     const dossierId = await this.requireDossierId(patientId, rdvId, medecinId);
-    await prisma.dossier.update({ where: { id: dossierId }, data: { observations } });
-    await syncDossierOperationReady(dossierId);
+    await prisma.$transaction(async (tx) => {
+      await tx.dossier.update({ where: { id: dossierId }, data: { observations } });
+      await syncDossierOperationReady(dossierId, tx);
+    });
     return this.loadMapped(dossierId);
   }
 
@@ -87,7 +88,21 @@ export class DossierService {
     medecinId: number
   ): Promise<DossierResponse> {
     const dossierId = await this.requireDossierId(patientId, rdvId, medecinId);
-    await prisma.dossier.update({ where: { id: dossierId }, data: { verified } });
+    if (verified) {
+      const result = await prisma.dossier.updateMany({
+        where: { id: dossierId, operationReadyAt: { not: null } },
+        data: { verified: true },
+      });
+      if (result.count === 0) {
+        throw new ApiError(
+          'Le dossier doit contenir des observations et au moins un fichier avant validation',
+          'DOSSIER_NOT_READY',
+          409
+        );
+      }
+    } else {
+      await prisma.dossier.update({ where: { id: dossierId }, data: { verified: false } });
+    }
     return this.loadMapped(dossierId);
   }
 
@@ -111,7 +126,10 @@ export class DossierService {
       where: { id: dossierId },
       select: dossierSelect,
     });
-    return mapDossier(dossier!);
+    if (!dossier) {
+      throw new ApiError('Dossier médical non trouvé', 'NOT_FOUND', 404);
+    }
+    return mapDossier(dossier);
   }
 }
 

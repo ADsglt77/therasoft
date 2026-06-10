@@ -1,70 +1,50 @@
-import path from 'path';
 import fs from 'fs';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
-import { UPLOADS_ROOT } from '../../../middlewares/upload';
-import { assertDossierAccess, assertPatientOwnsRdv } from './dossier.shared';
-import { syncDossierOperationReady } from './dossier-completion';
+import {
+  removeDossierFiles,
+  removeUploadedFiles,
+  resolveDossierFile,
+} from '../../../lib/dossier-storage';
+import { DossierOperationStatus, syncDossierOperationReady } from './dossier-completion';
+import { assertDossierAccess } from './dossier.shared';
 
-export interface DossierFileUploadResponse {
+interface DossierFileUploadResponse extends DossierOperationStatus {
   files: DossierFileResponse[];
-  operationReady: boolean;
-  operationReadyAt: Date | null;
 }
 
-export interface DossierOperationStatus {
-  operationReady: boolean;
-  operationReadyAt: Date | null;
-}
-
-export interface DossierFileResponse {
+interface DossierFileResponse {
   id: number;
   originalName: string;
-  storedName: string;
   mimeType: string;
   size: number;
   createdAt: Date;
-  url: string;
 }
 
-function toFileResponse(
-  file: {
-    id: number;
-    originalName: string;
-    storedName: string;
-    mimeType: string;
-    size: number;
-    createdAt: Date;
-  },
-  patientId: number,
-  rdvId: number
-): DossierFileResponse {
+function toFileResponse(file: {
+  id: number;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: Date;
+}): DossierFileResponse {
   return {
-    ...file,
-    url: `/api/patients/${patientId}/rdv/${rdvId}/dossier/files/${file.id}/download`,
+    id: file.id,
+    originalName: file.originalName,
+    mimeType: file.mimeType,
+    size: file.size,
+    createdAt: file.createdAt,
   };
 }
 
 class DossierFileService {
-  private async getDossierOperationStatus(dossierId: number): Promise<DossierOperationStatus> {
-    const dossier = await prisma.dossier.findUnique({
-      where: { id: dossierId },
-      select: { operationReadyAt: true },
-    });
-    return {
-      operationReady: dossier?.operationReadyAt != null,
-      operationReadyAt: dossier?.operationReadyAt ?? null,
-    };
-  }
-
-  private async getDossierId(patientId: number, rdvId: number): Promise<number> {
-    await assertPatientOwnsRdv(patientId, rdvId);
+  private async getDossierId(rdvId: number): Promise<number> {
     const dossier = await prisma.dossier.findUnique({
       where: { rdvId },
       select: { id: true },
     });
     if (!dossier) {
-      throw new ApiError('Dossier médical non trouvé', 'NOT_FOUND', 404);
+      throw new ApiError('Dossier medical non trouve', 'NOT_FOUND', 404);
     }
     return dossier.id;
   }
@@ -75,30 +55,39 @@ class DossierFileService {
     medecinId: number,
     files: Express.Multer.File[]
   ): Promise<DossierFileUploadResponse> {
-    await assertDossierAccess(patientId, rdvId, medecinId);
-    const dossierId = await this.getDossierId(patientId, rdvId);
+    let persisted = false;
+    try {
+      await assertDossierAccess(patientId, rdvId, medecinId);
+      const dossierId = await this.getDossierId(rdvId);
+      const result = await prisma.$transaction(async (tx) => {
+        const rows = await Promise.all(
+          files.map((file) =>
+            tx.dossierFile.create({
+              data: {
+                dossierId,
+                originalName: file.originalname,
+                storedName: file.filename,
+                mimeType: file.mimetype,
+                size: file.size,
+              },
+            })
+          )
+        );
+        const status = await syncDossierOperationReady(dossierId, tx);
+        return { rows, status };
+      });
+      persisted = true;
 
-    const created = await Promise.all(
-      files.map((f) =>
-        prisma.dossierFile.create({
-          data: {
-            dossierId,
-            originalName: f.originalname,
-            storedName: f.filename,
-            mimeType: f.mimetype,
-            size: f.size,
-          },
-        })
-      )
-    );
-
-    await syncDossierOperationReady(dossierId);
-    const status = await this.getDossierOperationStatus(dossierId);
-
-    return {
-      files: created.map((f) => toFileResponse(f, patientId, rdvId)),
-      ...status,
-    };
+      return {
+        files: result.rows.map(toFileResponse),
+        ...result.status,
+      };
+    } catch (error) {
+      if (!persisted) {
+        await removeUploadedFiles(files);
+      }
+      throw error;
+    }
   }
 
   async deleteFile(
@@ -108,25 +97,21 @@ class DossierFileService {
     medecinId: number
   ): Promise<DossierOperationStatus> {
     await assertDossierAccess(patientId, rdvId, medecinId);
-    const dossierId = await this.getDossierId(patientId, rdvId);
+    const dossierId = await this.getDossierId(rdvId);
 
     const file = await prisma.dossierFile.findFirst({
       where: { id: fileId, dossierId },
     });
     if (!file) {
-      throw new ApiError('Fichier non trouvé', 'NOT_FOUND', 404);
+      throw new ApiError('Fichier non trouve', 'NOT_FOUND', 404);
     }
 
-    const filePath = path.join(UPLOADS_ROOT, file.storedName);
-    try {
-      fs.unlinkSync(filePath);
-    } catch {
-      // Le fichier physique a peut-être déjà été supprimé
-    }
-
-    await prisma.dossierFile.delete({ where: { id: fileId } });
-    await syncDossierOperationReady(dossierId);
-    return this.getDossierOperationStatus(dossierId);
+    const status = await prisma.$transaction(async (tx) => {
+      await tx.dossierFile.delete({ where: { id: fileId } });
+      return syncDossierOperationReady(dossierId, tx);
+    });
+    await removeDossierFiles([file.storedName]);
+    return status;
   }
 
   async getFilePath(
@@ -136,16 +121,16 @@ class DossierFileService {
     medecinId: number
   ): Promise<{ absolutePath: string; originalName: string; mimeType: string }> {
     await assertDossierAccess(patientId, rdvId, medecinId);
-    const dossierId = await this.getDossierId(patientId, rdvId);
+    const dossierId = await this.getDossierId(rdvId);
 
     const file = await prisma.dossierFile.findFirst({
       where: { id: fileId, dossierId },
     });
     if (!file) {
-      throw new ApiError('Fichier non trouvé', 'NOT_FOUND', 404);
+      throw new ApiError('Fichier non trouve', 'NOT_FOUND', 404);
     }
 
-    const absolutePath = path.join(UPLOADS_ROOT, file.storedName);
+    const absolutePath = resolveDossierFile(file.storedName);
     if (!fs.existsSync(absolutePath)) {
       throw new ApiError('Fichier introuvable sur le disque', 'NOT_FOUND', 404);
     }
