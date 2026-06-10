@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { UiInputComponent, InputMessageType } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { FeedbackCardComponent } from '../../../components/feedback-card/feedback-card.component';
 import { PasswordStrengthIndicatorComponent } from '../../../components/password-strength-indicator/password-strength-indicator.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { PasswordValidator } from '../../../core/validators/password.validator';
-import { InputErrorMessages } from '../../../core/utils/input-error-messages';
-import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
-import { FormUtils } from '../../../core/utils/form-utils';
+import { extractApiError, getInputMessage } from '../../../core/utils/errors';
+import { markFormTouched, updateControl } from '../../../core/utils/form-utils';
+import { matchingFieldsValidator } from '../../../core/validators/matching-fields.validator';
 
 type ResetState = 'form' | 'success' | 'invalid';
 
@@ -41,7 +41,6 @@ export class ResetPasswordPageComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private authService: AuthService,
-    private router: Router,
     private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group(
@@ -49,7 +48,7 @@ export class ResetPasswordPageComponent implements OnInit {
         newPassword: ['', [Validators.required, PasswordValidator.strong()]],
         confirmPassword: ['', [Validators.required]],
       },
-      { validators: this.passwordMatchValidator }
+      { validators: matchingFieldsValidator('newPassword', 'confirmPassword') }
     );
   }
 
@@ -62,25 +61,12 @@ export class ResetPasswordPageComponent implements OnInit {
     this.token = token;
   }
 
-  passwordMatchValidator(form: FormGroup) {
-    const newPassword = form.get('newPassword');
-    const confirmPassword = form.get('confirmPassword');
-    if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
-      confirmPassword.setErrors({ passwordMismatch: true });
-      return { passwordMismatch: true };
-    }
-    if (confirmPassword && confirmPassword.hasError('passwordMismatch')) {
-      confirmPassword.setErrors(null);
-    }
-    return null;
-  }
-
   get newPasswordValue(): string {
     return this.form.get('newPassword')?.value || '';
   }
 
   get newPasswordMessage(): { message: string; type: InputMessageType | '' } {
-    return InputErrorMessages.getInputMessage(this.form, 'newPassword', {
+    return getInputMessage(this.form, 'newPassword', {
       showWarningForPassword: true,
       passwordMinLength: 12,
     });
@@ -96,9 +82,7 @@ export class ResetPasswordPageComponent implements OnInit {
   }
 
   update(field: string, value: string): void {
-    const control = this.form.get(field);
-    control?.setValue(value);
-    control?.markAsTouched();
+    updateControl(this.form, field, value);
   }
 
   onSubmit(): void {
@@ -106,7 +90,7 @@ export class ResetPasswordPageComponent implements OnInit {
       return;
     }
     if (this.form.invalid) {
-      FormUtils.markFormGroupTouched(this.form);
+      markFormTouched(this.form);
       return;
     }
     this.isLoading = true;
@@ -118,7 +102,7 @@ export class ResetPasswordPageComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        const extracted = ApiErrorHandler.extractError(err);
+        const extracted = extractApiError(err);
         if (extracted.code === 'AUTH_RESET_TOKEN_INVALID') {
           this.state = 'invalid';
         } else {
@@ -130,7 +114,4 @@ export class ResetPasswordPageComponent implements OnInit {
     });
   }
 
-  goLogin(): void {
-    this.router.navigate(['/login']);
-  }
 }

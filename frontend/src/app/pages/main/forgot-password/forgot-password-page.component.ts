@@ -5,7 +5,7 @@ import { UiInputComponent, InputMessageType } from '../../../components/input/ui
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { FeedbackCardComponent } from '../../../components/feedback-card/feedback-card.component';
 import { AuthService } from '../../../core/services/auth.service';
-import { FormUtils } from '../../../core/utils/form-utils';
+import { markFormTouched } from '../../../core/utils/form-utils';
 
 /**
  * Page « Mot de passe oublié » : saisie de l'email → envoi d'un lien de réinitialisation.
@@ -53,7 +53,7 @@ export class ForgotPasswordPageComponent {
       return;
     }
     if (this.form.invalid) {
-      FormUtils.markFormGroupTouched(this.form);
+      markFormTouched(this.form);
       return;
     }
     this.isLoading = true;
