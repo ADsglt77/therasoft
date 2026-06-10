@@ -6,12 +6,16 @@ import { UiInputComponent } from '../../../components/input/ui-input.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
 import { NotificationService } from '../../../core/services/notification.service';
-import { PatientService, Dossier, DossierFile } from '../../../core/services/patient.service';
+import {
+  PatientService,
+  Dossier,
+  DossierFile,
+  DossierOperationStatus,
+} from '../../../core/services/patient.service';
 import { ExistingFile } from '../../../components/input/ui-input.component';
 import { VoiceRecognitionService } from '../../../core/services/voice-recognition.service';
 import { Subscription } from 'rxjs';
-import { ApiErrorHandler } from '../../../core/utils/api-error-handler';
-import { NotificationMessages } from '../../../core/constants/notification-messages';
+import { extractApiError } from '../../../core/utils/errors';
 import { formatDateLong, formatTime as formatTimeUtil, calculateAge } from '../../../core/utils/date.utils';
 import { formatSexe as formatSexeUtil, getSexeIcon } from '../../../core/constants/sexe.constants';
 import { formatModalite as formatModaliteUtil } from '../../../core/constants/modalite.constants';
@@ -48,7 +52,8 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   private subscriptions = new Subscription();
   private transcriptSub: Subscription | null = null;
   private transcriptionInitialText = '';
-  private saveTimeout: any;
+  private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private saveRequested = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -71,6 +76,13 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       return;
     }
     const newValue = !this.dossier.verified;
+    if (newValue && !this.dossier.operationReady) {
+      this.notificationService.show(
+        'warning',
+        'Ajoutez des observations et au moins un fichier avant de vérifier le dossier'
+      );
+      return;
+    }
     this.isSavingVerified = true;
     this.patientService.setVerified(this.patientId, this.rdvId, newValue).subscribe({
       next: (updated) => {
@@ -101,6 +113,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     const sub = this.route.paramMap.subscribe((params) => {
       const date = params.get('date');
       const rdvIdParam = params.get('rdvId');
+      const patientIdParam = params.get('patientId');
       const patientIdFromState = history.state?.patientId as number | undefined;
 
       if (!date || !rdvIdParam) {
@@ -110,6 +123,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       }
 
       const rdvId = parseInt(rdvIdParam, 10);
+      const patientId = patientIdParam ? Number(patientIdParam) : patientIdFromState;
 
       if (isNaN(rdvId)) {
         this.notificationService.show('danger', 'ID de rendez-vous invalide');
@@ -117,13 +131,13 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
         return;
       }
 
-      if (!patientIdFromState || isNaN(patientIdFromState)) {
+      if (!patientId || !Number.isInteger(patientId) || patientId <= 0) {
         this.notificationService.show('warning', 'Dossier inaccessible depuis ce lien');
         this.router.navigate(['/calendar', date]);
         return;
       }
 
-      this.patientId = patientIdFromState;
+      this.patientId = patientId;
       this.rdvId = rdvId;
       this.loadPatientData();
       this.cdr.markForCheck();
@@ -135,7 +149,8 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
-      this.saveObservations();
+      this.saveTimeout = null;
+      this.flushPendingObservations();
     }
     this.clearTranscriptSub();
     if (this.isTranscribing) {
@@ -155,10 +170,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       next: (dossier) => {
         this.dossier = dossier;
         this.observationsValue = dossier.observations || '';
-        this.dossierFiles = (dossier.files || []).map((f) => ({
-          ...f,
-          url: `/uploads/dossiers/${f.storedName}`,
-        }));
+        this.dossierFiles = dossier.files || [];
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -195,7 +207,14 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
    */
   saveObservations(): void {
     if (!this.patientId || !this.rdvId || !this.dossier) return;
-    if (this.isSavingObservations) return;
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    if (this.isSavingObservations) {
+      this.saveRequested = true;
+      return;
+    }
     
     // Vérifier si la valeur a changé
     if (this.observationsValue === (this.dossier.observations || '')) {
@@ -203,14 +222,20 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     }
 
     this.isSavingObservations = true;
+    this.saveRequested = false;
+    const submittedValue = this.observationsValue;
+    const previousServerValue = this.dossier.observations || '';
 
     const sub = this.patientService
-      .updateObservations(this.patientId, this.rdvId, this.observationsValue)
+      .updateObservations(this.patientId, this.rdvId, submittedValue)
       .subscribe({
         next: (updatedDossier) => {
           const wasReady = this.dossier?.operationReady ?? false;
+          const hasNewerLocalValue = this.observationsValue !== submittedValue;
           this.dossier = updatedDossier;
-          this.observationsValue = updatedDossier.observations || '';
+          if (!hasNewerLocalValue) {
+            this.observationsValue = updatedDossier.observations || '';
+          }
           this.isSavingObservations = false;
           if (updatedDossier.operationReady && !wasReady) {
             this.notificationService.show(
@@ -220,14 +245,20 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           } else {
             this.notificationService.show('success', 'Observations mises à jour avec succès');
           }
+          if (hasNewerLocalValue || this.saveRequested) {
+            this.saveRequested = false;
+            this.saveTimeout = setTimeout(() => this.saveObservations(), 0);
+          }
           this.cdr.markForCheck();
         },
         error: (error) => {
           this.isSavingObservations = false;
-          // Restaurer la valeur précédente en cas d'erreur
-          this.observationsValue = this.dossier?.observations || '';
-          const extracted = ApiErrorHandler.extractError(error);
-          this.notificationService.show('danger', extracted.message || NotificationMessages.GENERIC_ERROR);
+          this.saveRequested = false;
+          if (this.observationsValue === submittedValue) {
+            this.observationsValue = previousServerValue;
+          }
+          const extracted = extractApiError(error);
+          this.notificationService.show('danger', extracted.message || 'Une erreur est survenue');
           this.cdr.markForCheck();
         },
       });
@@ -269,10 +300,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
     this.location.back();
   }
 
-  private applyOperationStatus(status: {
-    operationReady: boolean;
-    operationReadyAt: string | null;
-  }): boolean {
+  private applyOperationStatus(status: DossierOperationStatus): boolean {
     if (!this.dossier) {
       return false;
     }
@@ -281,6 +309,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       ...this.dossier,
       operationReady: status.operationReady,
       operationReadyAt: status.operationReadyAt,
+      verified: status.verified,
     };
     return status.operationReady && !wasReady;
   }
@@ -304,13 +333,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       .uploadDossierFiles(this.patientId, this.rdvId, files)
       .subscribe({
         next: (response) => {
-          this.dossierFiles = [
-            ...response.files.map((f) => ({
-              ...f,
-              url: `/uploads/dossiers/${f.storedName}`,
-            })),
-            ...this.dossierFiles,
-          ];
+          this.dossierFiles = [...response.files, ...this.dossierFiles];
           const becameReady = this.applyOperationStatus(response);
           this.clearSelectedTrigger++;
           this.isUploadingFiles = false;
@@ -329,7 +352,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.isUploadingFiles = false;
-          const extracted = ApiErrorHandler.extractError(error);
+          const extracted = extractApiError(error);
           this.notificationService.show(
             'danger',
             extracted.message || 'Erreur lors de l\'upload'
@@ -359,7 +382,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           URL.revokeObjectURL(url);
         },
         error: (error) => {
-          const extracted = ApiErrorHandler.extractError(error);
+          const extracted = extractApiError(error);
           this.notificationService.show('danger', extracted.message || 'Téléchargement impossible');
         },
       });
@@ -378,7 +401,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
           setTimeout(() => URL.revokeObjectURL(url), 60_000);
         },
         error: (error) => {
-          const extracted = ApiErrorHandler.extractError(error);
+          const extracted = extractApiError(error);
           this.notificationService.show('danger', extracted.message || 'Prévisualisation impossible');
         },
       });
@@ -402,7 +425,7 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.isDeletingFileId = null;
-          const extracted = ApiErrorHandler.extractError(error);
+          const extracted = extractApiError(error);
           this.notificationService.show(
             'danger',
             extracted.message || 'Erreur lors de la suppression'
@@ -484,6 +507,20 @@ export class DashboardPatientDetailPageComponent implements OnInit, OnDestroy {
       return;
     }
     this.isWideLayout = window.innerWidth > 1024;
+  }
+
+  private flushPendingObservations(): void {
+    if (
+      !this.patientId ||
+      !this.rdvId ||
+      !this.dossier ||
+      this.observationsValue === (this.dossier.observations || '')
+    ) {
+      return;
+    }
+    this.patientService
+      .updateObservations(this.patientId, this.rdvId, this.observationsValue)
+      .subscribe({ error: () => undefined });
   }
 }
 

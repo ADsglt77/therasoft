@@ -40,6 +40,14 @@ export const appRoutes: Routes = [
       import('./pages/dashboard/main-page.component').then((m) => m.DashboardMainPageComponent),
     children: [
       {
+        path: 'calendar/:date/:rdvId/patient/:patientId',
+        canActivate: [medecinGuard],
+        loadComponent: () =>
+          import('./pages/dashboard/patient-detail/dashboard-patient-detail-page.component').then(
+            (m) => m.DashboardPatientDetailPageComponent
+          ),
+      },
+      {
         path: 'calendar/:date/:rdvId',
         canActivate: [medecinGuard],
         loadComponent: () =>

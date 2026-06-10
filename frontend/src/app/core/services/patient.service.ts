@@ -1,21 +1,20 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiClientService } from '../../api/api-client.service';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export interface DossierFile {
   id: number;
   originalName: string;
-  storedName: string;
   mimeType: string;
   size: number;
   createdAt: string;
-  url: string;
 }
 
 export interface DossierOperationStatus {
   operationReady: boolean;
   operationReadyAt: string | null;
+  verified: boolean;
 }
 
 export interface DossierFileUploadResponse extends DossierOperationStatus {
@@ -50,10 +49,10 @@ export interface Dossier {
 @Injectable({
   providedIn: 'root',
 })
-export class PatientService extends ApiClientService {
-  constructor(http: HttpClient) {
-    super(http);
-  }
+export class PatientService {
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  constructor(private http: HttpClient) {}
 
   /** Base d'URL du dossier d'un RDV patient (+ suffixe optionnel). */
   private dossierUrl(patientId: number, rdvId: number, suffix = ''): string {

@@ -63,9 +63,9 @@ export class VoiceRecognitionService {
       this.finalTranscript = '';
       this.isRecognizing = true;
       this.recognition.start();
-    } catch (error) {
+    } catch {
       this.isRecognizing = false;
-      console.error('Démarrage de la transcription impossible :', error);
+      this.errorSubject.next(new Error('Démarrage de la transcription impossible'));
     }
   }
 
@@ -76,8 +76,8 @@ export class VoiceRecognitionService {
     this.isRecognizing = false;
     try {
       this.recognition.stop();
-    } catch (error) {
-      console.error('Arrêt de la transcription impossible :', error);
+    } catch {
+      this.errorSubject.next(new Error('Arrêt de la transcription impossible'));
     }
   }
 
