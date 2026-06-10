@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
@@ -28,6 +28,7 @@ interface BookingView {
   imports: [NgTemplateOutlet, RouterLink, AppIconComponent, UiBadgeComponent, UiButtonComponent],
   templateUrl: './dashboard-mes-rdv-page.component.html',
   styleUrl: './dashboard-mes-rdv-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardMesRdvPageComponent implements OnInit {
   upcoming: BookingView[] = [];
@@ -36,7 +37,8 @@ export class DashboardMesRdvPageComponent implements OnInit {
 
   constructor(
     private bookingService: BookingService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -52,6 +54,7 @@ export class DashboardMesRdvPageComponent implements OnInit {
       next: () => {
         this.notificationService.show('success', 'Rendez-vous annulé');
         this.upcoming = this.upcoming.filter((b) => b.data.id !== rdvId);
+        this.cdr.markForCheck();
       },
       error: () => this.notificationService.show('danger', "L'annulation a échoué"),
     });
@@ -65,10 +68,12 @@ export class DashboardMesRdvPageComponent implements OnInit {
         this.upcoming = views.filter((v) => !v.isPast).sort((a, b) => a.startMs - b.startMs);
         this.past = views.filter((v) => v.isPast).sort((a, b) => b.startMs - a.startMs);
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.isLoading = false;
         this.notificationService.show('danger', 'Impossible de charger vos rendez-vous');
+        this.cdr.markForCheck();
       },
     });
   }
