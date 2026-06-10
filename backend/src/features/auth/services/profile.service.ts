@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { ApiError } from '../../../middlewares/errorHandler';
 import { UpdateProfileInput, UpdateAvatarInput } from '../schemas/auth.schemas';
@@ -95,12 +96,10 @@ export class ProfileService {
     const patient = await prisma.patient.findUnique({ where: { id: patientId }, select: { id: true, userId: true } });
     if (!patient) throw new ApiError('Patient introuvable', 'AUTH_PATIENT_NOT_FOUND', 404);
 
-    const updateData: any = {};
+    const updateData: Prisma.PatientUncheckedUpdateInput = {};
     if (input.nom !== undefined) updateData.nom = input.nom;
     if (input.prenom !== undefined) updateData.prenom = input.prenom;
-    // @ts-ignore (since we don't have the full type here but we know it can be passed)
     if (input.adresse !== undefined) updateData.adresse = input.adresse;
-    // @ts-ignore
     if (input.medecinId !== undefined) updateData.medecinId = input.medecinId;
 
     if (Object.keys(updateData).length > 0) {
