@@ -33,7 +33,7 @@ export class AppIconComponent {
   }
 
   // Mapping des noms d'icônes vers les composants Lucide
-  private iconMap: Record<string, any> = {
+  private readonly iconMap: Record<string, typeof Sparkles> = {
     sparkles: Sparkles,
     check: Check,
     circle: Circle,
@@ -111,7 +111,7 @@ export class AppIconComponent {
     hamburger: Menu,
   };
 
-  get iconComponent(): any {
+  get iconComponent(): typeof Sparkles | undefined {
     return this.iconMap[this.name.toLowerCase()];
   }
 }
