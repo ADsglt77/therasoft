@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService, MeResponse } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -18,6 +18,7 @@ import { PasswordValidator } from '../../../core/validators/password.validator';
   imports: [ReactiveFormsModule, UiButtonComponent, UiInputComponent, PasswordStrengthIndicatorComponent],
   templateUrl: './dashboard-settings-page.component.html',
   styleUrl: './dashboard-settings-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardSettingsPageComponent implements OnInit {
   currentUser: MeResponse | null = null;
