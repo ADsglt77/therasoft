@@ -43,7 +43,8 @@ Si l’erreur `port is already allocated` revient, un autre service occupe encor
 |------|-------|--------------|
 | Médecin | `user@user.user` | `Azertyuiop1!` |
 | Médecin | `user2@user.user` | `Azertyuiop1!` |
-| Secrétaire (démo) | `secretaire@demo.demo` | `Azertyuiop1!` |
+
+> Les **patients** ne sont pas pré-créés : ils s'inscrivent eux-mêmes via la page `/register` (choix du médecin à l'inscription).
 
 ## Base de données (Prisma)
 
@@ -57,7 +58,7 @@ docker compose up -d --build
 docker compose exec backend npx prisma db push --accept-data-loss
 ```
 
-Au démarrage, l’entrypoint exécute `prisma db push --accept-data-loss` (colonnes legacy supprimées, rôle `ADMIN` → `SECRETAIRE` sur les bases existantes). Avec `RESET_DB_ON_SEED=true` (défaut), la base et les uploads sont vidés puis reseedés.
+Au démarrage, l’entrypoint exécute `prisma db push`. Avec `RESET_DB_ON_SEED=true` (défaut), la base et les uploads sont vidés puis reseedés (2 médecins, sites et vacations de démonstration).
 
 ## Commandes
 
