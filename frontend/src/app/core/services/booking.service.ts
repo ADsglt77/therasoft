@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ApiClientService } from '../../api/api-client.service';
+import { environment } from '../../../environments/environment';
 
 export interface BookingSite {
   id: number;
@@ -15,7 +15,6 @@ export interface BookingMedecin {
   id: number;
   nom: string;
   prenom: string;
-  specialite?: string | null;
 }
 
 export interface BookingSitesResponse {
@@ -59,10 +58,10 @@ export interface CreateBookingRequest {
 @Injectable({
   providedIn: 'root',
 })
-export class BookingService extends ApiClientService {
-  constructor(http: HttpClient) {
-    super(http);
-  }
+export class BookingService {
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  constructor(private http: HttpClient) {}
 
   getTypes(): Observable<{ types: BookingType[] }> {
     return this.http.get<{ types: BookingType[] }>(`${this.baseUrl}/rdv/types`);
@@ -72,9 +71,15 @@ export class BookingService extends ApiClientService {
     return this.http.get<BookingSitesResponse>(`${this.baseUrl}/rdv/booking-sites`);
   }
 
-  getAvailableDates(siteId: number, year: number, month: number): Observable<{ dates: string[] }> {
+  getAvailableDates(
+    siteId: number,
+    modalite: string,
+    year: number,
+    month: number
+  ): Observable<{ dates: string[] }> {
     const params = new HttpParams()
       .set('siteId', siteId)
+      .set('modalite', modalite)
       .set('year', year)
       .set('month', month);
     return this.http.get<{ dates: string[] }>(`${this.baseUrl}/rdv/available-dates`, { params });

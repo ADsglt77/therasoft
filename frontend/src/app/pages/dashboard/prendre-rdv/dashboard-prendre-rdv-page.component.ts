@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { take } from 'rxjs';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiButtonComponent } from '../../../components/button/ui-button.component';
 import { MonthCalendarComponent } from '../../../components/calendar/month/month-calendar/month-calendar.component';
@@ -57,6 +56,8 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
 
   private calYear = new Date().getFullYear();
   private calMonth = new Date().getMonth();
+  private availableDatesRequest = 0;
+  private slotsRequest = 0;
 
   readonly formatTime = formatTime;
 
@@ -69,17 +70,6 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Statut de vérification : valeur courante (évite le flash) puis rafraîchissement serveur.
-    this.authService
-      .getCurrentUser()
-      .pipe(take(1))
-      .subscribe((user) => {
-        if (user && user.role === 'PATIENT') {
-          this.isVerified = user.emailVerified !== false;
-          this.patientEmail = user.email ?? '';
-          this.cdr.markForCheck();
-        }
-      });
     this.loadVerificationStatus();
 
     this.bookingService.getTypes().subscribe({
@@ -169,8 +159,14 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
   }
 
   selectType(modalite: string): void {
+    this.availableDatesRequest++;
+    this.slotsRequest++;
     this.selectedModalite = modalite;
+    this.selectedSiteId = null;
+    this.selectedSiteLabel = null;
+    this.selectedDate = null;
     this.selectedSlot = null;
+    this.availableDates = new Set();
     this.slots = [];
     this.currentStep = 1;
   }
@@ -318,15 +314,29 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
   }
 
   private loadAvailableDates(): void {
-    if (this.selectedSiteId == null) {
+    if (this.selectedSiteId == null || this.selectedModalite == null) {
       return;
     }
-    this.bookingService.getAvailableDates(this.selectedSiteId, this.calYear, this.calMonth + 1).subscribe({
+    const request = ++this.availableDatesRequest;
+    const siteId = this.selectedSiteId;
+    const modalite = this.selectedModalite;
+    this.bookingService.getAvailableDates(
+      siteId,
+      modalite,
+      this.calYear,
+      this.calMonth + 1
+    ).subscribe({
       next: ({ dates }) => {
+        if (request !== this.availableDatesRequest) {
+          return;
+        }
         this.availableDates = new Set(dates);
         this.cdr.markForCheck();
       },
       error: () => {
+        if (request !== this.availableDatesRequest) {
+          return;
+        }
         this.availableDates = new Set();
         this.cdr.markForCheck();
       },
@@ -337,14 +347,24 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
     if (this.selectedSiteId == null || this.selectedModalite == null || this.selectedDate == null) {
       return;
     }
+    const request = ++this.slotsRequest;
+    const siteId = this.selectedSiteId;
+    const modalite = this.selectedModalite;
+    const date = this.selectedDate;
     this.isLoadingSlots = true;
-    this.bookingService.getAvailableSlots(this.selectedSiteId, this.selectedModalite, this.selectedDate).subscribe({
+    this.bookingService.getAvailableSlots(siteId, modalite, date).subscribe({
       next: ({ slots }) => {
+        if (request !== this.slotsRequest) {
+          return;
+        }
         this.slots = slots;
         this.isLoadingSlots = false;
         this.cdr.markForCheck();
       },
       error: () => {
+        if (request !== this.slotsRequest) {
+          return;
+        }
         this.slots = [];
         this.isLoadingSlots = false;
         this.cdr.markForCheck();
