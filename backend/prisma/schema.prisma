@@ -7,12 +7,11 @@ datasource db {
 }
 
 // Enums
-// - Role: MEDECIN (portail actuel), SECRETAIRE (évolution future)
+// - Role: MEDECIN (personnel médical, dashboard), PATIENT (portail patient)
 // - Sexe: optionnel mais propre
 // - ModaliteType: type d'examen / machine (Vacation et Rdv)
 enum Role {
   MEDECIN
-  SECRETAIRE
   PATIENT
 }
 
