@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { take } from 'rxjs';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
@@ -29,6 +29,7 @@ import { getModaliteUi } from '../../../core/constants/modalite.constants';
   ],
   templateUrl: './dashboard-prendre-rdv-page.component.html',
   styleUrl: './dashboard-prendre-rdv-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPrendreRdvPageComponent implements OnInit {
   medecin: BookingMedecin | null = null;
@@ -63,7 +64,8 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
     private bookingService: BookingService,
     private authService: AuthService,
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -75,18 +77,23 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
         if (user && user.role === 'PATIENT') {
           this.isVerified = user.emailVerified !== false;
           this.patientEmail = user.email ?? '';
+          this.cdr.markForCheck();
         }
       });
     this.loadVerificationStatus();
 
     this.bookingService.getTypes().subscribe({
-      next: ({ types }) => (this.types = types),
+      next: ({ types }) => {
+        this.types = types;
+        this.cdr.markForCheck();
+      },
       error: () => this.notificationService.show('danger', 'Impossible de charger les types de rendez-vous'),
     });
     this.bookingService.getBookingSites().subscribe({
       next: ({ medecin, sites }) => {
         this.medecin = medecin;
         this.sites = sites;
+        this.cdr.markForCheck();
       },
       error: () => this.notificationService.show('danger', 'Impossible de charger les lieux'),
     });
@@ -254,6 +261,7 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
           this.notificationService.show('danger', err?.error?.error?.message || 'La réservation a échoué');
           this.selectedSlot = null;
           this.loadSlots();
+          this.cdr.markForCheck();
         },
       });
   }
@@ -268,10 +276,12 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
       next: () => {
         this.isResending = false;
         this.notificationService.show('success', `Email de vérification renvoyé à ${this.patientEmail}`);
+        this.cdr.markForCheck();
       },
       error: () => {
         this.isResending = false;
         this.notificationService.show('danger', "L'envoi de l'email a échoué");
+        this.cdr.markForCheck();
       },
     });
   }
@@ -285,6 +295,7 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
           this.isVerified ? 'success' : 'information',
           this.isVerified ? 'Adresse email vérifiée' : "Votre email n'est pas encore vérifié"
         );
+        this.cdr.markForCheck();
       },
       error: () => this.notificationService.show('danger', 'Impossible de vérifier le statut'),
     });
@@ -295,6 +306,7 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
       next: (user) => {
         this.isVerified = user.emailVerified !== false;
         this.patientEmail = user.email ?? this.patientEmail;
+        this.cdr.markForCheck();
       },
       error: () => {},
     });
@@ -310,8 +322,14 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
       return;
     }
     this.bookingService.getAvailableDates(this.selectedSiteId, this.calYear, this.calMonth + 1).subscribe({
-      next: ({ dates }) => (this.availableDates = new Set(dates)),
-      error: () => (this.availableDates = new Set()),
+      next: ({ dates }) => {
+        this.availableDates = new Set(dates);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.availableDates = new Set();
+        this.cdr.markForCheck();
+      },
     });
   }
 
@@ -324,10 +342,12 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
       next: ({ slots }) => {
         this.slots = slots;
         this.isLoadingSlots = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.slots = [];
         this.isLoadingSlots = false;
+        this.cdr.markForCheck();
       },
     });
   }
