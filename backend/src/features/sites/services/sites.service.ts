@@ -1,14 +1,9 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
+import { parisDateKey, utcDateKey } from '../../../lib/dates';
+import { OpeningHour, parseOpeningHours } from '../../../lib/opening-hours';
 
-/** Créneau horaire d'ouverture (jour 1 = lundi … 7 = dimanche). */
-export interface OpeningHour {
-  day: number;
-  open: string; // "HH:mm"
-  close: string; // "HH:mm"
-}
-
-export interface SiteResponse {
+interface SiteResponse {
   id: number;
   nom: string;
   ville: string;
@@ -29,20 +24,13 @@ export interface SiteResponse {
   rdvUpcomingCount: number;
 }
 
-function toDateKey(date: Date): string {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-export class SitesService {
+class SitesService {
   /**
    * Liste les sites où le médecin a des vacations, avec stats agrégées
    * (RDV distincts, vacations, modalités, prochaine vacation) + métadonnées.
    */
   async getSitesByMedecin(medecinId: number, q?: string): Promise<SiteResponse[]> {
-    const todayKey = toDateKey(new Date());
+    const todayKey = parisDateKey();
     const term = q?.trim();
 
     // Filtre : sites du médecin, éventuellement restreints à la recherche
@@ -71,6 +59,19 @@ export class SitesService {
             },
           },
         },
+        {
+          rdvs: {
+            some: {
+              medecinId,
+              patient: {
+                OR: [
+                  { nom: { contains: term, mode: 'insensitive' } },
+                  { prenom: { contains: term, mode: 'insensitive' } },
+                ],
+              },
+            },
+          },
+        },
       ];
     }
 
@@ -93,24 +94,42 @@ export class SitesService {
     });
 
     // RDV distincts par site : RdvVacation → vacation.siteId
-    const rdvLinks = await prisma.rdvVacation.findMany({
-      where: { vacation: { medecinId } },
-      select: {
-        rdvId: true,
-        vacation: { select: { siteId: true } },
-        rdv: { select: { date: true } },
-      },
-    });
+    const [rdvLinks, directRdvs] = await Promise.all([
+      prisma.rdvVacation.findMany({
+        where: { vacation: { medecinId } },
+        select: {
+          rdvId: true,
+          vacation: { select: { siteId: true } },
+          rdv: { select: { date: true } },
+        },
+      }),
+      prisma.rdv.findMany({
+        where: { medecinId, siteId: { not: null } },
+        select: { id: true, siteId: true, date: true },
+      }),
+    ]);
 
     const allBySite = new Map<number, Set<number>>();
     const upcomingBySite = new Map<number, Set<number>>();
     for (const link of rdvLinks) {
       const siteId = link.vacation.siteId;
       (allBySite.get(siteId) ?? allBySite.set(siteId, new Set()).get(siteId)!).add(link.rdvId);
-      if (toDateKey(link.rdv.date) >= todayKey) {
+      if (utcDateKey(link.rdv.date) >= todayKey) {
         (upcomingBySite.get(siteId) ?? upcomingBySite.set(siteId, new Set()).get(siteId)!).add(
           link.rdvId
         );
+      }
+    }
+    for (const rdv of directRdvs) {
+      if (rdv.siteId == null) continue;
+      (allBySite.get(rdv.siteId) ?? allBySite.set(rdv.siteId, new Set()).get(rdv.siteId)!).add(
+        rdv.id
+      );
+      if (utcDateKey(rdv.date) >= todayKey) {
+        (
+          upcomingBySite.get(rdv.siteId) ??
+          upcomingBySite.set(rdv.siteId, new Set()).get(rdv.siteId)!
+        ).add(rdv.id);
       }
     }
 
@@ -118,7 +137,7 @@ export class SitesService {
       const modalites = [...new Set(site.vacations.map((v) => v.modalite as string))];
       const nextVacationDate =
         site.vacations
-          .map((v) => toDateKey(v.date))
+          .map((v) => utcDateKey(v.date))
           .filter((k) => k >= todayKey)
           .sort()[0] ?? null;
 
@@ -130,7 +149,7 @@ export class SitesService {
         latitude: site.latitude,
         longitude: site.longitude,
         websiteUrl: site.websiteUrl,
-        openingHours: (site.openingHours as unknown as OpeningHour[] | null) ?? [],
+        openingHours: parseOpeningHours(site.openingHours),
         vacationCount: site.vacations.length,
         modalites,
         nextVacationDate,
