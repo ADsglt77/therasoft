@@ -29,3 +29,6 @@ uploads/
 
 # Prisma : schéma via db push uniquement (pas de migrations SQL versionnées)
 backend/prisma/migrations/
+
+.claude/*
+.codex/
