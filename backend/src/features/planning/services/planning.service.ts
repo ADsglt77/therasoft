@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { getDefaultMonthRange } from '../../../lib/dates';
 
-export interface VacationResponse {
+interface VacationResponse {
   id: number;
   date: Date;
   horaire: Date;
@@ -11,14 +11,14 @@ export interface VacationResponse {
   modalite: string;
 }
 
-export interface DossierPlanningStatus {
+interface DossierPlanningStatus {
   hasObservations: boolean;
   fileCount: number;
   operationReady: boolean;
   verified: boolean;
 }
 
-export interface RdvResponse {
+interface RdvResponse {
   id: number;
   date: Date;
   heureDebut: Date;
@@ -84,7 +84,7 @@ function mapRdv(rdv: RdvRow): RdvResponse {
   return { ...rest, dossierStatus: mapDossierStatus(dossier) };
 }
 
-export class PlanningService {
+class PlanningService {
   async getVacationsByMedecin(
     medecinId: number,
     startDate?: Date,
@@ -129,12 +129,7 @@ export class PlanningService {
   }
 
   async getRdvsByMedecinAndDate(medecinId: number, date: Date): Promise<RdvResponse[]> {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    return this.findRdvs(this.rdvWhereForMedecin(medecinId, startOfDay, endOfDay), {
+    return this.findRdvs(this.rdvWhereForMedecin(medecinId, date, date), {
       heureDebut: 'asc',
     });
   }
