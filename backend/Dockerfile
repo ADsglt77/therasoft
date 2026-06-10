@@ -1,9 +1,9 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
 # Librairies nécessaires à Prisma et à l'attente de Postgres
-RUN apk add --no-cache openssl libc6-compat postgresql-client
+RUN apk add --no-cache openssl libc6-compat postgresql-client su-exec
 
 # Valeur par défaut uniquement pour la phase de build (prisma generate).
 # En runtime, DATABASE_URL est fournie par docker-compose.
@@ -12,7 +12,7 @@ ENV DATABASE_URL=${DATABASE_URL}
 
 # Installer les dépendances (build + runtime)
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copier le code source
 COPY . .
@@ -25,6 +25,8 @@ RUN npx prisma generate
 
 # Construire le code TypeScript
 RUN npm run build
+
+RUN mkdir -p /app/uploads/dossiers
 
 EXPOSE 3000
 
