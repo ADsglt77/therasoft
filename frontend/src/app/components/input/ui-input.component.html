@@ -106,6 +106,7 @@
       [id]="controlId"
       [required]="required"
       [disabled]="disabled"
+      [attr.max]="max || null"
       class="input"
       [ngClass]="getInputStateClasses()"
       [class.input--with-toggle]="showPasswordToggle"

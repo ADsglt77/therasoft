@@ -44,6 +44,7 @@ export class UiInputComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() label: string = '';
   @Input() required: boolean = false;
   @Input() disabled: boolean = false;
+  @Input() max: string = '';
   @Input() message: string = ''; // Message personnalisé (optionnel, prend priorité sur la validation auto)
   @Input() messageType: InputMessageType | '' = ''; // Type de message personnalisé (optionnel)
   @Input() minLength: number = 0; // Longueur minimale pour la validation auto
