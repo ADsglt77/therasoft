@@ -9,8 +9,8 @@ export interface MonthGridCell {
   isToday: boolean;
 }
 
-const WEEKS = 5;
 const DAYS = 7;
+const MIN_WEEKS = 5;
 
 /** Index du jour dans la semaine (0 = lundi … 6 = dimanche). */
 function dayOfWeekIndex(date: Date): number {
@@ -19,7 +19,7 @@ function dayOfWeekIndex(date: Date): number {
 }
 
 /**
- * Construit la grille d'un mois (5×7) : jours du mois + débordement avant/après.
+ * Construit la grille d'un mois (5 ou 6 semaines) : jours du mois + débordement.
  * Logique extraite de la page planning, réutilisable pour tout calendrier mois.
  */
 export function buildMonthGrid(year: number, month: number, today = new Date()): MonthGridCell[] {
@@ -51,7 +51,8 @@ export function buildMonthGrid(year: number, month: number, today = new Date()):
 
   const nextMonth = month === 11 ? 0 : month + 1;
   const nextYear = month === 11 ? year + 1 : year;
-  const remaining = WEEKS * DAYS - cells.length;
+  const weeks = Math.max(MIN_WEEKS, Math.ceil((firstIndex + daysInMonth) / DAYS));
+  const remaining = weeks * DAYS - cells.length;
   for (let d = 1; d <= remaining; d++) {
     push(nextYear, nextMonth, d, false);
   }

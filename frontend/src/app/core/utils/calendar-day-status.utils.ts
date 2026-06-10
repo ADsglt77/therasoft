@@ -1,8 +1,7 @@
 import { BadgeVariant } from '../../components/badge/ui-badge.component';
 import { formatDateKey } from './date.utils';
 
-/** Aligné sur les données seed (année de démo) */
-export const PLANNING_YEAR = 2026;
+const PLANNING_YEAR = 2026;
 
 export type CalendarDayStatus = 'travail' | 'repos' | 'vacances' | 'ferie';
 
@@ -20,18 +19,18 @@ const JOURS_FERIES = new Set<string>([
   `${PLANNING_YEAR}-12-25`,
 ]);
 
-export const DAY_STATUS_LABELS: Record<Exclude<CalendarDayStatus, 'travail'>, string> = {
+const DAY_STATUS_LABELS: Record<Exclude<CalendarDayStatus, 'travail'>, string> = {
   repos: 'Repos',
   vacances: 'Vacances',
   ferie: 'Férié',
 };
 
-export function isWeekendLocal(year: number, month: number, day: number): boolean {
+function isWeekendLocal(year: number, month: number, day: number): boolean {
   const dow = new Date(year, month, day).getDay();
   return dow === 0 || dow === 6;
 }
 
-export function isJourFerie(year: number, month: number, day: number): boolean {
+function isJourFerie(year: number, month: number, day: number): boolean {
   if (year !== PLANNING_YEAR) {
     return false;
   }

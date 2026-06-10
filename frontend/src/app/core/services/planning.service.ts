@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ApiClientService } from '../../api/api-client.service';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { formatDateKey } from '../utils/date.utils';
+import { environment } from '../../../environments/environment';
 
 /**
  * Interface pour une vacation retournée par l'API
@@ -17,7 +17,7 @@ export interface Vacation {
 }
 
 /** État du dossier affiché sur le planning jour */
-export interface DossierPlanningStatus {
+interface DossierPlanningStatus {
   hasObservations: boolean;
   fileCount: number;
   operationReady: boolean;
@@ -63,10 +63,10 @@ export interface RdvsResponse {
 @Injectable({
   providedIn: 'root',
 })
-export class PlanningService extends ApiClientService {
-  constructor(http: HttpClient) {
-    super(http);
-  }
+export class PlanningService {
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  constructor(private http: HttpClient) {}
 
   /**
    * Récupère les vacations pour une date précise

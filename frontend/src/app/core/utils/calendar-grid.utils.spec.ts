@@ -4,8 +4,12 @@ import { buildMonthGrid } from './calendar-grid.utils';
 describe('buildMonthGrid', () => {
   const today = new Date(2026, 0, 15); // 15 janvier 2026
 
-  it('produit une grille de 5×7 = 35 cellules', () => {
+  it('produit une grille minimale de 5×7 = 35 cellules', () => {
     expect(buildMonthGrid(2026, 0, today)).toHaveLength(35);
+  });
+
+  it('produit 6 semaines lorsque le mois ne tient pas sur 35 cellules', () => {
+    expect(buildMonthGrid(2026, 7, today)).toHaveLength(42);
   });
 
   it('contient les 31 jours de janvier marqués inCurrentMonth', () => {
