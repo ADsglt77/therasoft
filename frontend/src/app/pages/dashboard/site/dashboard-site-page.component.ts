@@ -1,6 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Subject, Subscription, merge, of } from 'rxjs';
+import { Subject, merge, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { AppIconComponent } from '../../../components/icon/app-icon.component';
 import { UiBadgeComponent } from '../../../components/badge/ui-badge.component';
@@ -50,43 +51,44 @@ const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 
   imports: [AppIconComponent, UiBadgeComponent],
   templateUrl: './dashboard-site-page.component.html',
   styleUrl: './dashboard-site-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardSitePageComponent implements OnInit, OnDestroy {
+export class DashboardSitePageComponent implements OnInit {
   sites: SiteView[] = [];
   isLoading = true;
   searchTerm = '';
 
   private readonly search$ = new Subject<string>();
-  private sub?: Subscription;
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private siteService: SiteService,
     private sanitizer: DomSanitizer,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     // Chargement initial immédiat (of('')) puis recherches utilisateur debouncées.
-    this.sub = merge(of(''), this.search$.pipe(debounceTime(250), distinctUntilChanged()))
+    merge(of(''), this.search$.pipe(debounceTime(250), distinctUntilChanged()))
       .pipe(
         switchMap((q) => {
           this.isLoading = true;
+          this.cdr.markForCheck();
           return this.siteService.getSites(q).pipe(
             catchError(() => {
               this.notificationService.show('danger', 'Impossible de charger les sites');
               return of({ sites: [], count: 0 } as SitesResponse);
             })
           );
-        })
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((res) => {
         this.sites = res.sites.map((site) => this.toView(site));
         this.isLoading = false;
+        this.cdr.markForCheck();
       });
-  }
-
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
   }
 
   onSearchInput(value: string): void {
