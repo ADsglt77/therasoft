@@ -14,11 +14,15 @@ export async function assertPatientOwnsRdv(patientId: number, rdvId: number): Pr
 }
 
 export async function verifyRdvOwnership(rdvId: number, medecinId: number): Promise<void> {
-  const link = await prisma.rdvVacation.findFirst({
-    where: { rdvId, vacation: { medecinId } },
+  const rdv = await prisma.rdv.findFirst({
+    where: {
+      id: rdvId,
+      OR: [{ medecinId }, { vacationLinks: { some: { vacation: { medecinId } } } }],
+    },
+    select: { id: true },
   });
 
-  if (!link) {
+  if (!rdv) {
     throw new ApiError('Accès refusé : ce rendez-vous ne vous appartient pas', 'FORBIDDEN', 403);
   }
 }
