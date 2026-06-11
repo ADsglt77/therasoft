@@ -95,6 +95,22 @@ function layout(opts: { preheader: string; content: string }): string {
 </html>`;
 }
 
+function bookingDetails(d: BookingEmailData): DetailRow[] {
+  return [
+    { label: 'Date', value: d.dateLabel },
+    { label: 'Heure', value: d.timeLabel },
+    { label: 'Examen', value: d.modaliteLabel },
+    { label: 'Lieu', value: d.siteLabel },
+    { label: 'Médecin', value: d.medecinLabel },
+  ];
+}
+
+function bookingTextDetails(d: BookingEmailData): string {
+  return bookingDetails(d)
+    .map(({ label, value }) => `- ${label} : ${value}`)
+    .join('\n');
+}
+
 // --- Emails ---
 
 export function verificationEmail({ prenom, link }: VerificationEmailData) {
@@ -147,18 +163,11 @@ Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot
 }
 
 export function bookingConfirmationEmail(d: BookingEmailData) {
-  const rows: DetailRow[] = [
-    { label: 'Date', value: d.dateLabel },
-    { label: 'Heure', value: d.timeLabel },
-    { label: 'Examen', value: d.modaliteLabel },
-    { label: 'Lieu', value: d.siteLabel },
-    { label: 'Médecin', value: d.medecinLabel },
-  ];
   const content = `
     ${heading('Votre rendez-vous est confirmé')}
     ${paragraph(`Bonjour ${d.prenom},`, COLORS.text)}
     ${paragraph('Votre rendez-vous a bien été enregistré :')}
-    ${detailsList(rows)}
+    ${detailsList(bookingDetails(d))}
     <p style="margin:20px 0 0;">${button('Voir mes rendez-vous', d.link)}</p>`;
   return {
     subject: 'Votre rendez-vous est confirmé — TsXcare',
@@ -169,11 +178,7 @@ export function bookingConfirmationEmail(d: BookingEmailData) {
     text: `Bonjour ${d.prenom},
 
 Votre rendez-vous est confirmé :
-- Date : ${d.dateLabel}
-- Heure : ${d.timeLabel}
-- Examen : ${d.modaliteLabel}
-- Lieu : ${d.siteLabel}
-- Médecin : ${d.medecinLabel}
+${bookingTextDetails(d)}
 
 Vos rendez-vous : ${d.link}
 — TsXcare`,
@@ -181,18 +186,11 @@ Vos rendez-vous : ${d.link}
 }
 
 export function bookingCancellationEmail(d: BookingEmailData) {
-  const rows: DetailRow[] = [
-    { label: 'Date', value: d.dateLabel },
-    { label: 'Heure', value: d.timeLabel },
-    { label: 'Examen', value: d.modaliteLabel },
-    { label: 'Lieu', value: d.siteLabel },
-    { label: 'Médecin', value: d.medecinLabel },
-  ];
   const content = `
     ${heading('Votre rendez-vous a été annulé')}
     ${paragraph(`Bonjour ${d.prenom},`, COLORS.text)}
     ${paragraph('Le rendez-vous suivant a bien été annulé :')}
-    ${detailsList(rows)}
+    ${detailsList(bookingDetails(d))}
     <p style="margin:20px 0 0;">${button('Prendre un nouveau rendez-vous', d.link)}</p>`;
   return {
     subject: 'Votre rendez-vous a été annulé — TsXcare',
@@ -200,11 +198,7 @@ export function bookingCancellationEmail(d: BookingEmailData) {
     text: `Bonjour ${d.prenom},
 
 Le rendez-vous suivant a été annulé :
-- Date : ${d.dateLabel}
-- Heure : ${d.timeLabel}
-- Examen : ${d.modaliteLabel}
-- Lieu : ${d.siteLabel}
-- Médecin : ${d.medecinLabel}
+${bookingTextDetails(d)}
 
 Prendre un nouveau rendez-vous : ${d.link}
 — TsXcare`,
