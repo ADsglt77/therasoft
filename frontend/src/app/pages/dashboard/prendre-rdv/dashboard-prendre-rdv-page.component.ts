@@ -8,7 +8,7 @@ import { UiStepperComponent, StepperStep } from '../../../components/stepper/ui-
 import { BookingService, BookingMedecin, BookingSite, BookingType, Slot } from '../../../core/services/booking.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { formatDateLong, formatTime } from '../../../core/utils/date.utils';
+import { formatDateKey, formatDateLong, formatTime } from '../../../core/utils/date.utils';
 import { getModaliteUi } from '../../../core/constants/modalite.constants';
 
 /**
@@ -204,7 +204,7 @@ export class DashboardPrendreRdvPageComponent implements OnInit {
     }
     const d = new Date(`${this.selectedDate}T00:00:00`);
     d.setDate(d.getDate() + delta);
-    this.selectedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    this.selectedDate = formatDateKey(d.getFullYear(), d.getMonth(), d.getDate());
     this.selectedSlot = null;
     this.loadSlots();
   }
