@@ -1,42 +1,60 @@
 # Portail Médecin
 
-Planning + dossiers patients · Angular · Express · PostgreSQL · **Docker only**
+Planning + dossiers patients · Angular · Express · PostgreSQL
 
-## Lancer (local)
+- **Dev** : back et front en natif (hot-reload), base PostgreSQL via Docker.
+- **Prod** : un seul `docker-compose.yml` (déployé par Dokploy).
+
+## Développement (local, natif)
+
+Un seul fichier d'environnement, à la racine (`.env`).
 
 ```bash
-cp .env.example .env
-docker compose up --build
+# 1. Base PostgreSQL (Docker, publiée sur 127.0.0.1:5432)
+cp .env.example .env            # un seul .env pour tout le projet
+docker compose up -d db
+
+# 2. Backend → http://localhost:3000
+cd backend
+npm install
+npx prisma generate
+npx prisma migrate deploy       # applique le schéma
+npm run prisma:seed             # démo (une seule fois : ignoré si déjà peuplé)
+npm run dev                     # tsx watch (charge le .env racine)
+
+# 3. Frontend → http://localhost:4200
+cd ../frontend
+npm install
+npm start                       # ng serve ; proxy.conf.json route /api vers :3000
 ```
 
-→ http://localhost (`docker-compose.override.yml` expose le port 80 en local uniquement)
+→ Application : **http://localhost:4200**
 
 ## Déploiement Dokploy
 
-Dokploy n’utilise que `docker-compose.yml` (sans port 80 sur l’hôte) — **ne pas** ajouter de second fichier compose sauf besoin particulier.
+Dokploy utilise l’unique `docker-compose.yml` (nginx + backend + frontend buildés en image, sans port sur l’hôte).
 
 Dans Dokploy :
 
 1. **Compose file** : `docker-compose.yml` seulement
 2. **Domaine** → service **nginx**, port conteneur **80**
 3. Variables obligatoires :
-   - `RESET_DB_ON_SEED=false` — valeur de production, conserve les données et applique seulement les migrations
    - `FRONTEND_ORIGIN=https://ton-domaine.fr`
    - `APP_URL=https://ton-domaine.fr`
    - `AUTH_SECRET` ≥ 32 caractères
    - `DB_PASSWORD`, `DB_NAME`, `DB_USER`
+   - `NODE_ENV=production`
 
-À chaque push / redémarrage du conteneur **backend**, l’entrypoint exécute automatiquement :
+À chaque push / redémarrage du conteneur **backend**, l’entrypoint exécute automatiquement,
+**sans jamais réinitialiser la base** :
 
 ```text
-RESET_DB_ON_SEED=false : prisma migrate deploy
-RESET_DB_ON_SEED=true  : drop schema → prisma migrate deploy → prisma db seed
+prisma migrate deploy   # applique uniquement les migrations en attente
+prisma db seed          # idempotent : ne peuple qu'une base vide (seed une seule fois)
 ```
 
-Les comptes démo (voir tableau ci-dessous) sont recréés uniquement lorsque
-`RESET_DB_ON_SEED=true` est activé explicitement.
-
-> `RESET_DB_ON_SEED=true` détruit le schéma et les uploads au démarrage. Cette option est réservée aux environnements de démonstration jetables.
+Les comptes démo (voir tableau ci-dessous) sont créés au premier déploiement, puis le seed
+est ignoré tant que des données existent. Aucune donnée n'est jamais effacée.
 
 Si l’erreur `port is already allocated` revient, un autre service occupe encore le port 80 sur le serveur (ancien déploiement) — le retirer dans Dokploy ou arrêter l’ancien conteneur.
 
@@ -57,53 +75,52 @@ Après avoir modifié `backend/prisma/schema.prisma`, générer une migration :
 
 ```bash
 # en local (crée le fichier SQL + applique + regénère le client)
-docker compose exec backend npx prisma migrate dev --name <description>
+cd backend
+npx prisma migrate dev --name <description>
 # puis committer le dossier généré dans prisma/migrations/
 ```
 
-Au démarrage, l’entrypoint exécute `prisma migrate deploy`. Par défaut,
-`RESET_DB_ON_SEED=false` conserve les données. Avec `RESET_DB_ON_SEED=true`, le schéma
-est réinitialisé puis les migrations et les données de démonstration sont rejouées.
-Sur une base pré-migrations existante, le démarrage échoue volontairement. Après avoir
-vérifié manuellement que son schéma correspond à `0_init`, définir
-`BASELINE_EXISTING_DB=true` pour un seul démarrage afin de marquer cette migration
-comme appliquée, puis remettre la variable à `false`.
+Au démarrage, l’entrypoint exécute `prisma migrate deploy` (jamais de reset) puis
+`prisma db seed`. Le seed est **idempotent** : il ne crée les données de démonstration
+que si la base est vide, donc il ne s’exécute qu’une seule fois. Les données existantes
+ne sont jamais effacées.
 
 ## Commandes
 
-```powershell
-.\docker.ps1 up prod          # démarrer (prod)
-.\docker.ps1 down prod        # arrêter en conservant BDD et uploads
-.\docker.ps1 down prod -PurgeData # arrêter + supprimer explicitement les volumes
-.\docker.ps1 up dev           # démarrer (hot-reload)
-.\docker.ps1 down dev         # arrêter en conservant BDD et uploads
+```bash
+# Base seule (dev natif)
+docker compose up -d db          # démarrer PostgreSQL (localhost:5432)
+docker compose down              # arrêter (conserve les volumes BDD + uploads)
+docker compose down -v           # arrêter + supprimer explicitement les volumes
+
+# Stack complète façon prod (test local des images)
+docker compose up --build        # nginx interne sur :80 (pas publié)
 ```
 
-`down` conserve les volumes PostgreSQL et uploads. La suppression des données exige
-désormais l'option explicite `-PurgeData`. Pour recréer les données de démonstration
-au prochain `up`, définir aussi `RESET_DB_ON_SEED=true`.
-
-En mode `dev`, les changements dans `frontend/src` et `backend/src` sont pris en compte sans rebuild complet (hot-reload).
-
-URL locale : `http://localhost`.
+Les changements dans `frontend/src` (ng serve) et `backend/src` (tsx watch) sont pris
+en compte immédiatement, sans rebuild.
 
 ## Prisma Studio
 
 ```bash
-docker compose --profile studio up studio
+cd backend
+npx prisma studio                # → http://localhost:5555
 ```
 
-→ http://localhost:5555
+## Variables d'environnement
 
-## .env (minimum)
+**Un seul fichier `.env` à la racine** (voir [.env.example](.env.example)), utilisé à la fois par
+`docker-compose.yml` (interpolation `${...}`) et par le backend en dev natif
+(`npm run dev` le charge via `--env-file=../.env`).
 
-- `DB_PASSWORD` — mot de passe PostgreSQL
+- `DB_USER`, `DB_PASSWORD`, `DB_NAME` — base PostgreSQL (compose)
+- `DATABASE_URL` — connexion du backend en dev natif (mêmes identifiants, vers `localhost:5432`)
 - `AUTH_SECRET` — secret aléatoire (≥ 32 caractères)
-- `HTTP_PORT` — port app (défaut `80`)
-- `FRONTEND_ORIGIN` et `APP_URL` — URL publique exacte de l’application
-- `RESET_DB_ON_SEED=true` sur une démo jetable uniquement · `false` en production
-- `BASELINE_EXISTING_DB=true` — usage ponctuel pour une ancienne base sans historique Prisma
+- `FRONTEND_ORIGIN` et `APP_URL` — URL exacte du front (`http://localhost:4200` en dev, domaine public en prod)
+- `NODE_ENV` — `development` en local · `production` en prod
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` — emails de vérification
+
+En prod (Dokploy), ces variables sont définies dans le panneau, pas dans un fichier committé.
 
 ## Qualité
 
