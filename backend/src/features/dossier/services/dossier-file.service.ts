@@ -49,6 +49,16 @@ class DossierFileService {
     return dossier.id;
   }
 
+  private async getFile(dossierId: number, fileId: number) {
+    const file = await prisma.dossierFile.findFirst({
+      where: { id: fileId, dossierId },
+    });
+    if (!file) {
+      throw new ApiError('Fichier non trouve', 'NOT_FOUND', 404);
+    }
+    return file;
+  }
+
   async uploadFiles(
     patientId: number,
     rdvId: number,
@@ -99,12 +109,7 @@ class DossierFileService {
     await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(rdvId);
 
-    const file = await prisma.dossierFile.findFirst({
-      where: { id: fileId, dossierId },
-    });
-    if (!file) {
-      throw new ApiError('Fichier non trouve', 'NOT_FOUND', 404);
-    }
+    const file = await this.getFile(dossierId, fileId);
 
     const status = await prisma.$transaction(async (tx) => {
       await tx.dossierFile.delete({ where: { id: fileId } });
@@ -123,12 +128,7 @@ class DossierFileService {
     await assertDossierAccess(patientId, rdvId, medecinId);
     const dossierId = await this.getDossierId(rdvId);
 
-    const file = await prisma.dossierFile.findFirst({
-      where: { id: fileId, dossierId },
-    });
-    if (!file) {
-      throw new ApiError('Fichier non trouve', 'NOT_FOUND', 404);
-    }
+    const file = await this.getFile(dossierId, fileId);
 
     const absolutePath = resolveDossierFile(file.storedName);
     if (!fs.existsSync(absolutePath)) {
