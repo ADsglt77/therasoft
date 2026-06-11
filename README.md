@@ -40,7 +40,6 @@ Dans Dokploy :
 2. **Domaine** → service **nginx**, port conteneur **80**
 3. Variables obligatoires :
    - `FRONTEND_ORIGIN=https://ton-domaine.fr`
-   - `APP_URL=https://ton-domaine.fr`
    - `AUTH_SECRET` ≥ 32 caractères
    - `DB_PASSWORD`, `DB_NAME`, `DB_USER`
    - `NODE_ENV=production`
@@ -116,7 +115,8 @@ npx prisma studio                # → http://localhost:5555
 - `DB_USER`, `DB_PASSWORD`, `DB_NAME` — base PostgreSQL (compose)
 - `DATABASE_URL` — connexion du backend en dev natif (mêmes identifiants, vers `localhost:5432`)
 - `AUTH_SECRET` — secret aléatoire (≥ 32 caractères)
-- `FRONTEND_ORIGIN` et `APP_URL` — URL exacte du front (`http://localhost:4200` en dev, domaine public en prod)
+- `FRONTEND_ORIGIN` — URL exacte du front (`http://localhost:4200` en dev, domaine public en prod)
+- `APP_URL` — optionnelle, uniquement si l'URL publique du backend diffère du front
 - `NODE_ENV` — `development` en local · `production` en prod
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` — emails de vérification
 
