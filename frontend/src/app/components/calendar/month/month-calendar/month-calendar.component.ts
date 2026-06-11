@@ -3,6 +3,7 @@ import { NavCalendarComponent } from '../../nav-calendar/nav-calendar.component'
 import { DayCardComponent } from '../day-card/day-card.component';
 import { SelectOption } from '../../../input/ui-input.component';
 import { buildMonthGrid, MonthGridCell } from '../../../../core/utils/calendar-grid.utils';
+import { formatDateKey } from '../../../../core/utils/date.utils';
 
 const YEAR_RANGE = 2;
 
@@ -89,8 +90,7 @@ export class MonthCalendarComponent {
 
   /** day-card n'émet que pour les jours non désactivés (donc disponibles). */
   onDayClick(event: { year: number; month: number; day: number }): void {
-    const dateKey = `${event.year}-${String(event.month + 1).padStart(2, '0')}-${String(event.day).padStart(2, '0')}`;
-    this.dateSelect.emit(dateKey);
+    this.dateSelect.emit(formatDateKey(event.year, event.month, event.day));
   }
 
   private emitMonth(): void {
