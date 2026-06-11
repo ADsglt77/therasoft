@@ -120,42 +120,18 @@ function withUtcTime(base: Date, hours: number, minutes: number): Date {
   return d;
 }
 
-async function cleanDatabase(): Promise<void> {
-  console.log('🧹 Nettoyage de la base de données...');
-  await prisma.dossierFile.deleteMany();
-  await prisma.dossier.deleteMany();
-  await prisma.rdvVacation.deleteMany();
-  await prisma.rdv.deleteMany();
-  await prisma.vacation.deleteMany();
-  await prisma.site.deleteMany();
-  await prisma.patient.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.auditLog.deleteMany();
-  await prisma.medecin.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.modaliteConfig.deleteMany();
-  console.log('✅ Base de données nettoyée\n');
-}
-
 async function main(): Promise<void> {
   await waitForDatabase();
 
-  const resetOnSeed = process.env.RESET_DB_ON_SEED === 'true';
+  // Seed exécuté une seule fois : si des données existent déjà, on n'y touche pas
+  // (aucun reset, ni en dev ni en prod).
   const existingMedecins = await prisma.medecin.count();
-
-  // Seed idempotent : en production (reset désactivé), on ne touche pas à des données existantes.
-  if (!resetOnSeed && existingMedecins > 0) {
-    console.log('⏭️  Seed ignoré : médecins déjà présents et RESET_DB_ON_SEED=false.\n');
+  if (existingMedecins > 0) {
+    console.log('⏭️  Seed ignoré : données déjà présentes (le seed ne s’exécute qu’une fois).\n');
     return;
   }
 
-  if (resetOnSeed) {
-    console.log('🌱 Seed forcé (RESET_DB_ON_SEED=true) : reset complet puis recréation...\n');
-    await cleanDatabase();
-  } else {
-    console.log('🌱 Base vide : initialisation des données de démonstration...\n');
-  }
+  console.log('🌱 Base vide : initialisation des données de démonstration...\n');
 
   // 1) Durées par modalité
   console.log('⏱️  Configuration des durées par modalité...');

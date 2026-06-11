@@ -45,11 +45,6 @@ const envSchema = z.object({
   SMTP_PASS: optionalString,
   SMTP_SECURE: envBool(false),
   MAIL_FROM: z.string().default('TsXcare <no-reply@tsxcare.local>'),
-
-  // Reset complet de la base au seed (démo). false = seed idempotent.
-  RESET_DB_ON_SEED: envBool(false),
-  // Autorise explicitement la baseline d'une base historique sans table Prisma.
-  BASELINE_EXISTING_DB: envBool(false),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -78,8 +73,6 @@ export const env = {
 
   frontendOrigin: data.FRONTEND_ORIGIN,
   appUrl: data.APP_URL || data.FRONTEND_ORIGIN,
-  resetDbOnSeed: data.RESET_DB_ON_SEED,
-  baselineExistingDb: data.BASELINE_EXISTING_DB,
 
   smtp: {
     host: data.SMTP_HOST,
