@@ -10,6 +10,7 @@ import {
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { UiButtonComponent } from '../button/ui-button.component';
 import { UiInputComponent, InputMessageType, SelectOption } from '../input/ui-input.component';
+import { UiDatePickerComponent } from '../date-picker/ui-date-picker.component';
 import { AddressAutocompleteComponent } from '../address-autocomplete/address-autocomplete.component';
 import { PasswordStrengthIndicatorComponent } from '../password-strength-indicator/password-strength-indicator.component';
 import { UiStepperComponent, StepperStep } from '../stepper/ui-stepper.component';
@@ -47,7 +48,7 @@ function dateNotInFuture(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, AddressAutocompleteComponent, PasswordStrengthIndicatorComponent, UiStepperComponent],
+  imports: [ReactiveFormsModule, RouterModule, UiButtonComponent, UiInputComponent, UiDatePickerComponent, AddressAutocompleteComponent, PasswordStrengthIndicatorComponent, UiStepperComponent],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,

@@ -92,19 +92,18 @@
 
         <div class="name-fields">
           <div class="field-wrapper">
-            <ui-input
-              type="date"
+            <app-date-picker
               label="Date de naissance"
               [value]="registerForm.get('dateNaissance')?.value || ''"
               [max]="maxDateNaissance"
-              (input)="updateFormControl(registerForm, 'dateNaissance', $any($event.target).value)"
+              (valueChange)="updateFormControl(registerForm, 'dateNaissance', $event)"
               id="register-date-naissance"
               [required]="true"
               [touched]="registerForm.get('dateNaissance')?.touched || false"
               [dirty]="registerForm.get('dateNaissance')?.dirty || false"
               [message]="registerDateNaissanceMessage.message"
               [messageType]="registerDateNaissanceMessage.type">
-            </ui-input>
+            </app-date-picker>
           </div>
 
           <div class="field-wrapper">
