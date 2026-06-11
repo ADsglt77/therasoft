@@ -54,17 +54,6 @@
       }
     }
 
-    .icon-moon-wrapper {
-      @include button-reset;
-      @include tap-target;
-      --moon-icon-color: var(--text-muted);
-      @include transition(color, $duration-base);
-      @include focus-visible;
-
-      &:hover {
-        --moon-icon-color: var(--text);
-      }
-    }
   }
 
   .hamburger-trigger {
@@ -172,35 +161,11 @@
         }
       }
 
-      &__footer {
-        padding: $spacing-16 $spacing-20;
-        padding-bottom: calc(#{$spacing-16} + env(safe-area-inset-bottom, 0px));
-        border-top: 1px solid border-surface-color(12%);
-      }
     }
 
     &.menu-main--mobile-open .hamburger-trigger {
       display: none !important;
     }
-
-    .mobile-theme-toggle {
-      @include button-reset;
-      display: flex;
-      align-items: center;
-      gap: $spacing-12;
-      width: 100%;
-      min-height: $tap-target-min;
-      padding: $spacing-12 $spacing-16;
-      border-radius: $radius-12;
-      color: var(--text);
-      @include transition(background-color, $duration-base);
-      @include focus-visible;
-
-      &:hover {
-        @include glass-hover;
-      }
-    }
-
   }
 }
 

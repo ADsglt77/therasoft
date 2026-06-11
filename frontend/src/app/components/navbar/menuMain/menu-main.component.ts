@@ -9,7 +9,6 @@ import { MenuHamburgerComponent } from './menuHamburger/menu-hamburger.component
 import { NavbarLinksComponent } from '../navbar-links/navbar-links.component';
 import { AuthService, AuthUser } from '../../../core/services/auth.service';
 import { navLinksForRole, NavLink } from '../../../core/constants/nav-links';
-import { ThemeService } from '../../../shared/theme/theme.service';
 
 @Component({
   selector: 'app-menu-main',
@@ -37,18 +36,14 @@ export class MenuMainComponent implements OnInit {
     return 'menu-main' + (this.mobileMenuOpen ? ' menu-main--mobile-open' : '');
   }
 
-  currentTheme: 'dark' | 'light' = 'dark';
-
   constructor(
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private router: Router,
-    private themeService: ThemeService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.checkAuthentication();
-    this.currentTheme = this.themeService.getTheme();
 
     this.router.events
       .pipe(
@@ -131,12 +126,6 @@ export class MenuMainComponent implements OnInit {
       return;
     }
     this.mobileMenuOpen = false;
-    this.cdr.markForCheck();
-  }
-
-  onToggleTheme(): void {
-    this.themeService.toggle();
-    this.currentTheme = this.themeService.getTheme();
     this.cdr.markForCheck();
   }
 }
