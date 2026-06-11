@@ -6,6 +6,10 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    # Publié sur la loopback uniquement : permet le dev natif (backend `npm run dev`
+    # → localhost:5432) sans exposer la base sur le réseau en prod.
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_therasoft:/var/lib/postgresql/data
     healthcheck:
@@ -30,8 +34,6 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
       NODE_ENV: ${NODE_ENV:-production}
-      RESET_DB_ON_SEED: ${RESET_DB_ON_SEED:-false}
-      BASELINE_EXISTING_DB: ${BASELINE_EXISTING_DB:-false}
       # Liens des emails (vérification) + SMTP (vérification d'email)
       APP_URL: ${APP_URL:-http://localhost}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -58,7 +60,7 @@ services:
   nginx:
     build: ./nginx
     # Pas de ports ici : Dokploy (et autres reverse proxy) route vers nginx:80 en interne.
-    # En local, docker-compose.override.yml publie HTTP_PORT sur l'hôte.
+    # En local, le dev se fait en natif (ng serve / npm run dev) : nginx n'est utile qu'en prod.
     depends_on:
       backend:
         condition: service_healthy
