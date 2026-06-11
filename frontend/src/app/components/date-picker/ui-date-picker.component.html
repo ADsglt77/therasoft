@@ -1,0 +1,94 @@
+@if (label) {
+  <label class="dp__label" [for]="controlId">
+    {{ label }}@if (required) {<span class="dp__req" aria-hidden="true"> *</span>}
+  </label>
+}
+
+<button
+  type="button"
+  class="dp__trigger"
+  [class.dp__trigger--open]="isOpen"
+  [class.dp__trigger--error]="displayMessageType === 'error'"
+  [id]="controlId"
+  [disabled]="disabled"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="isOpen"
+  (click)="toggle()">
+  <app-icon name="calendar" [size]="18" class="dp__trigger-icon"></app-icon>
+  <span class="dp__value" [class.dp__value--placeholder]="!displayValue">
+    {{ displayValue || placeholder }}
+  </span>
+  <app-icon name="chevron-down" [size]="18" class="dp__chevron" [class.dp__chevron--open]="isOpen"></app-icon>
+</button>
+
+@if (isOpen) {
+  <div class="dp__panel" role="dialog" aria-label="Choisir une date">
+    <div class="dp__header">
+      @if (view === 'days') {
+        <button type="button" class="dp__nav" (click)="prevMonth()" aria-label="Mois précédent">
+          <app-icon name="chevron-left" [size]="18"></app-icon>
+        </button>
+        <button type="button" class="dp__title" (click)="openYearView()" aria-label="Choisir l'année">
+          {{ monthLabel }}
+        </button>
+        <button type="button" class="dp__nav" (click)="nextMonth()" aria-label="Mois suivant">
+          <app-icon name="chevron-right" [size]="18"></app-icon>
+        </button>
+      } @else {
+        <button type="button" class="dp__nav" (click)="prevYears()" aria-label="Années précédentes">
+          <app-icon name="chevron-left" [size]="18"></app-icon>
+        </button>
+        <span class="dp__title dp__title--static">{{ yearRangeLabel }}</span>
+        <button type="button" class="dp__nav" (click)="nextYears()" aria-label="Années suivantes">
+          <app-icon name="chevron-right" [size]="18"></app-icon>
+        </button>
+      }
+    </div>
+
+    @if (view === 'days') {
+      <div class="dp__weekdays">
+        @for (day of weekDays; track $index) {
+          <span class="dp__weekday">{{ day }}</span>
+        }
+      </div>
+      <div class="dp__grid">
+        @for (cell of grid; track cell.dateKey) {
+          <button
+            type="button"
+            class="dp__day"
+            [class.dp__day--outside]="!cell.inCurrentMonth"
+            [class.dp__day--today]="cell.isToday"
+            [class.dp__day--selected]="isSelectedCell(cell)"
+            [disabled]="isDisabledCell(cell)"
+            (click)="selectDay(cell)">
+            {{ cell.dayNumber }}
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="dp__years">
+        @for (year of years; track year) {
+          <button
+            type="button"
+            class="dp__year"
+            [class.dp__year--selected]="isSelectedYear(year)"
+            [disabled]="isYearDisabled(year)"
+            (click)="selectYear(year)">
+            {{ year }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+}
+
+@if (hasMessage) {
+  <p
+    class="dp__message"
+    [class.dp__message--error]="displayMessageType === 'error'"
+    [class.dp__message--warning]="displayMessageType === 'warning'"
+    [class.dp__message--info]="displayMessageType === 'info'"
+    [class.dp__message--success]="displayMessageType === 'success'">
+    {{ displayMessage }}
+  </p>
+}
