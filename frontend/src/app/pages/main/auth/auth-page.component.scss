@@ -14,10 +14,10 @@
 
   .auth-page-content {
     position: relative;
-    // Largeur responsive : ~50vw bornée pour rester lisible (jamais trop étroite
-    // sur mobile ni trop large sur grand écran).
+    // Dimensions communes aux formulaires de connexion et d'inscription.
     width: clamp(340px, 50vw, 480px);
     max-width: 90vw;
+    height: min(600px, calc(100dvh - #{$spacing-32}));
     // overflow visible : un dropdown (select, autocomplétion) peut dépasser la
     // dialogue sans être tronqué à son bord.
     overflow: visible;
