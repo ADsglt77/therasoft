@@ -77,7 +77,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
     ports:
-      - "5555:5555"
+      - "127.0.0.1:5555:5555"
     entrypoint: ["sh", "-c", "npx prisma studio --url \"$$DATABASE_URL\" --port 5555 --browser none"]
 
 volumes:
