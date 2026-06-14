@@ -68,9 +68,9 @@ services:
     restart: unless-stopped
 
   studio:
-    profiles: [studio]
     image: therasoft-backend
     pull_policy: never
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
